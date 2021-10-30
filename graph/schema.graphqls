@@ -1,0 +1,50 @@
+enum Role {
+    ADMIN
+    USER
+    MODERATOR
+}
+
+
+type User {
+    id: ID!
+    username: String!
+    email: String!
+    images: [Image!]!
+    role: Role!
+}
+
+type Image {
+    id: ID!
+    title: String
+    description: String
+    user: User!
+    labels: [String!]!
+    url: String!
+}
+
+type Query {
+    images: [Image!]!
+}
+
+input NewImage {
+  title: String
+  description: String
+  labels: [String!]!
+  url: String!
+}
+
+
+input NewUser {
+  username: String!
+  email: String!
+  password: String!
+}
+
+type Mutation{
+  createUser(input: NewUser!): User! 
+  createImage(input: NewImage!): Image!
+}
+
+
+directive @Authorize on FIELD_DEFINITION
+
