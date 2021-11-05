@@ -43,6 +43,13 @@ input NewUser {
 type Mutation{
   createUser(input: NewUser!): User! 
   createImage(input: NewImage!): Image!
+  login(input: LoginInput!): Boolean
+  logout(input: Boolean ):Boolean
+}
+
+input LoginInput {
+  email: String!
+  password: String!
 }
 
 

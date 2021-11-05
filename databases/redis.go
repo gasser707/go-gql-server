@@ -1,23 +1,26 @@
 package databases
 
 import(
-"os"
+// "os"
  "github.com/go-redis/redis/v7" 
 )
 
-var RC *redis.Client
+var RedisClient *redis.Client
 
-func init() {
-	//Initializing redis
-	dsn := os.Getenv("REDIS_DSN")
-	if len(dsn) == 0 {
-		dsn = "localhost:6379"
-	}
-	RC = redis.NewClient(&redis.Options{
-		Addr: dsn, //redis port
+func InitDB() *redis.Client{
+	// redis_host := os.Getenv("REDIS_HOST")
+	// redis_port := os.Getenv("REDIS_PORT")
+	// redis_password := os.Getenv("REDIS_PASSWORD")
+
+	RedisClient := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
 	})
-	_, err := RC.Ping().Result()
+
+	_, err := RedisClient.Ping().Result()
 	if err != nil {
 		panic(err)
 	}
+	return RedisClient
 }

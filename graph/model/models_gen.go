@@ -17,6 +17,11 @@ type Image struct {
 	URL         string   `json:"url"`
 }
 
+type LoginInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 type NewImage struct {
 	Title       *string  `json:"title"`
 	Description *string  `json:"description"`
