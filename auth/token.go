@@ -45,9 +45,6 @@ func NewToken() *tokenservice {
 	return &tokenservice{}
 }
 
-var TokenService *TokenInterface
-
-
 
 func (t *tokenservice) CreateToken(userId string, userRole string) (*TokenDetails, error) {
 	td := &TokenDetails{}
@@ -134,7 +131,7 @@ func extract(token *jwt.Token) (*AccessDetails, error) {
 		accessUuid, ok := claims["access_uuid"].(string)
 		userId, userOk := claims["user_id"].(string)
 		role, roleOk := claims["user_role"].(string)
-		if ok == false  || userOk == false || roleOk == false {
+		if !ok  || !userOk || !roleOk  {
 			return nil, errors.New("unauthorized")
 		} else {
 			return &AccessDetails{

@@ -7,9 +7,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gasser707/go-gql-server/auth"
 	"github.com/gasser707/go-gql-server/graph/generated"
 	"github.com/gasser707/go-gql-server/graph/model"
-	handlers "github.com/gasser707/go-gql-server/handler"
 )
 
 func (r *imageResolver) User(ctx context.Context, obj *model.Image) (*model.User, error) {
@@ -25,7 +25,7 @@ func (r *mutationResolver) CreateImage(ctx context.Context, input model.NewImage
 }
 
 func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*bool, error) {
-	ok, err := handlers.AuthService.Login(ctx)
+	ok, err := auth.AuthService.Login(ctx)
 
 	if ok {
 		return &ok, nil
@@ -35,13 +35,14 @@ func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*
 }
 
 func (r *mutationResolver) Logout(ctx context.Context, input *bool) (*bool, error) {
-	ok, err := handlers.AuthService.Logout(ctx)
+	ok, err := auth.AuthService.Logout(ctx)
 
 	if ok {
 		return &ok, nil
 	} else {
 		return new(bool), fmt.Errorf(err.Error())
-	}}
+	}
+}
 
 func (r *queryResolver) Images(ctx context.Context) ([]*model.Image, error) {
 	panic(fmt.Errorf("not implemented"))
