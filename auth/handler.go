@@ -8,6 +8,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gasser707/go-gql-server/databases"
+	"github.com/gasser707/go-gql-server/graph/model"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,7 +34,7 @@ type User struct {
 	ID       string `json:"id"`
 	Username string `json:"username"`
 	Password string `json:"password"`
-	Role     string `json:"role"`
+	Role     model.Role `json:"role"`
 }
 
 //In memory user
@@ -41,7 +42,7 @@ var user = User{
 	ID:       "1",
 	Username: "username",
 	Password: "password",
-	Role:     "good",
+	Role:     model.RoleUser,
 }
 
 type Todo struct {
@@ -78,21 +79,33 @@ func (h *profileHandler) Login(c context.Context) (bool, error) {
 	return true, nil
 }
 
+
+func (h *profileHandler) validateCredentials(c context.Context) (string, model.Role, error){
+	metadata, err := h.tk.ExtractTokenMetadata(c)
+	if(err !=nil){
+		return "", "",err
+	}
+	userId, err := h.rd.FetchAuth(metadata.TokenUuid)
+	if err != nil {
+		return "", "",err
+	}
+
+	return userId, metadata.UserRole ,nil
+}
+
 func (h *profileHandler) GetCredentials(c context.Context) (*AccessDetails, error){
-	return h.tk.ExtractTokenMetadata(c)
+		return h.tk.ExtractTokenMetadata(c)
 }
 
 func (h *profileHandler) Logout(c context.Context) (bool, error) {
 	//If metadata is passed and the tokens valid, delete them from the redis store
-	metadata, _ := h.GetCredentials(c)
-	if metadata != nil {
-		deleteErr := h.rd.DeleteTokens(metadata)
-		if deleteErr != nil {
-			return false, deleteErr
-		}
-		return true, nil
+	metadata, _ := h.tk.ExtractTokenMetadata(c)
+	deleteErr := h.rd.DeleteTokens(metadata)
+	if deleteErr != nil {
+		return false, deleteErr
 	}
-	return false, fmt.Errorf("credentials not found")
+	return true, nil
+
 }
 
 func (h *profileHandler) CreateTodo(c *gin.Context) {
@@ -153,7 +166,7 @@ func (h *profileHandler) Refresh(c *gin.Context) {
 		}
 		userId, userOk := claims["user_id"].(string)
 		userRole, roleOk := claims["user_role"].(string)
-		if roleOk == false || userOk == false {
+		if !roleOk || !userOk {
 			c.JSON(http.StatusUnprocessableEntity, "unauthorized")
 			return
 		}
@@ -164,7 +177,7 @@ func (h *profileHandler) Refresh(c *gin.Context) {
 			return
 		}
 		//Create new pairs of refresh and access tokens
-		ts, createErr := h.tk.CreateToken(userId, userRole)
+		ts, createErr := h.tk.CreateToken(userId, model.Role(userRole))
 		if createErr != nil {
 			c.JSON(http.StatusForbidden, createErr.Error())
 			return

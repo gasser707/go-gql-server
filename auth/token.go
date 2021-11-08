@@ -13,6 +13,7 @@ import (
 	// "strings"
 	"time"
 
+	"github.com/gasser707/go-gql-server/graph/model"
 	"github.com/gasser707/go-gql-server/helpers"
 )
 
@@ -20,7 +21,7 @@ import (
 type AccessDetails struct {
 	TokenUuid string
 	UserId    string
-	UserRole string
+	UserRole model.Role
 }
 
 type TokenDetails struct {
@@ -33,8 +34,9 @@ type TokenDetails struct {
 }
 
 type TokenInterface interface {
-	CreateToken(userId string, userRole string) (*TokenDetails, error)
+	CreateToken(userId string, userRole model.Role) (*TokenDetails, error)
 	ExtractTokenMetadata(c context.Context) (*AccessDetails, error)
+	TokenValid(c context.Context)(error)
 }
 
 //Token implements the TokenInterface
@@ -46,7 +48,7 @@ func NewToken() *tokenservice {
 }
 
 
-func (t *tokenservice) CreateToken(userId string, userRole string) (*TokenDetails, error) {
+func (t *tokenservice) CreateToken(userId string, userRole model.Role) (*TokenDetails, error) {
 	td := &TokenDetails{}
 	td.AtExpires = time.Now().Add(time.Minute * 30).Unix() //expires after 30 min
 	td.TokenUuid = uuid.NewV4().String()
@@ -85,7 +87,7 @@ func (t *tokenservice) CreateToken(userId string, userRole string) (*TokenDetail
 	return td, nil
 }
 
-func TokenValid(c context.Context) error {
+func (t *tokenservice) TokenValid(c context.Context) error {
 	token, err := verifyToken(c)
 	if err != nil {
 		return err
@@ -137,7 +139,7 @@ func extract(token *jwt.Token) (*AccessDetails, error) {
 			return &AccessDetails{
 				TokenUuid: accessUuid,
 				UserId:    userId,
-				UserRole: role,
+				UserRole: model.Role(role),
 			}, nil
 		}
 	}

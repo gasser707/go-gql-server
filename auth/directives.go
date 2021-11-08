@@ -8,7 +8,7 @@ import (
 )
 
  var Authorize = func (ctx context.Context, obj interface{}, next graphql.Resolver) (interface{}, error) {
-	  _, err:= AuthService.GetCredentials(ctx)
+	  _, _, err:= AuthService.validateCredentials(ctx)
 
 	  if(err!=nil){
 	  return nil, fmt.Errorf("no auth credentials found")
@@ -17,11 +17,14 @@ import (
       return next(ctx)
 }
 
-var AdminOrSelf = func (ctx context.Context, obj model.LoginInput, next graphql.Resolver) (interface{}, error) {
-	_, err:= AuthService.GetCredentials(ctx)
+var AdminOrMod = func (ctx context.Context, obj model.LoginInput, next graphql.Resolver) (interface{}, error) {
+	_, role, err:= AuthService.validateCredentials(ctx)
 	if(err!=nil){
 		return nil, fmt.Errorf("no auth credentials found")
 	}
-	// uId = md.UserId
+	if role != model.RoleAdmin && role != model.RoleModerator {
+		return nil, fmt.Errorf("unauthorized")
+
+	}
 	return next(ctx)
 }
