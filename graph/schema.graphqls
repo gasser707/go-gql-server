@@ -12,6 +12,7 @@ type User {
     bio: String!
 	  avatar: String!
     joined: Time
+    images: [Image!]!
 }
 
 type Sale {

@@ -40,6 +40,8 @@ type ResolverRoot interface {
 	Image() ImageResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
+	Sale() SaleResolver
+	User() UserResolver
 }
 
 type DirectiveRoot struct {
@@ -90,6 +92,7 @@ type ComplexityRoot struct {
 		Bio      func(childComplexity int) int
 		Email    func(childComplexity int) int
 		ID       func(childComplexity int) int
+		Images   func(childComplexity int) int
 		Joined   func(childComplexity int) int
 		Role     func(childComplexity int) int
 		Username func(childComplexity int) int
@@ -112,6 +115,14 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Images(ctx context.Context, input *model.ImageFilterInput) ([]*model.Image, error)
 	Users(ctx context.Context, input *model.UserFilterInput) ([]*model.User, error)
+}
+type SaleResolver interface {
+	Image(ctx context.Context, obj *model.Sale) (*model.Image, error)
+	Buyer(ctx context.Context, obj *model.Sale) (*model.User, error)
+	Seller(ctx context.Context, obj *model.Sale) (*model.User, error)
+}
+type UserResolver interface {
+	Images(ctx context.Context, obj *model.User) ([]*model.Image, error)
 }
 
 type executableSchema struct {
@@ -375,6 +386,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.ID(childComplexity), true
 
+	case "User.images":
+		if e.complexity.User.Images == nil {
+			break
+		}
+
+		return e.complexity.User.Images(childComplexity), true
+
 	case "User.joined":
 		if e.complexity.User.Joined == nil {
 			break
@@ -474,6 +492,7 @@ type User {
     bio: String!
 	  avatar: String!
     joined: Time
+    images: [Image!]!
 }
 
 type Sale {
@@ -1831,14 +1850,14 @@ func (ec *executionContext) _Sale_image(ctx context.Context, field graphql.Colle
 		Object:     "Sale",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Image, nil
+		return ec.resolvers.Sale().Image(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1866,14 +1885,14 @@ func (ec *executionContext) _Sale_buyer(ctx context.Context, field graphql.Colle
 		Object:     "Sale",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Buyer, nil
+		return ec.resolvers.Sale().Buyer(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1901,14 +1920,14 @@ func (ec *executionContext) _Sale_seller(ctx context.Context, field graphql.Coll
 		Object:     "Sale",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Seller, nil
+		return ec.resolvers.Sale().Seller(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2197,6 +2216,41 @@ func (ec *executionContext) _User_joined(ctx context.Context, field graphql.Coll
 	res := resTmp.(*time.Time)
 	fc.Result = res
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_images(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Images(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Image)
+	fc.Result = res
+	return ec.marshalNImage2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐImageᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -3987,23 +4041,50 @@ func (ec *executionContext) _Sale(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._Sale_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "image":
-			out.Values[i] = ec._Sale_image(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Sale_image(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "buyer":
-			out.Values[i] = ec._Sale_buyer(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Sale_buyer(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "seller":
-			out.Values[i] = ec._Sale_seller(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Sale_seller(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "time":
 			out.Values[i] = ec._Sale_time(ctx, field, obj)
 		default:
@@ -4031,35 +4112,49 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._User_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "username":
 			out.Values[i] = ec._User_username(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "email":
 			out.Values[i] = ec._User_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "role":
 			out.Values[i] = ec._User_role(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "bio":
 			out.Values[i] = ec._User_bio(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "avatar":
 			out.Values[i] = ec._User_avatar(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "joined":
 			out.Values[i] = ec._User_joined(ctx, field, obj)
+		case "images":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_images(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

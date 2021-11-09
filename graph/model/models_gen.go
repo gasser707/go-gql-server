@@ -95,6 +95,7 @@ type User struct {
 	Bio      string     `json:"bio"`
 	Avatar   string     `json:"avatar"`
 	Joined   *time.Time `json:"joined"`
+	Images   []*Image   `json:"images"`
 }
 
 type UserFilterInput struct {

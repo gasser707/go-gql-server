@@ -39,6 +39,7 @@ func (r *mutationResolver) UpdateImage(ctx context.Context, input model.UpdateIm
 func (r *mutationResolver) BuyImage(ctx context.Context, input *model.BuyImageInput) (*model.Sale, error) {
 	panic(fmt.Errorf("not implemented"))
 }
+
 func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (bool, error) {
 	ok, err := auth.AuthService.Login(ctx)
 
@@ -58,11 +59,28 @@ func (r *mutationResolver) Logout(ctx context.Context, input *bool) (bool, error
 		return false, fmt.Errorf(err.Error())
 	}
 }
+
 func (r *queryResolver) Images(ctx context.Context, input *model.ImageFilterInput) ([]*model.Image, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *queryResolver) Users(ctx context.Context, input *model.UserFilterInput) ([]*model.User, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *saleResolver) Image(ctx context.Context, obj *model.Sale) (*model.Image, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *saleResolver) Buyer(ctx context.Context, obj *model.Sale) (*model.User, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *saleResolver) Seller(ctx context.Context, obj *model.Sale) (*model.User, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *userResolver) Images(ctx context.Context, obj *model.User) ([]*model.Image, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -75,6 +93,14 @@ func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResol
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
+// Sale returns generated.SaleResolver implementation.
+func (r *Resolver) Sale() generated.SaleResolver { return &saleResolver{r} }
+
+// User returns generated.UserResolver implementation.
+func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
+
 type imageResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type saleResolver struct{ *Resolver }
+type userResolver struct{ *Resolver }

@@ -63,3 +63,13 @@ models:
     fields:
       user:
         resolver: true # force a resolver to be generated
+  Sale:
+    fields:
+      buyer:
+        resolver: true # force a resolver to be generated
+      seller:
+        resolver: true # force a resolver to be generated
+      image:
+        resolver: true # force a resolver to be generated
+
+
