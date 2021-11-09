@@ -6,15 +6,37 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"time"
 )
 
+type BuyImageInput struct {
+	ImageID string `json:"imageId"`
+}
+
+type DeleteImageInput struct {
+	ID string `json:"id"`
+}
+
 type Image struct {
-	ID          string   `json:"id"`
+	ID          string     `json:"id"`
+	Title       string     `json:"title"`
+	Description string     `json:"description"`
+	User        *User      `json:"user"`
+	Labels      []string   `json:"labels"`
+	URL         string     `json:"url"`
+	Private     bool       `json:"private"`
+	ForSale     bool       `json:"forSale"`
+	Created     *time.Time `json:"created"`
+}
+
+type ImageFilterInput struct {
+	ID          *string  `json:"id"`
+	UserID      *string  `json:"userId"`
 	Title       *string  `json:"title"`
 	Description *string  `json:"description"`
-	User        *User    `json:"user"`
 	Labels      []string `json:"labels"`
-	URL         string   `json:"url"`
+	Private     *bool    `json:"private"`
+	ForSale     *bool    `json:"forSale"`
 }
 
 type LoginInput struct {
@@ -22,25 +44,65 @@ type LoginInput struct {
 	Password string `json:"password"`
 }
 
-type NewImage struct {
-	Title       *string  `json:"title"`
-	Description *string  `json:"description"`
+type NewImageInput struct {
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
 	Labels      []string `json:"labels"`
 	URL         string   `json:"url"`
+	Private     bool     `json:"private"`
+	ForSale     bool     `json:"forSale"`
 }
 
-type NewUser struct {
+type NewUserInput struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Bio      string `json:"bio"`
+	Avatar   string `json:"avatar"`
+}
+
+type Sale struct {
+	ID     string     `json:"id"`
+	Image  *Image     `json:"image"`
+	Buyer  *User      `json:"buyer"`
+	Seller *User      `json:"seller"`
+	Time   *time.Time `json:"time"`
+}
+
+type UpdateImageInput struct {
+	ID          string   `json:"id"`
+	Title       *string  `json:"title"`
+	Description *string  `json:"description"`
+	Labels      []string `json:"labels"`
+	URL         *string  `json:"url"`
+	Private     *bool    `json:"private"`
+	ForSale     *bool    `json:"forSale"`
+}
+
+type UpdateUserInput struct {
+	ID       string  `json:"id"`
+	Username *string `json:"username"`
+	Email    *string `json:"email"`
+	Bio      *string `json:"bio"`
+	Avatar   *string `json:"avatar"`
 }
 
 type User struct {
-	ID       string   `json:"id"`
-	Username string   `json:"username"`
-	Email    string   `json:"email"`
-	Images   []*Image `json:"images"`
-	Role     Role     `json:"role"`
+	ID       string     `json:"id"`
+	Username string     `json:"username"`
+	Email    string     `json:"email"`
+	Role     Role       `json:"role"`
+	Bio      string     `json:"bio"`
+	Avatar   string     `json:"avatar"`
+	Joined   *time.Time `json:"joined"`
+}
+
+type UserFilterInput struct {
+	ID       *string `json:"id"`
+	Username *string `json:"username"`
+	Email    *string `json:"email"`
+	Role     *Role   `json:"role"`
+	Bio      *string `json:"bio"`
 }
 
 type Role string
