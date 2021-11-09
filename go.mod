@@ -4,13 +4,31 @@ go 1.16
 
 require (
 	github.com/99designs/gqlgen v0.14.0
+	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.7.4
 	github.com/go-redis/redis/v7 v7.4.1
+	github.com/go-sql-driver/mysql v1.6.0
+	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/gorilla/securecookie v1.1.1
+	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/joho/godotenv v1.4.0
+	github.com/json-iterator/go v1.1.11 // indirect
+	github.com/kr/pretty v0.2.0 // indirect
+	github.com/mitchellh/mapstructure v1.4.2 // indirect
+	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/myesui/uuid v1.0.0 // indirect
+	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/twinj/uuid v1.0.0
 	github.com/vektah/gqlparser/v2 v2.2.0
+	github.com/volatiletech/sqlboiler/v4 v4.7.1 // indirect
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
+	golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420 // indirect
+	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
+	golang.org/x/tools v0.1.5 // indirect
+	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

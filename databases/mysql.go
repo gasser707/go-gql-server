@@ -1,45 +1,45 @@
 package databases
 
-// import (
-// 	"database/sql"
-// 	// "fmt"
-// 	"log"
-// 	"os"
-// )
 
-// const (
-// 	mysqlUsersUsername = "mysql_users_username"
-// 	mysqlUsersPassword = "mysql_users_password"
-// 	mysqlUsersHost     = "mysql_users_host"
-// 	mysqldb   = "testdb"
-// )
+import (
+	"database/sql"
+	"fmt"
+	"log"
+    _ "github.com/joho/godotenv/autoload"
+	_ "github.com/go-sql-driver/mysql"
+	"os"
+)
 
-// var (
-// 	Client *sql.DB
+const (
+	mysqlUsersUsername = "MYSQL_USER"
+	mysqlUsersPassword = "MYSQL_PASS"
+	mysqlUsersHost     = "MYSQL_HOST"
+	mysqlUsersSchema   = "MYSQL_DBNAME"
+)
 
-// 	username = os.Getenv(mysqlUsersUsername)
-// 	password = os.Getenv(mysqlUsersPassword)
-// 	host     = os.Getenv(mysqlUsersHost)
-// 	db   = os.Getenv(mysqldb)
-// )
+var (
+	MDB *sql.DB
 
-// func init() {
+	username = os.Getenv(mysqlUsersUsername)
+	password = os.Getenv(mysqlUsersPassword)
+	host     = os.Getenv(mysqlUsersHost)
+	schema   = os.Getenv(mysqlUsersSchema)
+)
 
-// 	// dataSourceName := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8",
-// 	// 	username, password, host, db,
-// 	// )
+func init() {
 
-// 	var err error
-// 	dataSourceName := "user7:s$cret@tcp(127.0.0.1:8083)/testdb"
+	//username:password@protocol(address)/dbname?param=value
+	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8",
+		username, password, host, schema,
+	)
+	var err error
+	MDB, err = sql.Open("mysql", dataSourceName)
+	if err != nil {
+		panic(err)
+	}
+	if err = MDB.Ping(); err != nil {
+		panic(err)
+	}
 
-// 	Client, err = sql.Open("mysql", dataSourceName)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	if err = Client.Ping(); err != nil {
-// 		panic(err)
-// 	}
-
-// 	log.Println("database successfully configured")
-// }
-//
+	log.Println("database successfully configured")
+}
