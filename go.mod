@@ -22,10 +22,10 @@ require (
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/twinj/uuid v1.0.0
 	github.com/vektah/gqlparser/v2 v2.2.0
-	github.com/volatiletech/sqlboiler/v4 v4.7.1 // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420 // indirect
-	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
+	golang.org/x/sys v0.0.0-20211109184856-51b60fd695b3 // indirect
+	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.5 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect

@@ -10,7 +10,8 @@ import (
 )
 
 type BuyImageInput struct {
-	ImageID string `json:"imageId"`
+	ImageID string  `json:"imageId"`
+	Price   float64 `json:"price"`
 }
 
 type DeleteImageInput struct {
@@ -27,6 +28,7 @@ type Image struct {
 	Private     bool       `json:"private"`
 	ForSale     bool       `json:"forSale"`
 	Created     *time.Time `json:"created"`
+	Price       float64    `json:"price"`
 }
 
 type ImageFilterInput struct {
@@ -37,6 +39,7 @@ type ImageFilterInput struct {
 	Labels      []string `json:"labels"`
 	Private     *bool    `json:"private"`
 	ForSale     *bool    `json:"forSale"`
+	Price       *float64 `json:"price"`
 }
 
 type LoginInput struct {
@@ -51,6 +54,7 @@ type NewImageInput struct {
 	URL         string   `json:"url"`
 	Private     bool     `json:"private"`
 	ForSale     bool     `json:"forSale"`
+	Price       float64  `json:"price"`
 }
 
 type NewUserInput struct {
@@ -67,6 +71,7 @@ type Sale struct {
 	Buyer  *User      `json:"buyer"`
 	Seller *User      `json:"seller"`
 	Time   *time.Time `json:"time"`
+	Price  float64    `json:"price"`
 }
 
 type UpdateImageInput struct {
@@ -77,6 +82,7 @@ type UpdateImageInput struct {
 	URL         *string  `json:"url"`
 	Private     *bool    `json:"private"`
 	ForSale     *bool    `json:"forSale"`
+	Price       *float64 `json:"price"`
 }
 
 type UpdateUserInput struct {

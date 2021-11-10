@@ -57,6 +57,7 @@ type ComplexityRoot struct {
 		ForSale     func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Labels      func(childComplexity int) int
+		Price       func(childComplexity int) int
 		Private     func(childComplexity int) int
 		Title       func(childComplexity int) int
 		URL         func(childComplexity int) int
@@ -83,6 +84,7 @@ type ComplexityRoot struct {
 		Buyer  func(childComplexity int) int
 		ID     func(childComplexity int) int
 		Image  func(childComplexity int) int
+		Price  func(childComplexity int) int
 		Seller func(childComplexity int) int
 		Time   func(childComplexity int) int
 	}
@@ -174,6 +176,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Image.Labels(childComplexity), true
+
+	case "Image.price":
+		if e.complexity.Image.Price == nil {
+			break
+		}
+
+		return e.complexity.Image.Price(childComplexity), true
 
 	case "Image.private":
 		if e.complexity.Image.Private == nil {
@@ -344,6 +353,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Sale.Image(childComplexity), true
 
+	case "Sale.price":
+		if e.complexity.Sale.Price == nil {
+			break
+		}
+
+		return e.complexity.Sale.Price(childComplexity), true
+
 	case "Sale.seller":
 		if e.complexity.Sale.Seller == nil {
 			break
@@ -501,6 +517,7 @@ type Sale {
     buyer: User!
     seller: User!
     time: Time
+    price: Float!
 }
 
 
@@ -514,6 +531,7 @@ type Image {
     private: Boolean!
     forSale: Boolean!
     created: Time
+    price: Float!
 }
 
 type Query {
@@ -529,6 +547,7 @@ input ImageFilterInput {
   labels: [String!]
   private: Boolean
   forSale: Boolean
+  price: Float
 }
 
 input UserFilterInput {
@@ -563,6 +582,7 @@ input NewImageInput {
   url: String!
   private: Boolean!
   forSale: Boolean!
+  price: Float!
 }
 
 input UpdateImageInput {
@@ -573,10 +593,12 @@ input UpdateImageInput {
   url: String
   private: Boolean
   forSale: Boolean
+  price: Float
 }
 
 input BuyImageInput {
   imageId: ID!
+  price: Float!
 }
 
 input DeleteImageInput{
@@ -1127,6 +1149,41 @@ func (ec *executionContext) _Image_created(ctx context.Context, field graphql.Co
 	res := resTmp.(*time.Time)
 	fc.Result = res
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Image_price(ctx context.Context, field graphql.CollectedField, obj *model.Image) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Image",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Price, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_registerUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1974,6 +2031,41 @@ func (ec *executionContext) _Sale_time(ctx context.Context, field graphql.Collec
 	res := resTmp.(*time.Time)
 	fc.Result = res
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Sale_price(ctx context.Context, field graphql.CollectedField, obj *model.Sale) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Sale",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Price, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -3392,6 +3484,14 @@ func (ec *executionContext) unmarshalInputBuyImageInput(ctx context.Context, obj
 			if err != nil {
 				return it, err
 			}
+		case "price":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("price"))
+			it.Price, err = ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -3486,6 +3586,14 @@ func (ec *executionContext) unmarshalInputImageFilterInput(ctx context.Context, 
 			if err != nil {
 				return it, err
 			}
+		case "price":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("price"))
+			it.Price, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -3577,6 +3685,14 @@ func (ec *executionContext) unmarshalInputNewImageInput(ctx context.Context, obj
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("forSale"))
 			it.ForSale, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "price":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("price"))
+			it.Price, err = ec.unmarshalNFloat2float64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3703,6 +3819,14 @@ func (ec *executionContext) unmarshalInputUpdateImageInput(ctx context.Context, 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("forSale"))
 			it.ForSale, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "price":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("price"))
+			it.Price, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3892,6 +4016,11 @@ func (ec *executionContext) _Image(ctx context.Context, sel ast.SelectionSet, ob
 			}
 		case "created":
 			out.Values[i] = ec._Image_created(ctx, field, obj)
+		case "price":
+			out.Values[i] = ec._Image_price(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4087,6 +4216,11 @@ func (ec *executionContext) _Sale(ctx context.Context, sel ast.SelectionSet, obj
 			})
 		case "time":
 			out.Values[i] = ec._Sale_time(ctx, field, obj)
+		case "price":
+			out.Values[i] = ec._Sale_price(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4455,6 +4589,21 @@ func (ec *executionContext) unmarshalNDeleteImageInput2ᚕᚖgithubᚗcomᚋgass
 func (ec *executionContext) unmarshalNDeleteImageInput2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐDeleteImageInput(ctx context.Context, v interface{}) (*model.DeleteImageInput, error) {
 	res, err := ec.unmarshalInputDeleteImageInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
+	res, err := graphql.UnmarshalFloat(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	res := graphql.MarshalFloat(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
@@ -4996,6 +5145,21 @@ func (ec *executionContext) unmarshalOBuyImageInput2ᚖgithubᚗcomᚋgasser707�
 	}
 	res, err := ec.unmarshalInputBuyImageInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalFloat(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalFloat(*v)
 }
 
 func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
