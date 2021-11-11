@@ -14,6 +14,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
+	"github.com/gasser707/go-gql-server/custom"
 	"github.com/gasser707/go-gql-server/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -100,29 +101,31 @@ type ComplexityRoot struct {
 }
 
 type ImageResolver interface {
-	User(ctx context.Context, obj *model.Image) (*model.User, error)
+	User(ctx context.Context, obj *custom.Image) (*custom.User, error)
 }
 type MutationResolver interface {
-	RegisterUser(ctx context.Context, input model.NewUserInput) (*model.User, error)
-	UpdateUser(ctx context.Context, input model.UpdateUserInput) (*model.User, error)
-	UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*model.Image, error)
+	RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error)
+	UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error)
+	UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error)
 	DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error)
-	UpdateImage(ctx context.Context, input model.UpdateImageInput) (*model.Image, error)
-	BuyImage(ctx context.Context, input *model.BuyImageInput) (*model.Sale, error)
+	UpdateImage(ctx context.Context, input model.UpdateImageInput) (*custom.Image, error)
+	BuyImage(ctx context.Context, input *model.BuyImageInput) (*custom.Sale, error)
 	Login(ctx context.Context, input model.LoginInput) (bool, error)
 	Logout(ctx context.Context, input *bool) (bool, error)
 }
 type QueryResolver interface {
-	Images(ctx context.Context, input *model.ImageFilterInput) ([]*model.Image, error)
-	Users(ctx context.Context, input *model.UserFilterInput) ([]*model.User, error)
+	Images(ctx context.Context, input *model.ImageFilterInput) ([]*custom.Image, error)
+	Users(ctx context.Context, input *model.UserFilterInput) ([]*custom.User, error)
 }
 type SaleResolver interface {
-	Image(ctx context.Context, obj *model.Sale) (*model.Image, error)
-	Buyer(ctx context.Context, obj *model.Sale) (*model.User, error)
-	Seller(ctx context.Context, obj *model.Sale) (*model.User, error)
+	Image(ctx context.Context, obj *custom.Sale) (*custom.Image, error)
+	Buyer(ctx context.Context, obj *custom.Sale) (*custom.User, error)
+	Seller(ctx context.Context, obj *custom.Sale) (*custom.User, error)
 }
 type UserResolver interface {
-	Images(ctx context.Context, obj *model.User) ([]*model.Image, error)
+	Role(ctx context.Context, obj *custom.User) (model.Role, error)
+
+	Images(ctx context.Context, obj *custom.User) ([]*custom.Image, error)
 }
 
 type executableSchema struct {
@@ -834,7 +837,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Image_id(ctx context.Context, field graphql.CollectedField, obj *model.Image) (ret graphql.Marshaler) {
+func (ec *executionContext) _Image_id(ctx context.Context, field graphql.CollectedField, obj *custom.Image) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -869,7 +872,7 @@ func (ec *executionContext) _Image_id(ctx context.Context, field graphql.Collect
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Image_title(ctx context.Context, field graphql.CollectedField, obj *model.Image) (ret graphql.Marshaler) {
+func (ec *executionContext) _Image_title(ctx context.Context, field graphql.CollectedField, obj *custom.Image) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -904,7 +907,7 @@ func (ec *executionContext) _Image_title(ctx context.Context, field graphql.Coll
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Image_description(ctx context.Context, field graphql.CollectedField, obj *model.Image) (ret graphql.Marshaler) {
+func (ec *executionContext) _Image_description(ctx context.Context, field graphql.CollectedField, obj *custom.Image) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -939,7 +942,7 @@ func (ec *executionContext) _Image_description(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Image_user(ctx context.Context, field graphql.CollectedField, obj *model.Image) (ret graphql.Marshaler) {
+func (ec *executionContext) _Image_user(ctx context.Context, field graphql.CollectedField, obj *custom.Image) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -969,12 +972,12 @@ func (ec *executionContext) _Image_user(ctx context.Context, field graphql.Colle
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*custom.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Image_labels(ctx context.Context, field graphql.CollectedField, obj *model.Image) (ret graphql.Marshaler) {
+func (ec *executionContext) _Image_labels(ctx context.Context, field graphql.CollectedField, obj *custom.Image) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1009,7 +1012,7 @@ func (ec *executionContext) _Image_labels(ctx context.Context, field graphql.Col
 	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Image_url(ctx context.Context, field graphql.CollectedField, obj *model.Image) (ret graphql.Marshaler) {
+func (ec *executionContext) _Image_url(ctx context.Context, field graphql.CollectedField, obj *custom.Image) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1044,7 +1047,7 @@ func (ec *executionContext) _Image_url(ctx context.Context, field graphql.Collec
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Image_private(ctx context.Context, field graphql.CollectedField, obj *model.Image) (ret graphql.Marshaler) {
+func (ec *executionContext) _Image_private(ctx context.Context, field graphql.CollectedField, obj *custom.Image) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1079,7 +1082,7 @@ func (ec *executionContext) _Image_private(ctx context.Context, field graphql.Co
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Image_forSale(ctx context.Context, field graphql.CollectedField, obj *model.Image) (ret graphql.Marshaler) {
+func (ec *executionContext) _Image_forSale(ctx context.Context, field graphql.CollectedField, obj *custom.Image) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1114,7 +1117,7 @@ func (ec *executionContext) _Image_forSale(ctx context.Context, field graphql.Co
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Image_created(ctx context.Context, field graphql.CollectedField, obj *model.Image) (ret graphql.Marshaler) {
+func (ec *executionContext) _Image_created(ctx context.Context, field graphql.CollectedField, obj *custom.Image) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1146,7 +1149,7 @@ func (ec *executionContext) _Image_created(ctx context.Context, field graphql.Co
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Image_price(ctx context.Context, field graphql.CollectedField, obj *model.Image) (ret graphql.Marshaler) {
+func (ec *executionContext) _Image_price(ctx context.Context, field graphql.CollectedField, obj *custom.Image) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1218,9 +1221,9 @@ func (ec *executionContext) _Mutation_registerUser(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*custom.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1265,10 +1268,10 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(*model.User); ok {
+		if data, ok := tmp.(*custom.User); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/gasser707/go-gql-server/graph/model.User`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/gasser707/go-gql-server/custom.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1280,9 +1283,9 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*custom.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_uploadImages(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1327,10 +1330,10 @@ func (ec *executionContext) _Mutation_uploadImages(ctx context.Context, field gr
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.([]*model.Image); ok {
+		if data, ok := tmp.([]*custom.Image); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/gasser707/go-gql-server/graph/model.Image`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/gasser707/go-gql-server/custom.Image`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1342,9 +1345,9 @@ func (ec *executionContext) _Mutation_uploadImages(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Image)
+	res := resTmp.([]*custom.Image)
 	fc.Result = res
-	return ec.marshalNImage2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐImageᚄ(ctx, field.Selections, res)
+	return ec.marshalNImage2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐImageᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_deleteImages(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1451,10 +1454,10 @@ func (ec *executionContext) _Mutation_updateImage(ctx context.Context, field gra
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(*model.Image); ok {
+		if data, ok := tmp.(*custom.Image); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/gasser707/go-gql-server/graph/model.Image`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/gasser707/go-gql-server/custom.Image`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1466,9 +1469,9 @@ func (ec *executionContext) _Mutation_updateImage(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Image)
+	res := resTmp.(*custom.Image)
 	fc.Result = res
-	return ec.marshalNImage2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐImage(ctx, field.Selections, res)
+	return ec.marshalNImage2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐImage(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_buyImage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1513,10 +1516,10 @@ func (ec *executionContext) _Mutation_buyImage(ctx context.Context, field graphq
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(*model.Sale); ok {
+		if data, ok := tmp.(*custom.Sale); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/gasser707/go-gql-server/graph/model.Sale`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/gasser707/go-gql-server/custom.Sale`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1528,9 +1531,9 @@ func (ec *executionContext) _Mutation_buyImage(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Sale)
+	res := resTmp.(*custom.Sale)
 	fc.Result = res
-	return ec.marshalNSale2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐSale(ctx, field.Selections, res)
+	return ec.marshalNSale2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐSale(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1679,10 +1682,10 @@ func (ec *executionContext) _Query_images(ctx context.Context, field graphql.Col
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.([]*model.Image); ok {
+		if data, ok := tmp.([]*custom.Image); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/gasser707/go-gql-server/graph/model.Image`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/gasser707/go-gql-server/custom.Image`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1694,9 +1697,9 @@ func (ec *executionContext) _Query_images(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Image)
+	res := resTmp.([]*custom.Image)
 	fc.Result = res
-	return ec.marshalNImage2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐImageᚄ(ctx, field.Selections, res)
+	return ec.marshalNImage2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐImageᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_users(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1741,10 +1744,10 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.([]*model.User); ok {
+		if data, ok := tmp.([]*custom.User); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/gasser707/go-gql-server/graph/model.User`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/gasser707/go-gql-server/custom.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1756,9 +1759,9 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.User)
+	res := resTmp.([]*custom.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐUserᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1832,7 +1835,7 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Sale_id(ctx context.Context, field graphql.CollectedField, obj *model.Sale) (ret graphql.Marshaler) {
+func (ec *executionContext) _Sale_id(ctx context.Context, field graphql.CollectedField, obj *custom.Sale) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1867,7 +1870,7 @@ func (ec *executionContext) _Sale_id(ctx context.Context, field graphql.Collecte
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Sale_image(ctx context.Context, field graphql.CollectedField, obj *model.Sale) (ret graphql.Marshaler) {
+func (ec *executionContext) _Sale_image(ctx context.Context, field graphql.CollectedField, obj *custom.Sale) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1897,12 +1900,12 @@ func (ec *executionContext) _Sale_image(ctx context.Context, field graphql.Colle
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Image)
+	res := resTmp.(*custom.Image)
 	fc.Result = res
-	return ec.marshalNImage2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐImage(ctx, field.Selections, res)
+	return ec.marshalNImage2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐImage(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Sale_buyer(ctx context.Context, field graphql.CollectedField, obj *model.Sale) (ret graphql.Marshaler) {
+func (ec *executionContext) _Sale_buyer(ctx context.Context, field graphql.CollectedField, obj *custom.Sale) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1932,12 +1935,12 @@ func (ec *executionContext) _Sale_buyer(ctx context.Context, field graphql.Colle
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*custom.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Sale_seller(ctx context.Context, field graphql.CollectedField, obj *model.Sale) (ret graphql.Marshaler) {
+func (ec *executionContext) _Sale_seller(ctx context.Context, field graphql.CollectedField, obj *custom.Sale) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1967,12 +1970,12 @@ func (ec *executionContext) _Sale_seller(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*custom.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Sale_time(ctx context.Context, field graphql.CollectedField, obj *model.Sale) (ret graphql.Marshaler) {
+func (ec *executionContext) _Sale_time(ctx context.Context, field graphql.CollectedField, obj *custom.Sale) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2004,7 +2007,7 @@ func (ec *executionContext) _Sale_time(ctx context.Context, field graphql.Collec
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Sale_price(ctx context.Context, field graphql.CollectedField, obj *model.Sale) (ret graphql.Marshaler) {
+func (ec *executionContext) _Sale_price(ctx context.Context, field graphql.CollectedField, obj *custom.Sale) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2039,7 +2042,7 @@ func (ec *executionContext) _Sale_price(ctx context.Context, field graphql.Colle
 	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *custom.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2074,7 +2077,7 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_username(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_username(ctx context.Context, field graphql.CollectedField, obj *custom.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2109,7 +2112,7 @@ func (ec *executionContext) _User_username(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *custom.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2144,7 +2147,7 @@ func (ec *executionContext) _User_email(ctx context.Context, field graphql.Colle
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_role(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_role(ctx context.Context, field graphql.CollectedField, obj *custom.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2155,14 +2158,14 @@ func (ec *executionContext) _User_role(ctx context.Context, field graphql.Collec
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Role, nil
+		return ec.resolvers.User().Role(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2179,7 +2182,7 @@ func (ec *executionContext) _User_role(ctx context.Context, field graphql.Collec
 	return ec.marshalNRole2githubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐRole(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_bio(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_bio(ctx context.Context, field graphql.CollectedField, obj *custom.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2214,7 +2217,7 @@ func (ec *executionContext) _User_bio(ctx context.Context, field graphql.Collect
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_avatar(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_avatar(ctx context.Context, field graphql.CollectedField, obj *custom.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2249,7 +2252,7 @@ func (ec *executionContext) _User_avatar(ctx context.Context, field graphql.Coll
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_joined(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_joined(ctx context.Context, field graphql.CollectedField, obj *custom.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2281,7 +2284,7 @@ func (ec *executionContext) _User_joined(ctx context.Context, field graphql.Coll
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_images(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_images(ctx context.Context, field graphql.CollectedField, obj *custom.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2311,9 +2314,9 @@ func (ec *executionContext) _User_images(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Image)
+	res := resTmp.([]*custom.Image)
 	fc.Result = res
-	return ec.marshalNImage2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐImageᚄ(ctx, field.Selections, res)
+	return ec.marshalNImage2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐImageᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -3927,7 +3930,7 @@ func (ec *executionContext) unmarshalInputUserFilterInput(ctx context.Context, o
 
 var imageImplementors = []string{"Image"}
 
-func (ec *executionContext) _Image(ctx context.Context, sel ast.SelectionSet, obj *model.Image) graphql.Marshaler {
+func (ec *executionContext) _Image(ctx context.Context, sel ast.SelectionSet, obj *custom.Image) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, imageImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4129,7 +4132,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 
 var saleImplementors = []string{"Sale"}
 
-func (ec *executionContext) _Sale(ctx context.Context, sel ast.SelectionSet, obj *model.Sale) graphql.Marshaler {
+func (ec *executionContext) _Sale(ctx context.Context, sel ast.SelectionSet, obj *custom.Sale) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, saleImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4205,7 +4208,7 @@ func (ec *executionContext) _Sale(ctx context.Context, sel ast.SelectionSet, obj
 
 var userImplementors = []string{"User"}
 
-func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *model.User) graphql.Marshaler {
+func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *custom.User) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, userImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4230,10 +4233,19 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				atomic.AddUint32(&invalids, 1)
 			}
 		case "role":
-			out.Values[i] = ec._User_role(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_role(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "bio":
 			out.Values[i] = ec._User_bio(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -4592,11 +4604,11 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) marshalNImage2githubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐImage(ctx context.Context, sel ast.SelectionSet, v model.Image) graphql.Marshaler {
+func (ec *executionContext) marshalNImage2githubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐImage(ctx context.Context, sel ast.SelectionSet, v custom.Image) graphql.Marshaler {
 	return ec._Image(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNImage2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐImageᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Image) graphql.Marshaler {
+func (ec *executionContext) marshalNImage2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐImageᚄ(ctx context.Context, sel ast.SelectionSet, v []*custom.Image) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -4620,7 +4632,7 @@ func (ec *executionContext) marshalNImage2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNImage2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐImage(ctx, sel, v[i])
+			ret[i] = ec.marshalNImage2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐImage(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -4640,7 +4652,7 @@ func (ec *executionContext) marshalNImage2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑ
 	return ret
 }
 
-func (ec *executionContext) marshalNImage2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐImage(ctx context.Context, sel ast.SelectionSet, v *model.Image) graphql.Marshaler {
+func (ec *executionContext) marshalNImage2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐImage(ctx context.Context, sel ast.SelectionSet, v *custom.Image) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -4696,11 +4708,11 @@ func (ec *executionContext) marshalNRole2githubᚗcomᚋgasser707ᚋgoᚑgqlᚑs
 	return v
 }
 
-func (ec *executionContext) marshalNSale2githubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐSale(ctx context.Context, sel ast.SelectionSet, v model.Sale) graphql.Marshaler {
+func (ec *executionContext) marshalNSale2githubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐSale(ctx context.Context, sel ast.SelectionSet, v custom.Sale) graphql.Marshaler {
 	return ec._Sale(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNSale2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐSale(ctx context.Context, sel ast.SelectionSet, v *model.Sale) graphql.Marshaler {
+func (ec *executionContext) marshalNSale2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐSale(ctx context.Context, sel ast.SelectionSet, v *custom.Sale) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -4771,11 +4783,11 @@ func (ec *executionContext) unmarshalNUpdateUserInput2githubᚗcomᚋgasser707�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNUser2githubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2githubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐUser(ctx context.Context, sel ast.SelectionSet, v custom.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*custom.User) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -4799,7 +4811,7 @@ func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑg
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐUser(ctx, sel, v[i])
+			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐUser(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -4819,7 +4831,7 @@ func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑg
 	return ret
 }
 
-func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐUser(ctx context.Context, sel ast.SelectionSet, v *custom.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")

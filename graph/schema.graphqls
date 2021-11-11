@@ -72,7 +72,6 @@ input NewUserInput {
 }
 
 input UpdateUserInput {
-    id: ID!
     username: String
     email: String
     bio: String

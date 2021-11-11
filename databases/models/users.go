@@ -781,7 +781,7 @@ func (o *User) AddImages(ctx context.Context, exec boil.ContextExecutor, insert 
 				strmangle.SetParamNames("`", "`", 0, []string{"user_id"}),
 				strmangle.WhereClause("`", "`", 0, imagePrimaryKeyColumns),
 			)
-			values := []interface{}{o.ID, rel.ID, rel.UserID}
+			values := []interface{}{o.ID, rel.ID}
 
 			if boil.IsDebug(ctx) {
 				writer := boil.DebugWriterFrom(ctx)
@@ -834,7 +834,7 @@ func (o *User) AddBuyerSales(ctx context.Context, exec boil.ContextExecutor, ins
 				strmangle.SetParamNames("`", "`", 0, []string{"buyer_id"}),
 				strmangle.WhereClause("`", "`", 0, salePrimaryKeyColumns),
 			)
-			values := []interface{}{o.ID, rel.ID, rel.ImageID, rel.SellerID, rel.BuyerID}
+			values := []interface{}{o.ID, rel.ID}
 
 			if boil.IsDebug(ctx) {
 				writer := boil.DebugWriterFrom(ctx)
@@ -887,7 +887,7 @@ func (o *User) AddSellerSales(ctx context.Context, exec boil.ContextExecutor, in
 				strmangle.SetParamNames("`", "`", 0, []string{"seller_id"}),
 				strmangle.WhereClause("`", "`", 0, salePrimaryKeyColumns),
 			)
-			values := []interface{}{o.ID, rel.ID, rel.ImageID, rel.SellerID, rel.BuyerID}
+			values := []interface{}{o.ID, rel.ID}
 
 			if boil.IsDebug(ctx) {
 				writer := boil.DebugWriterFrom(ctx)

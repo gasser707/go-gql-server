@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"time"
 )
 
 type BuyImageInput struct {
@@ -16,19 +15,6 @@ type BuyImageInput struct {
 
 type DeleteImageInput struct {
 	ID string `json:"id"`
-}
-
-type Image struct {
-	ID          string     `json:"id"`
-	Title       string     `json:"title"`
-	Description string     `json:"description"`
-	User        *User      `json:"user"`
-	Labels      []string   `json:"labels"`
-	URL         string     `json:"url"`
-	Private     bool       `json:"private"`
-	ForSale     bool       `json:"forSale"`
-	Created     *time.Time `json:"created"`
-	Price       float64    `json:"price"`
 }
 
 type ImageFilterInput struct {
@@ -65,15 +51,6 @@ type NewUserInput struct {
 	Avatar   string `json:"avatar"`
 }
 
-type Sale struct {
-	ID     string     `json:"id"`
-	Image  *Image     `json:"image"`
-	Buyer  *User      `json:"buyer"`
-	Seller *User      `json:"seller"`
-	Time   *time.Time `json:"time"`
-	Price  float64    `json:"price"`
-}
-
 type UpdateImageInput struct {
 	ID          string   `json:"id"`
 	Title       *string  `json:"title"`
@@ -91,17 +68,6 @@ type UpdateUserInput struct {
 	Email    *string `json:"email"`
 	Bio      *string `json:"bio"`
 	Avatar   *string `json:"avatar"`
-}
-
-type User struct {
-	ID       string     `json:"id"`
-	Username string     `json:"username"`
-	Email    string     `json:"email"`
-	Role     Role       `json:"role"`
-	Bio      string     `json:"bio"`
-	Avatar   string     `json:"avatar"`
-	Joined   *time.Time `json:"joined"`
-	Images   []*Image   `json:"images"`
 }
 
 type UserFilterInput struct {

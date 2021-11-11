@@ -87,7 +87,7 @@ var (
 	labelAllColumns            = []string{"id", "tag", "image_id"}
 	labelColumnsWithoutDefault = []string{"tag", "image_id"}
 	labelColumnsWithDefault    = []string{"id"}
-	labelPrimaryKeyColumns     = []string{"id", "image_id"}
+	labelPrimaryKeyColumns     = []string{"id"}
 )
 
 type (
@@ -499,7 +499,7 @@ func (o *Label) SetImage(ctx context.Context, exec boil.ContextExecutor, insert 
 		strmangle.SetParamNames("`", "`", 0, []string{"image_id"}),
 		strmangle.WhereClause("`", "`", 0, labelPrimaryKeyColumns),
 	)
-	values := []interface{}{related.ID, o.ID, o.ImageID}
+	values := []interface{}{related.ID, o.ID}
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -538,7 +538,7 @@ func Labels(mods ...qm.QueryMod) labelQuery {
 
 // FindLabel retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindLabel(ctx context.Context, exec boil.ContextExecutor, iD int, imageID int, selectCols ...string) (*Label, error) {
+func FindLabel(ctx context.Context, exec boil.ContextExecutor, iD int, selectCols ...string) (*Label, error) {
 	labelObj := &Label{}
 
 	sel := "*"
@@ -546,10 +546,10 @@ func FindLabel(ctx context.Context, exec boil.ContextExecutor, iD int, imageID i
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from `labels` where `id`=? AND `image_id`=?", sel,
+		"select %s from `labels` where `id`=?", sel,
 	)
 
-	q := queries.Raw(query, iD, imageID)
+	q := queries.Raw(query, iD)
 
 	err := q.Bind(ctx, exec, labelObj)
 	if err != nil {
@@ -625,21 +625,31 @@ func (o *Label) Insert(ctx context.Context, exec boil.ContextExecutor, columns b
 		fmt.Fprintln(writer, cache.query)
 		fmt.Fprintln(writer, vals)
 	}
-	_, err = exec.ExecContext(ctx, cache.query, vals...)
+	result, err := exec.ExecContext(ctx, cache.query, vals...)
 
 	if err != nil {
 		return errors.Wrap(err, "databases: unable to insert into labels")
 	}
 
+	var lastID int64
 	var identifierCols []interface{}
 
 	if len(cache.retMapping) == 0 {
 		goto CacheNoHooks
 	}
 
+	lastID, err = result.LastInsertId()
+	if err != nil {
+		return ErrSyncFail
+	}
+
+	o.ID = int(lastID)
+	if lastID != 0 && len(cache.retMapping) == 1 && cache.retMapping[0] == labelMapping["id"] {
+		goto CacheNoHooks
+	}
+
 	identifierCols = []interface{}{
 		o.ID,
-		o.ImageID,
 	}
 
 	if boil.IsDebug(ctx) {
@@ -888,16 +898,27 @@ func (o *Label) Upsert(ctx context.Context, exec boil.ContextExecutor, updateCol
 		fmt.Fprintln(writer, cache.query)
 		fmt.Fprintln(writer, vals)
 	}
-	_, err = exec.ExecContext(ctx, cache.query, vals...)
+	result, err := exec.ExecContext(ctx, cache.query, vals...)
 
 	if err != nil {
 		return errors.Wrap(err, "databases: unable to upsert for labels")
 	}
 
+	var lastID int64
 	var uniqueMap []uint64
 	var nzUniqueCols []interface{}
 
 	if len(cache.retMapping) == 0 {
+		goto CacheNoHooks
+	}
+
+	lastID, err = result.LastInsertId()
+	if err != nil {
+		return ErrSyncFail
+	}
+
+	o.ID = int(lastID)
+	if lastID != 0 && len(cache.retMapping) == 1 && cache.retMapping[0] == labelMapping["id"] {
 		goto CacheNoHooks
 	}
 
@@ -939,7 +960,7 @@ func (o *Label) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, e
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), labelPrimaryKeyMapping)
-	sql := "DELETE FROM `labels` WHERE `id`=? AND `image_id`=?"
+	sql := "DELETE FROM `labels` WHERE `id`=?"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1036,7 +1057,7 @@ func (o LabelSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (i
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *Label) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindLabel(ctx, exec, o.ID, o.ImageID)
+	ret, err := FindLabel(ctx, exec, o.ID)
 	if err != nil {
 		return err
 	}
@@ -1075,16 +1096,16 @@ func (o *LabelSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) e
 }
 
 // LabelExists checks if the Label row exists.
-func LabelExists(ctx context.Context, exec boil.ContextExecutor, iD int, imageID int) (bool, error) {
+func LabelExists(ctx context.Context, exec boil.ContextExecutor, iD int) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from `labels` where `id`=? AND `image_id`=? limit 1)"
+	sql := "select exists(select 1 from `labels` where `id`=? limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, iD, imageID)
+		fmt.Fprintln(writer, iD)
 	}
-	row := exec.QueryRowContext(ctx, sql, iD, imageID)
+	row := exec.QueryRowContext(ctx, sql, iD)
 
 	err := row.Scan(&exists)
 	if err != nil {

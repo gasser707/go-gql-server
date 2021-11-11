@@ -6,9 +6,8 @@ package graph
 import (
 	"context"
 	"fmt"
-	"strconv"
-
 	"github.com/gasser707/go-gql-server/auth"
+	"github.com/gasser707/go-gql-server/custom"
 	db "github.com/gasser707/go-gql-server/databases"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	"github.com/gasser707/go-gql-server/graph/generated"
@@ -18,11 +17,11 @@ import (
 	. "github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-func (r *imageResolver) User(ctx context.Context, obj *model.Image) (*model.User, error) {
+func (r *imageResolver) User(ctx context.Context, obj *custom.Image) (*custom.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) RegisterUser(ctx context.Context, input model.NewUserInput) (*model.User, error) {
+func (r *mutationResolver) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error) {
 	c, _ := dbModels.Users(Where("email = ?", input.Email)).Count(ctx, db.MysqlDB)
 
 	if c != 0 {
@@ -41,30 +40,28 @@ func (r *mutationResolver) RegisterUser(ctx context.Context, input model.NewUser
 		Avatar:   input.Avatar,
 		Role:     model.RoleUser.String(),
 	}
-	insertedUser.Insert(ctx, db.MysqlDB, boil.Infer())
+	err = insertedUser.Insert(ctx, db.MysqlDB, boil.Infer())
+	if(err!=nil){
+		return nil, err
+	}
 
-	returnedUser := &model.User{
+	returnedUser := &custom.User{
 		Username: input.Username,
 		Email:    input.Email,
 		Bio:      input.Bio,
 		Avatar:   input.Avatar,
+		Joined: &insertedUser.CreatedAt,
 	}
 	return returnedUser, nil
 }
 
-func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*model.User, error) {
-
-	err := auth.AuthService.IsSelf(ctx, input)
-	if(err!= nil){
-		return nil, err
-	}
-
-	id, err := strconv.Atoi(input.ID)
+func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error) {
+	userId, err := auth.AuthService.GetCredentials(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := dbModels.FindUser(ctx, db.MysqlDB, id)
+	user, err := dbModels.FindUser(ctx, db.MysqlDB, int(userId))
 
 	if err != nil {
 		return nil, err
@@ -85,45 +82,72 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUse
 
 	_, err = user.Update(ctx, db.MysqlDB, boil.Infer())
 
-	if(err != nil){
-		return nil, err
-	}
-
-	returnUser := &model.User{Avatar: user.Avatar, Email: user.Email, Username: user.Username, Bio: user.Bio}
-
-	return returnUser, nil
-}
-
-func (r *mutationResolver) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*model.Image, error) {
-	userId := auth.AuthService.GetCredentials(ctx)
-	id, err := strconv.Atoi(string(userId))
 	if err != nil {
 		return nil, err
 	}
 
-	images := []model.Image{}
+	returnUser := &custom.User{Avatar: user.Avatar, Email: user.Email, Username: user.Username, Bio: user.Bio}
+	return returnUser, nil
+}
 
-	for _,value:= range input{
-		image:= model.Image{Title: value.Title, Description: value.Description, URL: value.URL, Private: value.Private,
-			ForSale: value.ForSale, Price: value.Price,
-			User: &model.User{
-				Username: model.Image.User.Username,
-			},
+func (r *mutationResolver) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
+	userId, err := auth.AuthService.GetCredentials(ctx)
+	if err != nil {
+		return nil, err
+	}
+	dbImages := []dbModels.Image{}
+	for _, inputImg := range input {
+		image := dbModels.Image{
+		  Title: inputImg.Title, Description: inputImg.Description,
+		  URL: inputImg.URL, Private: inputImg.Private,
+		  ForSale: inputImg.ForSale, Price: inputImg.Price, UserID: int(userId),
+		}
+		err:= image.Insert(ctx, db.MysqlDB, boil.Infer())
+		if(err!= nil ){
+			return nil, err
+		}
+
+		for _, inputLabel:= range inputImg.Labels{
+			label:= dbModels.Label{
+				Tag: inputLabel,
+				ImageID: image.ID,
+			}
+			err:= label.Insert(ctx, db.MysqlDB, boil.Infer())
+			if(err!= nil){
+				return nil, err
+			}
+		}
+		dbImages = append(dbImages, image)
+	}
+
+	images := []*custom.Image{}
+	for _, dbImg := range dbImages {
+		imgId:= fmt.Sprintf("%v", dbImg.ID)
+		image := &custom.Image{
+		  ID: imgId, Title: dbImg.Title, Description: dbImg.Description,
+		  URL: dbImg.URL, Private: dbImg.Private,
+		  ForSale: dbImg.ForSale, Price: dbImg.Price, UserID: string(userId),
+		  Created: &dbImg.CreatedAt,
 		}
 		images = append(images, image)
 	}
 
+	return images, nil
 }
 
 func (r *mutationResolver) DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
+	userId, err := auth.AuthService.GetCredentials(ctx)
+	if err != nil {
+		return false, err
+	}
+	
+}
+
+func (r *mutationResolver) UpdateImage(ctx context.Context, input model.UpdateImageInput) (*custom.Image, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) UpdateImage(ctx context.Context, input model.UpdateImageInput) (*model.Image, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *mutationResolver) BuyImage(ctx context.Context, input *model.BuyImageInput) (*model.Sale, error) {
+func (r *mutationResolver) BuyImage(ctx context.Context, input *model.BuyImageInput) (*custom.Sale, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -147,27 +171,31 @@ func (r *mutationResolver) Logout(ctx context.Context, input *bool) (bool, error
 	}
 }
 
-func (r *queryResolver) Images(ctx context.Context, input *model.ImageFilterInput) ([]*model.Image, error) {
+func (r *queryResolver) Images(ctx context.Context, input *model.ImageFilterInput) ([]*custom.Image, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Users(ctx context.Context, input *model.UserFilterInput) ([]*model.User, error) {
+func (r *queryResolver) Users(ctx context.Context, input *model.UserFilterInput) ([]*custom.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *saleResolver) Image(ctx context.Context, obj *model.Sale) (*model.Image, error) {
+func (r *saleResolver) Image(ctx context.Context, obj *custom.Sale) (*custom.Image, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *saleResolver) Buyer(ctx context.Context, obj *model.Sale) (*model.User, error) {
+func (r *saleResolver) Buyer(ctx context.Context, obj *custom.Sale) (*custom.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *saleResolver) Seller(ctx context.Context, obj *model.Sale) (*model.User, error) {
+func (r *saleResolver) Seller(ctx context.Context, obj *custom.Sale) (*custom.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *userResolver) Images(ctx context.Context, obj *model.User) ([]*model.Image, error) {
+func (r *userResolver) Role(ctx context.Context, obj *custom.User) (model.Role, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *userResolver) Images(ctx context.Context, obj *custom.User) ([]*custom.Image, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

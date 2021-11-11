@@ -240,7 +240,7 @@ var (
 	imageAllColumns            = []string{"id", "created_at", "url", "description", "user_id", "title", "price", "forSale", "private"}
 	imageColumnsWithoutDefault = []string{"url", "description", "user_id", "title", "price", "forSale", "private"}
 	imageColumnsWithDefault    = []string{"id", "created_at"}
-	imagePrimaryKeyColumns     = []string{"id", "user_id"}
+	imagePrimaryKeyColumns     = []string{"id"}
 )
 
 type (
@@ -890,7 +890,7 @@ func (o *Image) SetUser(ctx context.Context, exec boil.ContextExecutor, insert b
 		strmangle.SetParamNames("`", "`", 0, []string{"user_id"}),
 		strmangle.WhereClause("`", "`", 0, imagePrimaryKeyColumns),
 	)
-	values := []interface{}{related.ID, o.ID, o.UserID}
+	values := []interface{}{related.ID, o.ID}
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -939,7 +939,7 @@ func (o *Image) AddLabels(ctx context.Context, exec boil.ContextExecutor, insert
 				strmangle.SetParamNames("`", "`", 0, []string{"image_id"}),
 				strmangle.WhereClause("`", "`", 0, labelPrimaryKeyColumns),
 			)
-			values := []interface{}{o.ID, rel.ID, rel.ImageID}
+			values := []interface{}{o.ID, rel.ID}
 
 			if boil.IsDebug(ctx) {
 				writer := boil.DebugWriterFrom(ctx)
@@ -992,7 +992,7 @@ func (o *Image) AddSales(ctx context.Context, exec boil.ContextExecutor, insert 
 				strmangle.SetParamNames("`", "`", 0, []string{"image_id"}),
 				strmangle.WhereClause("`", "`", 0, salePrimaryKeyColumns),
 			)
-			values := []interface{}{o.ID, rel.ID, rel.ImageID, rel.SellerID, rel.BuyerID}
+			values := []interface{}{o.ID, rel.ID}
 
 			if boil.IsDebug(ctx) {
 				writer := boil.DebugWriterFrom(ctx)
@@ -1035,7 +1035,7 @@ func Images(mods ...qm.QueryMod) imageQuery {
 
 // FindImage retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindImage(ctx context.Context, exec boil.ContextExecutor, iD int, userID int, selectCols ...string) (*Image, error) {
+func FindImage(ctx context.Context, exec boil.ContextExecutor, iD int, selectCols ...string) (*Image, error) {
 	imageObj := &Image{}
 
 	sel := "*"
@@ -1043,10 +1043,10 @@ func FindImage(ctx context.Context, exec boil.ContextExecutor, iD int, userID in
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from `images` where `id`=? AND `user_id`=?", sel,
+		"select %s from `images` where `id`=?", sel,
 	)
 
-	q := queries.Raw(query, iD, userID)
+	q := queries.Raw(query, iD)
 
 	err := q.Bind(ctx, exec, imageObj)
 	if err != nil {
@@ -1129,21 +1129,31 @@ func (o *Image) Insert(ctx context.Context, exec boil.ContextExecutor, columns b
 		fmt.Fprintln(writer, cache.query)
 		fmt.Fprintln(writer, vals)
 	}
-	_, err = exec.ExecContext(ctx, cache.query, vals...)
+	result, err := exec.ExecContext(ctx, cache.query, vals...)
 
 	if err != nil {
 		return errors.Wrap(err, "databases: unable to insert into images")
 	}
 
+	var lastID int64
 	var identifierCols []interface{}
 
 	if len(cache.retMapping) == 0 {
 		goto CacheNoHooks
 	}
 
+	lastID, err = result.LastInsertId()
+	if err != nil {
+		return ErrSyncFail
+	}
+
+	o.ID = int(lastID)
+	if lastID != 0 && len(cache.retMapping) == 1 && cache.retMapping[0] == imageMapping["id"] {
+		goto CacheNoHooks
+	}
+
 	identifierCols = []interface{}{
 		o.ID,
-		o.UserID,
 	}
 
 	if boil.IsDebug(ctx) {
@@ -1399,16 +1409,27 @@ func (o *Image) Upsert(ctx context.Context, exec boil.ContextExecutor, updateCol
 		fmt.Fprintln(writer, cache.query)
 		fmt.Fprintln(writer, vals)
 	}
-	_, err = exec.ExecContext(ctx, cache.query, vals...)
+	result, err := exec.ExecContext(ctx, cache.query, vals...)
 
 	if err != nil {
 		return errors.Wrap(err, "databases: unable to upsert for images")
 	}
 
+	var lastID int64
 	var uniqueMap []uint64
 	var nzUniqueCols []interface{}
 
 	if len(cache.retMapping) == 0 {
+		goto CacheNoHooks
+	}
+
+	lastID, err = result.LastInsertId()
+	if err != nil {
+		return ErrSyncFail
+	}
+
+	o.ID = int(lastID)
+	if lastID != 0 && len(cache.retMapping) == 1 && cache.retMapping[0] == imageMapping["id"] {
 		goto CacheNoHooks
 	}
 
@@ -1450,7 +1471,7 @@ func (o *Image) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, e
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), imagePrimaryKeyMapping)
-	sql := "DELETE FROM `images` WHERE `id`=? AND `user_id`=?"
+	sql := "DELETE FROM `images` WHERE `id`=?"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1547,7 +1568,7 @@ func (o ImageSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (i
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *Image) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindImage(ctx, exec, o.ID, o.UserID)
+	ret, err := FindImage(ctx, exec, o.ID)
 	if err != nil {
 		return err
 	}
@@ -1586,16 +1607,16 @@ func (o *ImageSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) e
 }
 
 // ImageExists checks if the Image row exists.
-func ImageExists(ctx context.Context, exec boil.ContextExecutor, iD int, userID int) (bool, error) {
+func ImageExists(ctx context.Context, exec boil.ContextExecutor, iD int) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from `images` where `id`=? AND `user_id`=? limit 1)"
+	sql := "select exists(select 1 from `images` where `id`=? limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, iD, userID)
+		fmt.Fprintln(writer, iD)
 	}
-	row := exec.QueryRowContext(ctx, sql, iD, userID)
+	row := exec.QueryRowContext(ctx, sql, iD)
 
 	err := row.Scan(&exists)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/dgrijalva/jwt-go"
 	db "github.com/gasser707/go-gql-server/databases"
@@ -28,6 +29,7 @@ func NewProfile(rd AuthInterface, tk TokenInterface) *profileHandler {
 var AuthService *profileHandler
 
 type UserID string
+type intUserID int64
 
 func init() {
 	var rd = NewRedisStore(db.RedisClient)
@@ -109,10 +111,14 @@ func (h *profileHandler) IsSelf (ctx context.Context, input model.UpdateUserInpu
 	return nil
 }
 
-func (h *profileHandler) GetCredentials(c context.Context) (UserID){
+func (h *profileHandler) GetCredentials(c context.Context) (intUserID, error){
 	metadata, _ := h.tk.ExtractTokenMetadata(c)
 	userId, _ := h.rd.FetchAuth(metadata.TokenUuid)
-	return UserID(userId)
+	id, err := strconv.Atoi(string(userId))
+	if err != nil {
+		return -1, err
+	}
+	return intUserID(id), nil
 }
 
 

@@ -55,15 +55,18 @@ models:
       - github.com/99designs/gqlgen/graphql.Int64
       - github.com/99designs/gqlgen/graphql.Int32
   User:
+    model: github.com/gasser707/go-gql-server/custom.User
     fields:
       images:
         resolver: true # force a resolver to be generated
 
   Image:
+    model: github.com/gasser707/go-gql-server/custom.Image
     fields:
       user:
         resolver: true # force a resolver to be generated
   Sale:
+    model: github.com/gasser707/go-gql-server/custom.Sale
     fields:
       buyer:
         resolver: true # force a resolver to be generated

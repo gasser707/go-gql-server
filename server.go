@@ -1,4 +1,5 @@
 package main
+
 //go:generate sqlboiler --wipe --no-tests -o databases/models -p databases mysql
 
 import (
@@ -24,6 +25,7 @@ func graphqlHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		h.ServeHTTP(c.Writer, c.Request)
 	}
+
 }
 
 

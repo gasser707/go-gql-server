@@ -114,7 +114,7 @@ var (
 	saleAllColumns            = []string{"id", "image_id", "buyer_id", "seller_id", "created_at", "price"}
 	saleColumnsWithoutDefault = []string{"image_id", "buyer_id", "seller_id", "price"}
 	saleColumnsWithDefault    = []string{"id", "created_at"}
-	salePrimaryKeyColumns     = []string{"id", "image_id", "seller_id", "buyer_id"}
+	salePrimaryKeyColumns     = []string{"id"}
 )
 
 type (
@@ -762,7 +762,7 @@ func (o *Sale) SetBuyer(ctx context.Context, exec boil.ContextExecutor, insert b
 		strmangle.SetParamNames("`", "`", 0, []string{"buyer_id"}),
 		strmangle.WhereClause("`", "`", 0, salePrimaryKeyColumns),
 	)
-	values := []interface{}{related.ID, o.ID, o.ImageID, o.SellerID, o.BuyerID}
+	values := []interface{}{related.ID, o.ID}
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -809,7 +809,7 @@ func (o *Sale) SetImage(ctx context.Context, exec boil.ContextExecutor, insert b
 		strmangle.SetParamNames("`", "`", 0, []string{"image_id"}),
 		strmangle.WhereClause("`", "`", 0, salePrimaryKeyColumns),
 	)
-	values := []interface{}{related.ID, o.ID, o.ImageID, o.SellerID, o.BuyerID}
+	values := []interface{}{related.ID, o.ID}
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -856,7 +856,7 @@ func (o *Sale) SetSeller(ctx context.Context, exec boil.ContextExecutor, insert 
 		strmangle.SetParamNames("`", "`", 0, []string{"seller_id"}),
 		strmangle.WhereClause("`", "`", 0, salePrimaryKeyColumns),
 	)
-	values := []interface{}{related.ID, o.ID, o.ImageID, o.SellerID, o.BuyerID}
+	values := []interface{}{related.ID, o.ID}
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -895,7 +895,7 @@ func Sales(mods ...qm.QueryMod) saleQuery {
 
 // FindSale retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindSale(ctx context.Context, exec boil.ContextExecutor, iD int, imageID int, sellerID int, buyerID int, selectCols ...string) (*Sale, error) {
+func FindSale(ctx context.Context, exec boil.ContextExecutor, iD int, selectCols ...string) (*Sale, error) {
 	saleObj := &Sale{}
 
 	sel := "*"
@@ -903,10 +903,10 @@ func FindSale(ctx context.Context, exec boil.ContextExecutor, iD int, imageID in
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from `sales` where `id`=? AND `image_id`=? AND `seller_id`=? AND `buyer_id`=?", sel,
+		"select %s from `sales` where `id`=?", sel,
 	)
 
-	q := queries.Raw(query, iD, imageID, sellerID, buyerID)
+	q := queries.Raw(query, iD)
 
 	err := q.Bind(ctx, exec, saleObj)
 	if err != nil {
@@ -989,23 +989,31 @@ func (o *Sale) Insert(ctx context.Context, exec boil.ContextExecutor, columns bo
 		fmt.Fprintln(writer, cache.query)
 		fmt.Fprintln(writer, vals)
 	}
-	_, err = exec.ExecContext(ctx, cache.query, vals...)
+	result, err := exec.ExecContext(ctx, cache.query, vals...)
 
 	if err != nil {
 		return errors.Wrap(err, "databases: unable to insert into sales")
 	}
 
+	var lastID int64
 	var identifierCols []interface{}
 
 	if len(cache.retMapping) == 0 {
 		goto CacheNoHooks
 	}
 
+	lastID, err = result.LastInsertId()
+	if err != nil {
+		return ErrSyncFail
+	}
+
+	o.ID = int(lastID)
+	if lastID != 0 && len(cache.retMapping) == 1 && cache.retMapping[0] == saleMapping["id"] {
+		goto CacheNoHooks
+	}
+
 	identifierCols = []interface{}{
 		o.ID,
-		o.ImageID,
-		o.SellerID,
-		o.BuyerID,
 	}
 
 	if boil.IsDebug(ctx) {
@@ -1261,16 +1269,27 @@ func (o *Sale) Upsert(ctx context.Context, exec boil.ContextExecutor, updateColu
 		fmt.Fprintln(writer, cache.query)
 		fmt.Fprintln(writer, vals)
 	}
-	_, err = exec.ExecContext(ctx, cache.query, vals...)
+	result, err := exec.ExecContext(ctx, cache.query, vals...)
 
 	if err != nil {
 		return errors.Wrap(err, "databases: unable to upsert for sales")
 	}
 
+	var lastID int64
 	var uniqueMap []uint64
 	var nzUniqueCols []interface{}
 
 	if len(cache.retMapping) == 0 {
+		goto CacheNoHooks
+	}
+
+	lastID, err = result.LastInsertId()
+	if err != nil {
+		return ErrSyncFail
+	}
+
+	o.ID = int(lastID)
+	if lastID != 0 && len(cache.retMapping) == 1 && cache.retMapping[0] == saleMapping["id"] {
 		goto CacheNoHooks
 	}
 
@@ -1312,7 +1331,7 @@ func (o *Sale) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, er
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), salePrimaryKeyMapping)
-	sql := "DELETE FROM `sales` WHERE `id`=? AND `image_id`=? AND `seller_id`=? AND `buyer_id`=?"
+	sql := "DELETE FROM `sales` WHERE `id`=?"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1409,7 +1428,7 @@ func (o SaleSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (in
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *Sale) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindSale(ctx, exec, o.ID, o.ImageID, o.SellerID, o.BuyerID)
+	ret, err := FindSale(ctx, exec, o.ID)
 	if err != nil {
 		return err
 	}
@@ -1448,16 +1467,16 @@ func (o *SaleSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) er
 }
 
 // SaleExists checks if the Sale row exists.
-func SaleExists(ctx context.Context, exec boil.ContextExecutor, iD int, imageID int, sellerID int, buyerID int) (bool, error) {
+func SaleExists(ctx context.Context, exec boil.ContextExecutor, iD int) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from `sales` where `id`=? AND `image_id`=? AND `seller_id`=? AND `buyer_id`=? limit 1)"
+	sql := "select exists(select 1 from `sales` where `id`=? limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, iD, imageID, sellerID, buyerID)
+		fmt.Fprintln(writer, iD)
 	}
-	row := exec.QueryRowContext(ctx, sql, iD, imageID, sellerID, buyerID)
+	row := exec.QueryRowContext(ctx, sql, iD)
 
 	err := row.Scan(&exists)
 	if err != nil {
