@@ -1,13 +1,13 @@
 package databases
 
-
 import (
 	"database/sql"
 	"fmt"
 	"log"
-    _ "github.com/joho/godotenv/autoload"
-	_ "github.com/go-sql-driver/mysql"
 	"os"
+
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 const (
@@ -18,7 +18,7 @@ const (
 )
 
 var (
-	MDB *sql.DB
+	MysqlDB *sql.DB
 
 	username = os.Getenv(mysqlUsersUsername)
 	password = os.Getenv(mysqlUsersPassword)
@@ -33,11 +33,11 @@ func init() {
 		username, password, host, schema,
 	)
 	var err error
-	MDB, err = sql.Open("mysql", dataSourceName)
+	MysqlDB, err = sql.Open("mysql", dataSourceName)
 	if err != nil {
 		panic(err)
 	}
-	if err = MDB.Ping(); err != nil {
+	if err = MysqlDB.Ping(); err != nil {
 		panic(err)
 	}
 

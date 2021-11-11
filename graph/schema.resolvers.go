@@ -8,8 +8,13 @@ import (
 	"fmt"
 
 	"github.com/gasser707/go-gql-server/auth"
+	db "github.com/gasser707/go-gql-server/databases"
+	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	"github.com/gasser707/go-gql-server/graph/generated"
 	"github.com/gasser707/go-gql-server/graph/model"
+	"github.com/gasser707/go-gql-server/helpers"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	. "github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 func (r *imageResolver) User(ctx context.Context, obj *model.Image) (*model.User, error) {
@@ -17,7 +22,35 @@ func (r *imageResolver) User(ctx context.Context, obj *model.Image) (*model.User
 }
 
 func (r *mutationResolver) RegisterUser(ctx context.Context, input model.NewUserInput) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	
+	c, _ := dbModels.Users(Where("email = ?", input.Email)).Count(ctx, db.MysqlDB)
+
+	if(c != 0){
+		return nil, fmt.Errorf("user already exists")
+	}
+
+	pwd, err := helpers.HashPassword(input.Password)
+	if(err != nil){
+		return nil, err
+	}
+	insertedUser := &dbModels.User{
+		Email: input.Email,
+		Password: pwd,
+		Username: input.Username,
+		Bio: input.Bio,
+		Avatar: input.Avatar,
+		Role: model.RoleUser.String(),
+	}
+	insertedUser.Insert(ctx, db.MysqlDB, boil.Infer())
+
+	returnedUser := &model.User{
+		Username: input.Username,
+		Email: input.Email,
+		Bio: input.Bio,
+		Avatar: input.Avatar,
+	}
+
+	return returnedUser, nil
 }
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*model.User, error) {

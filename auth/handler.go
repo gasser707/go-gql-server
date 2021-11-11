@@ -35,6 +35,7 @@ type User struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Role     model.Role `json:"role"`
+	Email string `json:"Email"`
 }
 
 //In memory user
@@ -42,6 +43,7 @@ var user = User{
 	ID:       "1",
 	Username: "username",
 	Password: "password",
+	Email: "g@g.com",
 	Role:     model.RoleUser,
 }
 
