@@ -29,7 +29,7 @@ var (
 func init() {
 
 	//username:password@protocol(address)/dbname?param=value
-	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8",
+	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true",
 		username, password, host, schema,
 	)
 	var err error

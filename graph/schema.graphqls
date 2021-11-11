@@ -116,10 +116,10 @@ input LoginInput {
 
 type Mutation{
   registerUser(input: NewUserInput!): User! 
-  updateUser(input: UpdateUserInput!): User! @Authorize @IsSelf
-  uploadImages(input: [NewImageInput!]!): [Image!]! @Authorize @IsOwnImage
-  deleteImages(input: [DeleteImageInput!]!): Boolean! @Authorize @IsOwnImage
-  updateImage(input: UpdateImageInput!): Image! @Authorize @IsOwnImage
+  updateUser(input: UpdateUserInput!): User! @Authorize
+  uploadImages(input: [NewImageInput!]!): [Image!]! @Authorize 
+  deleteImages(input: [DeleteImageInput!]!): Boolean! @Authorize
+  updateImage(input: UpdateImageInput!): Image! @Authorize
   buyImage(input: BuyImageInput): Sale! @Authorize
   login(input: LoginInput!): Boolean!
   logout(input: Boolean ):Boolean! @Authorize
@@ -127,8 +127,5 @@ type Mutation{
 
 scalar Time
 
-
-directive @IsOwnImage on FIELD_DEFINITION
-directive @IsSelf on FIELD_DEFINITION
 directive @Authorize on FIELD_DEFINITION
 

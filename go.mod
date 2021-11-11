@@ -16,7 +16,7 @@ require (
 	github.com/vektah/gqlparser/v2 v2.2.0
 	github.com/volatiletech/sqlboiler/v4 v4.7.1
 	github.com/volatiletech/strmangle v0.0.1
-	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa // indirect
+	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa
 	golang.org/x/sys v0.0.0-20211109184856-51b60fd695b3 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect

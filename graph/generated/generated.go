@@ -45,9 +45,7 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
-	Authorize  func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
-	IsOwnImage func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
-	IsSelf     func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	Authorize func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -612,10 +610,10 @@ input LoginInput {
 
 type Mutation{
   registerUser(input: NewUserInput!): User! 
-  updateUser(input: UpdateUserInput!): User! @Authorize @IsSelf
-  uploadImages(input: [NewImageInput!]!): [Image!]! @Authorize @IsOwnImage
-  deleteImages(input: [DeleteImageInput!]!): Boolean! @Authorize @IsOwnImage
-  updateImage(input: UpdateImageInput!): Image! @Authorize @IsOwnImage
+  updateUser(input: UpdateUserInput!): User! @Authorize
+  uploadImages(input: [NewImageInput!]!): [Image!]! @Authorize 
+  deleteImages(input: [DeleteImageInput!]!): Boolean! @Authorize
+  updateImage(input: UpdateImageInput!): Image! @Authorize
   buyImage(input: BuyImageInput): Sale! @Authorize
   login(input: LoginInput!): Boolean!
   logout(input: Boolean ):Boolean! @Authorize
@@ -623,9 +621,6 @@ type Mutation{
 
 scalar Time
 
-
-directive @IsOwnImage on FIELD_DEFINITION
-directive @IsSelf on FIELD_DEFINITION
 directive @Authorize on FIELD_DEFINITION
 
 `, BuiltIn: false},
@@ -1262,14 +1257,8 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 			}
 			return ec.directives.Authorize(ctx, nil, directive0)
 		}
-		directive2 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.IsSelf == nil {
-				return nil, errors.New("directive IsSelf is not implemented")
-			}
-			return ec.directives.IsSelf(ctx, nil, directive1)
-		}
 
-		tmp, err := directive2(rctx)
+		tmp, err := directive1(rctx)
 		if err != nil {
 			return nil, graphql.ErrorOnPath(ctx, err)
 		}
@@ -1330,14 +1319,8 @@ func (ec *executionContext) _Mutation_uploadImages(ctx context.Context, field gr
 			}
 			return ec.directives.Authorize(ctx, nil, directive0)
 		}
-		directive2 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.IsOwnImage == nil {
-				return nil, errors.New("directive IsOwnImage is not implemented")
-			}
-			return ec.directives.IsOwnImage(ctx, nil, directive1)
-		}
 
-		tmp, err := directive2(rctx)
+		tmp, err := directive1(rctx)
 		if err != nil {
 			return nil, graphql.ErrorOnPath(ctx, err)
 		}
@@ -1398,14 +1381,8 @@ func (ec *executionContext) _Mutation_deleteImages(ctx context.Context, field gr
 			}
 			return ec.directives.Authorize(ctx, nil, directive0)
 		}
-		directive2 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.IsOwnImage == nil {
-				return nil, errors.New("directive IsOwnImage is not implemented")
-			}
-			return ec.directives.IsOwnImage(ctx, nil, directive1)
-		}
 
-		tmp, err := directive2(rctx)
+		tmp, err := directive1(rctx)
 		if err != nil {
 			return nil, graphql.ErrorOnPath(ctx, err)
 		}
@@ -1466,14 +1443,8 @@ func (ec *executionContext) _Mutation_updateImage(ctx context.Context, field gra
 			}
 			return ec.directives.Authorize(ctx, nil, directive0)
 		}
-		directive2 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.IsOwnImage == nil {
-				return nil, errors.New("directive IsOwnImage is not implemented")
-			}
-			return ec.directives.IsOwnImage(ctx, nil, directive1)
-		}
 
-		tmp, err := directive2(rctx)
+		tmp, err := directive1(rctx)
 		if err != nil {
 			return nil, graphql.ErrorOnPath(ctx, err)
 		}

@@ -7,9 +7,12 @@ import (
 	"os"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gasser707/go-gql-server/databases"
+	db "github.com/gasser707/go-gql-server/databases"
+	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	"github.com/gasser707/go-gql-server/graph/model"
+	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gin-gonic/gin"
+	. "github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 // ProfileHandler struct
@@ -24,27 +27,12 @@ func NewProfile(rd AuthInterface, tk TokenInterface) *profileHandler {
 
 var AuthService *profileHandler
 
+type UserID string
+
 func init() {
-	var rd = NewRedisStore(databases.RedisClient)
+	var rd = NewRedisStore(db.RedisClient)
 	var tk = NewToken()
 	AuthService = NewProfile(rd, tk)
-}
-
-type User struct {
-	ID       string `json:"id"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Role     model.Role `json:"role"`
-	Email string `json:"Email"`
-}
-
-//In memory user
-var user = User{
-	ID:       "1",
-	Username: "username",
-	Password: "password",
-	Email: "g@g.com",
-	Role:     model.RoleUser,
 }
 
 type Todo struct {
@@ -53,27 +41,30 @@ type Todo struct {
 	Body   string `json:"body"`
 }
 
-func (h *profileHandler) Login(c context.Context) (bool, error) {
-	// var u User
-	// if err := c.ShouldBindJSON(&u); err != nil {
-	// 	c.JSON(http.StatusUnprocessableEntity, "Invalid json provided")
-	// 	return
-	// }
-	//compare the user from the request, with the one we defined:
-	// if user.Username != u.Username || user.Password != u.Password {
-	// 	c.JSON(http.StatusUnauthorized, "Please provide valid login details")
-	// 	return
-	// }
-	ts, err := AuthService.tk.CreateToken(user.ID, user.Role)
+func (h *profileHandler) Login(ctx context.Context, input model.LoginInput) (bool, error) {
+
+	user, err := dbModels.Users(Where("email = ?",input.Email)).One(ctx, db.MysqlDB)
+	if(err!=nil){
+		return false, err
+	}
+	ok:= helpers.CheckPasswordHash(input.Password, user.Password)
+
+	if(!ok){
+		return false, fmt.Errorf("wrong email password combination")
+	}
+	id := fmt.Sprintf("%v",user.ID)
+	role := fmt.Sprintf("%v",user.Role)
+
+	ts, err := AuthService.tk.CreateToken(id, model.Role(role))
 	if err != nil {
 		return false, err
 	}
-	saveErr := AuthService.rd.CreateAuth(user.ID, ts)
+	saveErr := AuthService.rd.CreateAuth(id, ts)
 	if saveErr != nil {
 		return false, err
 	}
 
-	ca, err := GetCookieAccess(c)
+	ca, err := GetCookieAccess(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -82,7 +73,7 @@ func (h *profileHandler) Login(c context.Context) (bool, error) {
 }
 
 
-func (h *profileHandler) validateCredentials(c context.Context) (string, model.Role, error){
+func (h *profileHandler) validateCredentials(c context.Context) (UserID, model.Role, error){
 	metadata, err := h.tk.ExtractTokenMetadata(c)
 	if(err !=nil){
 		return "", "",err
@@ -92,11 +83,7 @@ func (h *profileHandler) validateCredentials(c context.Context) (string, model.R
 		return "", "",err
 	}
 
-	return userId, metadata.UserRole ,nil
-}
-
-func (h *profileHandler) GetCredentials(c context.Context) (*AccessDetails, error){
-		return h.tk.ExtractTokenMetadata(c)
+	return UserID(userId), metadata.UserRole ,nil
 }
 
 func (h *profileHandler) Logout(c context.Context) (bool, error) {
@@ -110,28 +97,47 @@ func (h *profileHandler) Logout(c context.Context) (bool, error) {
 
 }
 
-func (h *profileHandler) CreateTodo(c *gin.Context) {
-	var td Todo
-	if err := c.ShouldBindJSON(&td); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, "invalid json")
-		return
+func (h *profileHandler) IsSelf (ctx context.Context, input model.UpdateUserInput) error {
+	id, _, err:= h.validateCredentials(ctx)
+	if(err!=nil){
+		return fmt.Errorf("no auth credentials found")
 	}
-	metadata, err := h.tk.ExtractTokenMetadata(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, "unauthorized")
-		return
-	}
-	userId, err := h.rd.FetchAuth(metadata.TokenUuid)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, "unauthorized")
-		return
-	}
-	td.UserID = userId
 
-	//you can proceed to save the  to a database
-
-	c.JSON(http.StatusCreated, td)
+	if id != UserID(input.ID){
+		return fmt.Errorf("unauthorized")
+	}
+	return nil
 }
+
+func (h *profileHandler) GetCredentials(c context.Context) (UserID){
+	metadata, _ := h.tk.ExtractTokenMetadata(c)
+	userId, _ := h.rd.FetchAuth(metadata.TokenUuid)
+	return UserID(userId)
+}
+
+
+// func (h *profileHandler) CreateTodo(c *gin.Context) {
+// 	var td Todo
+// 	if err := c.ShouldBindJSON(&td); err != nil {
+// 		c.JSON(http.StatusUnprocessableEntity, "invalid json")
+// 		return
+// 	}
+// 	metadata, err := h.tk.ExtractTokenMetadata(c)
+// 	if err != nil {
+// 		c.JSON(http.StatusUnauthorized, "unauthorized")
+// 		return
+// 	}
+// 	userId, err := h.rd.FetchAuth(metadata.TokenUuid)
+// 	if err != nil {
+// 		c.JSON(http.StatusUnauthorized, "unauthorized")
+// 		return
+// 	}
+// 	td.UserID = userId
+
+// 	//you can proceed to save the  to a database
+
+// 	c.JSON(http.StatusCreated, td)
+// }
 
 func (h *profileHandler) Refresh(c *gin.Context) {
 	mapToken := map[string]string{}

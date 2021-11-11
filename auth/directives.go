@@ -17,7 +17,7 @@ import (
       return next(ctx)
 }
 
-var AdminOrMod = func (ctx context.Context, obj model.LoginInput, next graphql.Resolver) (interface{}, error) {
+var AdminOrMod = func (ctx context.Context, input model.LoginInput, next graphql.Resolver) (interface{}, error) {
 	_, role, err:= AuthService.validateCredentials(ctx)
 	if(err!=nil){
 		return nil, fmt.Errorf("no auth credentials found")

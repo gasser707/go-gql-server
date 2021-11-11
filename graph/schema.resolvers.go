@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/gasser707/go-gql-server/auth"
 	db "github.com/gasser707/go-gql-server/databases"
@@ -22,43 +23,96 @@ func (r *imageResolver) User(ctx context.Context, obj *model.Image) (*model.User
 }
 
 func (r *mutationResolver) RegisterUser(ctx context.Context, input model.NewUserInput) (*model.User, error) {
-	
 	c, _ := dbModels.Users(Where("email = ?", input.Email)).Count(ctx, db.MysqlDB)
 
-	if(c != 0){
+	if c != 0 {
 		return nil, fmt.Errorf("user already exists")
 	}
 
 	pwd, err := helpers.HashPassword(input.Password)
-	if(err != nil){
+	if err != nil {
 		return nil, err
 	}
 	insertedUser := &dbModels.User{
-		Email: input.Email,
+		Email:    input.Email,
 		Password: pwd,
 		Username: input.Username,
-		Bio: input.Bio,
-		Avatar: input.Avatar,
-		Role: model.RoleUser.String(),
+		Bio:      input.Bio,
+		Avatar:   input.Avatar,
+		Role:     model.RoleUser.String(),
 	}
 	insertedUser.Insert(ctx, db.MysqlDB, boil.Infer())
 
 	returnedUser := &model.User{
 		Username: input.Username,
-		Email: input.Email,
-		Bio: input.Bio,
-		Avatar: input.Avatar,
+		Email:    input.Email,
+		Bio:      input.Bio,
+		Avatar:   input.Avatar,
 	}
-
 	return returnedUser, nil
 }
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+
+	err := auth.AuthService.IsSelf(ctx, input)
+	if(err!= nil){
+		return nil, err
+	}
+
+	id, err := strconv.Atoi(input.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := dbModels.FindUser(ctx, db.MysqlDB, id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if input.Avatar != nil {
+		user.Avatar = *input.Avatar
+	}
+	if input.Bio != nil {
+		user.Bio = *input.Bio
+	}
+	if input.Username != nil {
+		user.Username = *input.Username
+	}
+	if input.Email != nil {
+		user.Username = *input.Email
+	}
+
+	_, err = user.Update(ctx, db.MysqlDB, boil.Infer())
+
+	if(err != nil){
+		return nil, err
+	}
+
+	returnUser := &model.User{Avatar: user.Avatar, Email: user.Email, Username: user.Username, Bio: user.Bio}
+
+	return returnUser, nil
 }
 
 func (r *mutationResolver) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*model.Image, error) {
-	panic(fmt.Errorf("not implemented"))
+	userId := auth.AuthService.GetCredentials(ctx)
+	id, err := strconv.Atoi(string(userId))
+	if err != nil {
+		return nil, err
+	}
+
+	images := []model.Image{}
+
+	for _,value:= range input{
+		image:= model.Image{Title: value.Title, Description: value.Description, URL: value.URL, Private: value.Private,
+			ForSale: value.ForSale, Price: value.Price,
+			User: &model.User{
+				Username: model.Image.User.Username,
+			},
+		}
+		images = append(images, image)
+	}
+
 }
 
 func (r *mutationResolver) DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
@@ -74,7 +128,7 @@ func (r *mutationResolver) BuyImage(ctx context.Context, input *model.BuyImageIn
 }
 
 func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (bool, error) {
-	ok, err := auth.AuthService.Login(ctx)
+	ok, err := auth.AuthService.Login(ctx, input)
 
 	if ok {
 		return ok, nil
