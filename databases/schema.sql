@@ -51,4 +51,4 @@ ALTER TABLE sales ADD CONSTRAINT sale_seller_fkey FOREIGN KEY (seller_id) REFERE
 ALTER TABLE sales ADD CONSTRAINT sale_buyer_fkey FOREIGN KEY (buyer_id) REFERENCES users(id);
 
 
-ALTER TABLE labels ADD CONSTRAINT label_image_fkey FOREIGN KEY (image_id) REFERENCES images(id);
+ALTER TABLE labels ADD CONSTRAINT label_image_fkey FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE;

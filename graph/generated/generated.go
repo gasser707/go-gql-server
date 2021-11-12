@@ -123,8 +123,6 @@ type SaleResolver interface {
 	Seller(ctx context.Context, obj *custom.Sale) (*custom.User, error)
 }
 type UserResolver interface {
-	Role(ctx context.Context, obj *custom.User) (model.Role, error)
-
 	Images(ctx context.Context, obj *custom.User) ([]*custom.Image, error)
 }
 
@@ -569,7 +567,6 @@ input NewUserInput {
 }
 
 input UpdateUserInput {
-    id: ID!
     username: String
     email: String
     bio: String
@@ -2158,14 +2155,14 @@ func (ec *executionContext) _User_role(ctx context.Context, field graphql.Collec
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().Role(rctx, obj)
+		return obj.Role, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3819,14 +3816,6 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 
 	for k, v := range asMap {
 		switch k {
-		case "id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			it.ID, err = ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		case "username":
 			var err error
 
@@ -4233,19 +4222,10 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				atomic.AddUint32(&invalids, 1)
 			}
 		case "role":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_role(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._User_role(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "bio":
 			out.Values[i] = ec._User_bio(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

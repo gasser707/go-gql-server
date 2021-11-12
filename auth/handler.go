@@ -99,17 +99,6 @@ func (h *profileHandler) Logout(c context.Context) (bool, error) {
 
 }
 
-func (h *profileHandler) IsSelf (ctx context.Context, input model.UpdateUserInput) error {
-	id, _, err:= h.validateCredentials(ctx)
-	if(err!=nil){
-		return fmt.Errorf("no auth credentials found")
-	}
-
-	if id != UserID(input.ID){
-		return fmt.Errorf("unauthorized")
-	}
-	return nil
-}
 
 func (h *profileHandler) GetCredentials(c context.Context) (intUserID, error){
 	metadata, _ := h.tk.ExtractTokenMetadata(c)

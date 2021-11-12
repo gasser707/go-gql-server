@@ -6,6 +6,8 @@ package graph
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	"github.com/gasser707/go-gql-server/auth"
 	"github.com/gasser707/go-gql-server/custom"
 	db "github.com/gasser707/go-gql-server/databases"
@@ -41,7 +43,7 @@ func (r *mutationResolver) RegisterUser(ctx context.Context, input model.NewUser
 		Role:     model.RoleUser.String(),
 	}
 	err = insertedUser.Insert(ctx, db.MysqlDB, boil.Infer())
-	if(err!=nil){
+	if err != nil {
 		return nil, err
 	}
 
@@ -50,7 +52,7 @@ func (r *mutationResolver) RegisterUser(ctx context.Context, input model.NewUser
 		Email:    input.Email,
 		Bio:      input.Bio,
 		Avatar:   input.Avatar,
-		Joined: &insertedUser.CreatedAt,
+		Joined:   &insertedUser.CreatedAt,
 	}
 	return returnedUser, nil
 }
@@ -98,22 +100,22 @@ func (r *mutationResolver) UploadImages(ctx context.Context, input []*model.NewI
 	dbImages := []dbModels.Image{}
 	for _, inputImg := range input {
 		image := dbModels.Image{
-		  Title: inputImg.Title, Description: inputImg.Description,
-		  URL: inputImg.URL, Private: inputImg.Private,
-		  ForSale: inputImg.ForSale, Price: inputImg.Price, UserID: int(userId),
+			Title: inputImg.Title, Description: inputImg.Description,
+			URL: inputImg.URL, Private: inputImg.Private,
+			ForSale: inputImg.ForSale, Price: inputImg.Price, UserID: int(userId),
 		}
-		err:= image.Insert(ctx, db.MysqlDB, boil.Infer())
-		if(err!= nil ){
+		err := image.Insert(ctx, db.MysqlDB, boil.Infer())
+		if err != nil {
 			return nil, err
 		}
 
-		for _, inputLabel:= range inputImg.Labels{
-			label:= dbModels.Label{
-				Tag: inputLabel,
+		for _, inputLabel := range inputImg.Labels {
+			label := dbModels.Label{
+				Tag:     inputLabel,
 				ImageID: image.ID,
 			}
-			err:= label.Insert(ctx, db.MysqlDB, boil.Infer())
-			if(err!= nil){
+			err := label.Insert(ctx, db.MysqlDB, boil.Infer())
+			if err != nil {
 				return nil, err
 			}
 		}
@@ -122,12 +124,12 @@ func (r *mutationResolver) UploadImages(ctx context.Context, input []*model.NewI
 
 	images := []*custom.Image{}
 	for _, dbImg := range dbImages {
-		imgId:= fmt.Sprintf("%v", dbImg.ID)
+		imgId := fmt.Sprintf("%v", dbImg.ID)
 		image := &custom.Image{
-		  ID: imgId, Title: dbImg.Title, Description: dbImg.Description,
-		  URL: dbImg.URL, Private: dbImg.Private,
-		  ForSale: dbImg.ForSale, Price: dbImg.Price, UserID: string(userId),
-		  Created: &dbImg.CreatedAt,
+			ID: imgId, Title: dbImg.Title, Description: dbImg.Description,
+			URL: dbImg.URL, Private: dbImg.Private,
+			ForSale: dbImg.ForSale, Price: dbImg.Price, UserID: string(userId),
+			Created: &dbImg.CreatedAt,
 		}
 		images = append(images, image)
 	}
@@ -140,7 +142,23 @@ func (r *mutationResolver) DeleteImages(ctx context.Context, input []*model.Dele
 	if err != nil {
 		return false, err
 	}
-	
+
+	for _, delImg := range input {
+		delImgId, _ := strconv.Atoi(delImg.ID)
+		img, err := dbModels.FindImage(ctx, db.MysqlDB, delImgId)
+		if err != nil {
+			return false, err
+		}
+		if img.UserID != int(userId) {
+			return false, fmt.Errorf("an image from the list doesn't belong to you")
+		}
+		_, err = img.Delete(ctx, db.MysqlDB)
+		if(err!=nil){
+			return false, err
+		}
+	}
+
+	return true, nil
 }
 
 func (r *mutationResolver) UpdateImage(ctx context.Context, input model.UpdateImageInput) (*custom.Image, error) {
@@ -191,10 +209,6 @@ func (r *saleResolver) Seller(ctx context.Context, obj *custom.Sale) (*custom.Us
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *userResolver) Role(ctx context.Context, obj *custom.User) (model.Role, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
 func (r *userResolver) Images(ctx context.Context, obj *custom.User) ([]*custom.Image, error) {
 	panic(fmt.Errorf("not implemented"))
 }
@@ -219,3 +233,13 @@ type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type saleResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *userResolver) Role(ctx context.Context, obj *custom.User) (model.Role, error) {
+	panic(fmt.Errorf("not implemented"))
+}
