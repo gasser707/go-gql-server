@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"github.com/gasser707/go-gql-server/auth"
@@ -20,10 +21,13 @@ type usersServiceInterface interface {
 }
 
 //UsersService implements the usersServiceInterface
-var UserService usersServiceInterface = &usersService{}
-type usersService struct{}
+var _ usersServiceInterface = &UsersService{}
+type UsersService struct{
+	DB *sql.DB
 
-func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInput)(*custom.User, error){
+}
+
+func (s *UsersService) UpdateUser(ctx context.Context, input model.UpdateUserInput)(*custom.User, error){
 
 	userId, err := auth.AuthService.GetCredentials(ctx)
 	if err != nil {
@@ -60,7 +64,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 }
 
 
-func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error){
+func (s *UsersService) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error){
 
 	c, _ := dbModels.Users(Where("email = ?", input.Email)).Count(ctx, db.MysqlDB)
 

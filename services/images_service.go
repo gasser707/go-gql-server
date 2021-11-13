@@ -2,8 +2,10 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strconv"
+
 	"github.com/gasser707/go-gql-server/auth"
 	"github.com/gasser707/go-gql-server/custom"
 	db "github.com/gasser707/go-gql-server/databases"
@@ -13,8 +15,20 @@ import (
 	// . "github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
+type imagesServiceInterface interface {
+	UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error)
+	DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error)
+}
 
-func UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
+//UsersService implements the usersServiceInterface
+var _ imagesServiceInterface = &ImagesService{}
+type ImagesService struct{
+	DB *sql.DB
+}
+
+
+
+func (s *ImagesService) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
 	userId, err := auth.AuthService.GetCredentials(ctx)
 	if err != nil {
 		return nil, err
@@ -61,7 +75,7 @@ func UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.
 }
 
 
-func  DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
+func (s *ImagesService)  DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
 	userId, err := auth.AuthService.GetCredentials(ctx)
 	if err != nil {
 		return false, err

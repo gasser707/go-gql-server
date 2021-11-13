@@ -19,19 +19,19 @@ func (r *imageResolver) User(ctx context.Context, obj *custom.Image) (*custom.Us
 }
 
 func (r *mutationResolver) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error) {
-	return services.UsersService.RegisterUser(ctx, input)
+	return r.UsersService.RegisterUser(ctx, input)
 }
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error) {
-
+	return r.UsersService.UpdateUser(ctx, input)
 }
 
 func (r *mutationResolver) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
-	return services.ImagesService.UploadImages(ctx, input)
+	return r.ImagesService.UploadImages(ctx, input)
 }
 
 func (r *mutationResolver) DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
-	return services.ImagesService.UploadImages(ctx, input)
+	return r.ImagesService.DeleteImages(ctx, input)
 
 }
 

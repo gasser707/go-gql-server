@@ -33,17 +33,17 @@ type TokenDetails struct {
 	RtExpires    int64
 }
 
-type TokenInterface interface {
+type TokenServiceInterface interface {
 	CreateToken(userId string, userRole model.Role) (*TokenDetails, error)
 	ExtractTokenMetadata(c context.Context) (*AccessDetails, error)
 	TokenValid(c context.Context)(error)
 }
 
 //Token implements the TokenInterface
-var _ TokenInterface = &tokenservice{}
+var _ TokenServiceInterface = &tokenservice{}
 type tokenservice struct{}
 
-func NewToken() *tokenservice {
+func NewTokenService() *tokenservice {
 	return &tokenservice{}
 }
 

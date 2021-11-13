@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -18,12 +19,13 @@ import (
 
 // ProfileHandler struct
 type profileHandler struct {
-	rd AuthInterface
-	tk TokenInterface
+	rd RedisServiceInterface
+	tk TokenServiceInterface 
+	DB *sql.DB
 }
 
-func NewProfile(rd AuthInterface, tk TokenInterface) *profileHandler {
-	return &profileHandler{rd, tk}
+func NewProfile(rd RedisServiceInterface, tk TokenServiceInterface, db *sql.DB ) *profileHandler {
+	return &profileHandler{rd, tk, db}
 }
 
 var AuthService *profileHandler
@@ -31,11 +33,6 @@ var AuthService *profileHandler
 type UserID string
 type intUserID int64
 
-func init() {
-	var rd = NewRedisStore(db.RedisClient)
-	var tk = NewToken()
-	AuthService = NewProfile(rd, tk)
-}
 
 
 func (h *profileHandler) Login(ctx context.Context, input model.LoginInput) (bool, error) {
