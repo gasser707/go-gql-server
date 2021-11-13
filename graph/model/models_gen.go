@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"github.com/99designs/gqlgen/graphql"
 )
 
 type BuyImageInput struct {
@@ -34,13 +36,13 @@ type LoginInput struct {
 }
 
 type NewImageInput struct {
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Labels      []string `json:"labels"`
-	URL         string   `json:"url"`
-	Private     bool     `json:"private"`
-	ForSale     bool     `json:"forSale"`
-	Price       float64  `json:"price"`
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
+	Labels      []string       `json:"labels"`
+	File        graphql.Upload `json:"file"`
+	Private     bool           `json:"private"`
+	ForSale     bool           `json:"forSale"`
+	Price       float64        `json:"price"`
 }
 
 type NewUserInput struct {
@@ -56,7 +58,6 @@ type UpdateImageInput struct {
 	Title       *string  `json:"title"`
 	Description *string  `json:"description"`
 	Labels      []string `json:"labels"`
-	URL         *string  `json:"url"`
 	Private     *bool    `json:"private"`
 	ForSale     *bool    `json:"forSale"`
 	Price       *float64 `json:"price"`

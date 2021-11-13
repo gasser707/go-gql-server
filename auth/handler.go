@@ -37,11 +37,6 @@ func init() {
 	AuthService = NewProfile(rd, tk)
 }
 
-type Todo struct {
-	UserID string `json:"user_id"`
-	Title  string `json:"title"`
-	Body   string `json:"body"`
-}
 
 func (h *profileHandler) Login(ctx context.Context, input model.LoginInput) (bool, error) {
 

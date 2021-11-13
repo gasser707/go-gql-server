@@ -82,7 +82,7 @@ input NewImageInput {
   title: String!
   description: String!
   labels: [String!]!
-  url: String!
+  file: Upload!
   private: Boolean!
   forSale: Boolean!
   price: Float!
@@ -93,7 +93,6 @@ input UpdateImageInput {
   title: String
   description: String
   labels: [String!]
-  url: String
   private: Boolean
   forSale: Boolean
   price: Float
@@ -125,6 +124,7 @@ type Mutation{
 }
 
 scalar Time
+scalar Upload
 
 directive @Authorize on FIELD_DEFINITION
 

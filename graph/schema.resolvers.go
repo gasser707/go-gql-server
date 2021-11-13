@@ -6,17 +6,12 @@ package graph
 import (
 	"context"
 	"fmt"
-	"strconv"
-
 	"github.com/gasser707/go-gql-server/auth"
 	"github.com/gasser707/go-gql-server/custom"
-	db "github.com/gasser707/go-gql-server/databases"
-	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	"github.com/gasser707/go-gql-server/graph/generated"
 	"github.com/gasser707/go-gql-server/graph/model"
-	"github.com/gasser707/go-gql-server/helpers"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	. "github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/gasser707/go-gql-server/services"
+
 )
 
 func (r *imageResolver) User(ctx context.Context, obj *custom.Image) (*custom.User, error) {
@@ -24,141 +19,20 @@ func (r *imageResolver) User(ctx context.Context, obj *custom.Image) (*custom.Us
 }
 
 func (r *mutationResolver) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error) {
-	c, _ := dbModels.Users(Where("email = ?", input.Email)).Count(ctx, db.MysqlDB)
-
-	if c != 0 {
-		return nil, fmt.Errorf("user already exists")
-	}
-
-	pwd, err := helpers.HashPassword(input.Password)
-	if err != nil {
-		return nil, err
-	}
-	insertedUser := &dbModels.User{
-		Email:    input.Email,
-		Password: pwd,
-		Username: input.Username,
-		Bio:      input.Bio,
-		Avatar:   input.Avatar,
-		Role:     model.RoleUser.String(),
-	}
-	err = insertedUser.Insert(ctx, db.MysqlDB, boil.Infer())
-	if err != nil {
-		return nil, err
-	}
-
-	returnedUser := &custom.User{
-		Username: input.Username,
-		Email:    input.Email,
-		Bio:      input.Bio,
-		Avatar:   input.Avatar,
-		Joined:   &insertedUser.CreatedAt,
-	}
-	return returnedUser, nil
+	return services.UsersService.RegisterUser(ctx, input)
 }
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error) {
-	userId, err := auth.AuthService.GetCredentials(ctx)
-	if err != nil {
-		return nil, err
-	}
 
-	user, err := dbModels.FindUser(ctx, db.MysqlDB, int(userId))
-
-	if err != nil {
-		return nil, err
-	}
-
-	if input.Avatar != nil {
-		user.Avatar = *input.Avatar
-	}
-	if input.Bio != nil {
-		user.Bio = *input.Bio
-	}
-	if input.Username != nil {
-		user.Username = *input.Username
-	}
-	if input.Email != nil {
-		user.Username = *input.Email
-	}
-
-	_, err = user.Update(ctx, db.MysqlDB, boil.Infer())
-
-	if err != nil {
-		return nil, err
-	}
-
-	returnUser := &custom.User{Avatar: user.Avatar, Email: user.Email, Username: user.Username, Bio: user.Bio}
-	return returnUser, nil
 }
 
 func (r *mutationResolver) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
-	userId, err := auth.AuthService.GetCredentials(ctx)
-	if err != nil {
-		return nil, err
-	}
-	dbImages := []dbModels.Image{}
-	for _, inputImg := range input {
-		image := dbModels.Image{
-			Title: inputImg.Title, Description: inputImg.Description,
-			URL: inputImg.URL, Private: inputImg.Private,
-			ForSale: inputImg.ForSale, Price: inputImg.Price, UserID: int(userId),
-		}
-		err := image.Insert(ctx, db.MysqlDB, boil.Infer())
-		if err != nil {
-			return nil, err
-		}
-
-		for _, inputLabel := range inputImg.Labels {
-			label := dbModels.Label{
-				Tag:     inputLabel,
-				ImageID: image.ID,
-			}
-			err := label.Insert(ctx, db.MysqlDB, boil.Infer())
-			if err != nil {
-				return nil, err
-			}
-		}
-		dbImages = append(dbImages, image)
-	}
-
-	images := []*custom.Image{}
-	for _, dbImg := range dbImages {
-		imgId := fmt.Sprintf("%v", dbImg.ID)
-		image := &custom.Image{
-			ID: imgId, Title: dbImg.Title, Description: dbImg.Description,
-			URL: dbImg.URL, Private: dbImg.Private,
-			ForSale: dbImg.ForSale, Price: dbImg.Price, UserID: string(userId),
-			Created: &dbImg.CreatedAt,
-		}
-		images = append(images, image)
-	}
-
-	return images, nil
+	return services.ImagesService.UploadImages(ctx, input)
 }
 
 func (r *mutationResolver) DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
-	userId, err := auth.AuthService.GetCredentials(ctx)
-	if err != nil {
-		return false, err
-	}
+	return services.ImagesService.UploadImages(ctx, input)
 
-	for _, delImg := range input {
-		delImgId, _ := strconv.Atoi(delImg.ID)
-		img, err := dbModels.FindImage(ctx, db.MysqlDB, delImgId)
-		if err != nil {
-			return false, err
-		}
-		if img.UserID != int(userId) {
-			return false, fmt.Errorf("an image from the list doesn't belong to you")
-		}
-		_, err = img.Delete(ctx, db.MysqlDB)
-		if(err!=nil){
-			return false, err
-		}
-	}
-
-	return true, nil
 }
 
 func (r *mutationResolver) UpdateImage(ctx context.Context, input model.UpdateImageInput) (*custom.Image, error) {

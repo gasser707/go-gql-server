@@ -577,7 +577,7 @@ input NewImageInput {
   title: String!
   description: String!
   labels: [String!]!
-  url: String!
+  file: Upload!
   private: Boolean!
   forSale: Boolean!
   price: Float!
@@ -588,7 +588,6 @@ input UpdateImageInput {
   title: String
   description: String
   labels: [String!]
-  url: String
   private: Boolean
   forSale: Boolean
   price: Float
@@ -620,6 +619,7 @@ type Mutation{
 }
 
 scalar Time
+scalar Upload
 
 directive @Authorize on FIELD_DEFINITION
 
@@ -3635,11 +3635,11 @@ func (ec *executionContext) unmarshalInputNewImageInput(ctx context.Context, obj
 			if err != nil {
 				return it, err
 			}
-		case "url":
+		case "file":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
-			it.URL, err = ec.unmarshalNString2string(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("file"))
+			it.File, err = ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3766,14 +3766,6 @@ func (ec *executionContext) unmarshalInputUpdateImageInput(ctx context.Context, 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("labels"))
 			it.Labels, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "url":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
-			it.URL, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4761,6 +4753,21 @@ func (ec *executionContext) unmarshalNUpdateImageInput2githubᚗcomᚋgasser707�
 func (ec *executionContext) unmarshalNUpdateUserInput2githubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐUpdateUserInput(ctx context.Context, v interface{}) (model.UpdateUserInput, error) {
 	res, err := ec.unmarshalInputUpdateUserInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, v interface{}) (graphql.Upload, error) {
+	res, err := graphql.UnmarshalUpload(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, sel ast.SelectionSet, v graphql.Upload) graphql.Marshaler {
+	res := graphql.MarshalUpload(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) marshalNUser2githubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐUser(ctx context.Context, sel ast.SelectionSet, v custom.User) graphql.Marshaler {
