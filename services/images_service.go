@@ -15,20 +15,20 @@ import (
 	// . "github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-type imagesServiceInterface interface {
+type ImagesServiceInterface interface {
 	UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error)
 	DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error)
 }
 
 //UsersService implements the usersServiceInterface
-var _ imagesServiceInterface = &ImagesService{}
-type ImagesService struct{
+var _ ImagesServiceInterface = &imagesService{}
+type imagesService struct{
 	DB *sql.DB
 }
 
 
 
-func (s *ImagesService) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
+func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
 	userId, err := auth.AuthService.GetCredentials(ctx)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (s *ImagesService) UploadImages(ctx context.Context, input []*model.NewImag
 }
 
 
-func (s *ImagesService)  DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
+func (s *imagesService)  DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
 	userId, err := auth.AuthService.GetCredentials(ctx)
 	if err != nil {
 		return false, err

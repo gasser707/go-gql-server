@@ -39,8 +39,8 @@ type Image {
 }
 
 type Query {
-    images(input: ImageFilterInput): [Image!]! @Authorize
-    users(input: UserFilterInput): [User!]! @Authorize
+    images(input: ImageFilterInput): [Image!]! 
+    users(input: UserFilterInput): [User!]! 
 }
 
 input ImageFilterInput {
@@ -114,17 +114,15 @@ input LoginInput {
 
 type Mutation{
   registerUser(input: NewUserInput!): User! 
-  updateUser(input: UpdateUserInput!): User! @Authorize
-  uploadImages(input: [NewImageInput!]!): [Image!]! @Authorize 
-  deleteImages(input: [DeleteImageInput!]!): Boolean! @Authorize
-  updateImage(input: UpdateImageInput!): Image! @Authorize
-  buyImage(input: BuyImageInput): Sale! @Authorize
+  updateUser(input: UpdateUserInput!): User! 
+  uploadImages(input: [NewImageInput!]!): [Image!]! 
+  deleteImages(input: [DeleteImageInput!]!): Boolean! 
+  updateImage(input: UpdateImageInput!): Image! 
+  buyImage(input: BuyImageInput): Sale! 
   login(input: LoginInput!): Boolean!
-  logout(input: Boolean ):Boolean! @Authorize
+  logout(input: Boolean ):Boolean! 
 }
 
 scalar Time
 scalar Upload
-
-directive @Authorize on FIELD_DEFINITION
 

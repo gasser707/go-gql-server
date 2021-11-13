@@ -6,11 +6,10 @@ package graph
 import (
 	"context"
 	"fmt"
-	"github.com/gasser707/go-gql-server/auth"
+
 	"github.com/gasser707/go-gql-server/custom"
 	"github.com/gasser707/go-gql-server/graph/generated"
 	"github.com/gasser707/go-gql-server/graph/model"
-
 )
 
 func (r *imageResolver) User(ctx context.Context, obj *custom.Image) (*custom.User, error) {
@@ -31,7 +30,6 @@ func (r *mutationResolver) UploadImages(ctx context.Context, input []*model.NewI
 
 func (r *mutationResolver) DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
 	return r.ImagesService.DeleteImages(ctx, input)
-
 }
 
 func (r *mutationResolver) UpdateImage(ctx context.Context, input model.UpdateImageInput) (*custom.Image, error) {
@@ -43,23 +41,11 @@ func (r *mutationResolver) BuyImage(ctx context.Context, input *model.BuyImageIn
 }
 
 func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (bool, error) {
-	ok, err := auth.AuthService.Login(ctx, input)
-
-	if ok {
-		return ok, nil
-	} else {
-		return false, fmt.Errorf(err.Error())
-	}
+	return r.AuthService.Login(ctx, input)
 }
 
 func (r *mutationResolver) Logout(ctx context.Context, input *bool) (bool, error) {
-	ok, err := auth.AuthService.Logout(ctx)
-
-	if ok {
-		return ok, nil
-	} else {
-		return false, fmt.Errorf(err.Error())
-	}
+	return r.AuthService.Logout(ctx)
 }
 
 func (r *queryResolver) Images(ctx context.Context, input *model.ImageFilterInput) ([]*custom.Image, error) {
@@ -79,6 +65,10 @@ func (r *saleResolver) Buyer(ctx context.Context, obj *custom.Sale) (*custom.Use
 }
 
 func (r *saleResolver) Seller(ctx context.Context, obj *custom.Sale) (*custom.User, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *userResolver) Role(ctx context.Context, obj *custom.User) (model.Role, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -106,13 +96,3 @@ type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type saleResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *userResolver) Role(ctx context.Context, obj *custom.User) (model.Role, error) {
-	panic(fmt.Errorf("not implemented"))
-}

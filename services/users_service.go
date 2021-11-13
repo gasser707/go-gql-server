@@ -15,19 +15,19 @@ import (
 	. "github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-type usersServiceInterface interface {
+type UsersServiceInterface interface {
 	UpdateUser(ctx context.Context, input model.UpdateUserInput)(*custom.User, error)
 	RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error)
 }
 
 //UsersService implements the usersServiceInterface
-var _ usersServiceInterface = &UsersService{}
-type UsersService struct{
+var _ UsersServiceInterface = &usersService{}
+type usersService struct{
 	DB *sql.DB
 
 }
 
-func (s *UsersService) UpdateUser(ctx context.Context, input model.UpdateUserInput)(*custom.User, error){
+func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInput)(*custom.User, error){
 
 	userId, err := auth.AuthService.GetCredentials(ctx)
 	if err != nil {
@@ -64,7 +64,7 @@ func (s *UsersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 }
 
 
-func (s *UsersService) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error){
+func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error){
 
 	c, _ := dbModels.Users(Where("email = ?", input.Email)).Count(ctx, db.MysqlDB)
 

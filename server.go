@@ -18,7 +18,6 @@ func graphqlHandler() gin.HandlerFunc {
 	// Resolver is in the resolver.go file
 
 	c :=  generated.Config{Resolvers: &graph.Resolver{}} 
-	c.Directives.Authorize = auth.Authorize
 			
 	h := handler.NewDefaultServer(generated.NewExecutableSchema(c))
 

@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -46,7 +45,6 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
-	Authorize func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -123,6 +121,8 @@ type SaleResolver interface {
 	Seller(ctx context.Context, obj *custom.Sale) (*custom.User, error)
 }
 type UserResolver interface {
+	Role(ctx context.Context, obj *custom.User) (model.Role, error)
+
 	Images(ctx context.Context, obj *custom.User) ([]*custom.Image, error)
 }
 
@@ -534,8 +534,8 @@ type Image {
 }
 
 type Query {
-    images(input: ImageFilterInput): [Image!]! @Authorize
-    users(input: UserFilterInput): [User!]! @Authorize
+    images(input: ImageFilterInput): [Image!]! 
+    users(input: UserFilterInput): [User!]! 
 }
 
 input ImageFilterInput {
@@ -609,19 +609,17 @@ input LoginInput {
 
 type Mutation{
   registerUser(input: NewUserInput!): User! 
-  updateUser(input: UpdateUserInput!): User! @Authorize
-  uploadImages(input: [NewImageInput!]!): [Image!]! @Authorize 
-  deleteImages(input: [DeleteImageInput!]!): Boolean! @Authorize
-  updateImage(input: UpdateImageInput!): Image! @Authorize
-  buyImage(input: BuyImageInput): Sale! @Authorize
+  updateUser(input: UpdateUserInput!): User! 
+  uploadImages(input: [NewImageInput!]!): [Image!]! 
+  deleteImages(input: [DeleteImageInput!]!): Boolean! 
+  updateImage(input: UpdateImageInput!): Image! 
+  buyImage(input: BuyImageInput): Sale! 
   login(input: LoginInput!): Boolean!
-  logout(input: Boolean ):Boolean! @Authorize
+  logout(input: Boolean ):Boolean! 
 }
 
 scalar Time
 scalar Upload
-
-directive @Authorize on FIELD_DEFINITION
 
 `, BuiltIn: false},
 }
@@ -1247,28 +1245,8 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UpdateUser(rctx, args["input"].(model.UpdateUserInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Authorize == nil {
-				return nil, errors.New("directive Authorize is not implemented")
-			}
-			return ec.directives.Authorize(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*custom.User); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/gasser707/go-gql-server/custom.User`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateUser(rctx, args["input"].(model.UpdateUserInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1309,28 +1287,8 @@ func (ec *executionContext) _Mutation_uploadImages(ctx context.Context, field gr
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UploadImages(rctx, args["input"].([]*model.NewImageInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Authorize == nil {
-				return nil, errors.New("directive Authorize is not implemented")
-			}
-			return ec.directives.Authorize(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.([]*custom.Image); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/gasser707/go-gql-server/custom.Image`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UploadImages(rctx, args["input"].([]*model.NewImageInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1371,28 +1329,8 @@ func (ec *executionContext) _Mutation_deleteImages(ctx context.Context, field gr
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().DeleteImages(rctx, args["input"].([]*model.DeleteImageInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Authorize == nil {
-				return nil, errors.New("directive Authorize is not implemented")
-			}
-			return ec.directives.Authorize(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(bool); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteImages(rctx, args["input"].([]*model.DeleteImageInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1433,28 +1371,8 @@ func (ec *executionContext) _Mutation_updateImage(ctx context.Context, field gra
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UpdateImage(rctx, args["input"].(model.UpdateImageInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Authorize == nil {
-				return nil, errors.New("directive Authorize is not implemented")
-			}
-			return ec.directives.Authorize(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*custom.Image); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/gasser707/go-gql-server/custom.Image`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateImage(rctx, args["input"].(model.UpdateImageInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1495,28 +1413,8 @@ func (ec *executionContext) _Mutation_buyImage(ctx context.Context, field graphq
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().BuyImage(rctx, args["input"].(*model.BuyImageInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Authorize == nil {
-				return nil, errors.New("directive Authorize is not implemented")
-			}
-			return ec.directives.Authorize(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*custom.Sale); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/gasser707/go-gql-server/custom.Sale`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().BuyImage(rctx, args["input"].(*model.BuyImageInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1599,28 +1497,8 @@ func (ec *executionContext) _Mutation_logout(ctx context.Context, field graphql.
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().Logout(rctx, args["input"].(*bool))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Authorize == nil {
-				return nil, errors.New("directive Authorize is not implemented")
-			}
-			return ec.directives.Authorize(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(bool); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Logout(rctx, args["input"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1661,28 +1539,8 @@ func (ec *executionContext) _Query_images(ctx context.Context, field graphql.Col
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().Images(rctx, args["input"].(*model.ImageFilterInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Authorize == nil {
-				return nil, errors.New("directive Authorize is not implemented")
-			}
-			return ec.directives.Authorize(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.([]*custom.Image); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/gasser707/go-gql-server/custom.Image`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Images(rctx, args["input"].(*model.ImageFilterInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1723,28 +1581,8 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().Users(rctx, args["input"].(*model.UserFilterInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Authorize == nil {
-				return nil, errors.New("directive Authorize is not implemented")
-			}
-			return ec.directives.Authorize(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.([]*custom.User); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/gasser707/go-gql-server/custom.User`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Users(rctx, args["input"].(*model.UserFilterInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2155,14 +1993,14 @@ func (ec *executionContext) _User_role(ctx context.Context, field graphql.Collec
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Role, nil
+		return ec.resolvers.User().Role(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4214,10 +4052,19 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				atomic.AddUint32(&invalids, 1)
 			}
 		case "role":
-			out.Values[i] = ec._User_role(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_role(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "bio":
 			out.Values[i] = ec._User_bio(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

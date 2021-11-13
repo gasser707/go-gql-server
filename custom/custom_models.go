@@ -2,7 +2,6 @@ package custom
 
 import (
 	"time"
-	"github.com/gasser707/go-gql-server/graph/model"
 )
 
 
@@ -22,7 +21,7 @@ type Image struct {
 
 type Sale struct {
 	ID     string     `json:"id"`
-	Image  *Image     `json:"image"`
+	ImageID  string     `json:"image"`
 	BuyerID  string      `json:"buyerId"`
 	SellerID string      `json:"sellerId"`
 	Time   *time.Time `json:"time"`
@@ -34,9 +33,18 @@ type User struct {
 	ID       string     `json:"id"`
 	Username string     `json:"username"`
 	Email    string     `json:"email"`
-	Role     model.Role       `json:"role"`
+	Role     Role       `json:"role"`
 	Bio      string     `json:"bio"`
 	Avatar   string     `json:"avatar"`
 	Joined   *time.Time `json:"joined"`
 	Images   []*Image   `json:"images"`
 }
+
+
+type Role string
+
+const (
+	RoleAdmin     Role = "ADMIN"
+	RoleUser      Role = "USER"
+	RoleModerator Role = "MODERATOR"
+)
