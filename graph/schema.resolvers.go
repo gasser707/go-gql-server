@@ -10,7 +10,6 @@ import (
 	"github.com/gasser707/go-gql-server/custom"
 	"github.com/gasser707/go-gql-server/graph/generated"
 	"github.com/gasser707/go-gql-server/graph/model"
-	"github.com/gasser707/go-gql-server/services"
 
 )
 
