@@ -7,19 +7,21 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gasser707/go-gql-server/auth"
-	db "github.com/gasser707/go-gql-server/databases"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	"github.com/gasser707/go-gql-server/graph/model"
 	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/securecookie"
 	. "github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 type AuthServiceInterface interface {
 	Login(ctx context.Context, input model.LoginInput) (bool, error)
 	validateCredentials(c context.Context) (UserID, model.Role, error)
+	GetCredentials(c context.Context) (intUserID, error)
 	Logout(c context.Context) (bool, error)
 	Refresh(c *gin.Context)
 }
@@ -30,10 +32,12 @@ type authService struct{
 	rd auth.RedisServiceInterface
 	tk auth.TokenServiceInterface 
 	DB *sql.DB
+	sc  *securecookie.SecureCookie
 }
 
-func NewAuthService(rd auth.RedisServiceInterface, tk auth.TokenServiceInterface, db *sql.DB ) *authService {
-	return &authService{rd, tk, db}
+func NewAuthService(rd auth.RedisServiceInterface, tk auth.TokenServiceInterface,db *sql.DB, 
+	sc *securecookie.SecureCookie ) *authService {
+	return &authService{rd, tk, db, sc}
 }
 
 
@@ -43,7 +47,7 @@ type intUserID int64
 
 func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, error) {
 
-	user, err := dbModels.Users(Where("email = ?",input.Email)).One(ctx, db.MysqlDB)
+	user, err := dbModels.Users(Where("email = ?",input.Email)).One(ctx, s.DB)
 	if(err!=nil){
 		return false, err
 	}
@@ -68,7 +72,7 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 	if err != nil {
 		return false, err
 	}
-	ca.SetToken(ts.AccessToken, ts.RefreshToken)
+	ca.SetToken(ts.AccessToken, ts.RefreshToken, s.sc)
 	return true, nil
 }
 

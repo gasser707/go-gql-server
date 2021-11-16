@@ -4,10 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-
-	"github.com/gasser707/go-gql-server/auth"
 	"github.com/gasser707/go-gql-server/custom"
-	db "github.com/gasser707/go-gql-server/databases"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	"github.com/gasser707/go-gql-server/graph/model"
 	"github.com/gasser707/go-gql-server/helpers"
@@ -24,17 +21,18 @@ type UsersServiceInterface interface {
 var _ UsersServiceInterface = &usersService{}
 type usersService struct{
 	DB *sql.DB
+	AuthService AuthServiceInterface
 
 }
 
 func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInput)(*custom.User, error){
 
-	userId, err := auth.AuthService.GetCredentials(ctx)
+	userId, err := s.AuthService.GetCredentials(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := dbModels.FindUser(ctx, db.MysqlDB, int(userId))
+	user, err := dbModels.FindUser(ctx, s.DB, int(userId))
 
 	if err != nil {
 		return nil, err
@@ -53,7 +51,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 		user.Username = *input.Email
 	}
 
-	_, err = user.Update(ctx, db.MysqlDB, boil.Infer())
+	_, err = user.Update(ctx, s.DB, boil.Infer())
 
 	if err != nil {
 		return nil, err
@@ -66,7 +64,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 
 func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error){
 
-	c, _ := dbModels.Users(Where("email = ?", input.Email)).Count(ctx, db.MysqlDB)
+	c, _ := dbModels.Users(Where("email = ?", input.Email)).Count(ctx, s.DB)
 
 	if c != 0 {
 		return nil, fmt.Errorf("user already exists")
@@ -84,7 +82,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 		Avatar:   input.Avatar,
 		Role:     model.RoleUser.String(),
 	}
-	err = insertedUser.Insert(ctx, db.MysqlDB, boil.Infer())
+	err = insertedUser.Insert(ctx, s.DB, boil.Infer())
 	if err != nil {
 		return nil, err
 	}

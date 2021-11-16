@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/securecookie"
 	"github.com/twinj/uuid"
 
 	// "net/http"
@@ -41,10 +42,14 @@ type TokenServiceInterface interface {
 
 //Token implements the TokenInterface
 var _ TokenServiceInterface = &tokenservice{}
-type tokenservice struct{}
+type tokenservice struct{
+	sc  *securecookie.SecureCookie
+}
 
-func NewTokenService() *tokenservice {
-	return &tokenservice{}
+func NewTokenService(sc  *securecookie.SecureCookie) *tokenservice {
+	return &tokenservice{
+		sc: sc,
+	}
 }
 
 

@@ -18,7 +18,6 @@ const (
 )
 
 var (
-	MysqlDB *sql.DB
 
 	username = os.Getenv(mysqlUsersUsername)
 	password = os.Getenv(mysqlUsersPassword)
@@ -26,20 +25,23 @@ var (
 	schema   = os.Getenv(mysqlUsersSchema)
 )
 
-func init() {
+func NewMysqlClient() *sql.DB {
 
 	//username:password@protocol(address)/dbname?param=value
 	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true",
 		username, password, host, schema,
 	)
-	var err error
-	MysqlDB, err = sql.Open("mysql", dataSourceName)
+
+	mysqlClient, err := sql.Open("mysql", dataSourceName)
 	if err != nil {
 		panic(err)
 	}
-	if err = MysqlDB.Ping(); err != nil {
+	if err = mysqlClient.Ping(); err != nil {
 		panic(err)
 	}
 
 	log.Println("database successfully configured")
+
+	return mysqlClient
+
 }

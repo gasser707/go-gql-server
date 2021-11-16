@@ -68,14 +68,14 @@ input NewUserInput {
   email: String!
   password: String!
   bio: String!
-  avatar: String!
+  avatar: Upload!
 }
 
 input UpdateUserInput {
-    username: String
-    email: String
-    bio: String
-    avatar: String
+    username: String!
+    email: String!
+    bio: String!
+    avatar: Upload
 }
 
 input NewImageInput {
@@ -90,12 +90,12 @@ input NewImageInput {
 
 input UpdateImageInput {
   id: ID!
-  title: String
-  description: String
+  title: String!
+  description: String!
   labels: [String!]
-  private: Boolean
-  forSale: Boolean
-  price: Float
+  private: Boolean!
+  forSale: Boolean!
+  price: Float!
 }
 
 input BuyImageInput {

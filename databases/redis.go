@@ -6,18 +6,19 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-var RedisClient *redis.Client
 
-func init()  {
+func NewRedisClient() *redis.Client  {
 
-	RedisClient = redis.NewClient(&redis.Options{
+	 redisClient := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_HOST"),
 		Password: os.Getenv("REDIS_PASSWORD"),
 		DB:       0,
 	})
 
-	_, err := RedisClient.Ping().Result()
+	_, err := redisClient.Ping().Result()
 	if err != nil {
 		panic(err)
 	}
+
+	return redisClient
 }

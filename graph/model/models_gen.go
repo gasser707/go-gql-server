@@ -46,28 +46,28 @@ type NewImageInput struct {
 }
 
 type NewUserInput struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Bio      string `json:"bio"`
-	Avatar   string `json:"avatar"`
+	Username string         `json:"username"`
+	Email    string         `json:"email"`
+	Password string         `json:"password"`
+	Bio      string         `json:"bio"`
+	Avatar   graphql.Upload `json:"avatar"`
 }
 
 type UpdateImageInput struct {
 	ID          string   `json:"id"`
-	Title       *string  `json:"title"`
-	Description *string  `json:"description"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
 	Labels      []string `json:"labels"`
-	Private     *bool    `json:"private"`
-	ForSale     *bool    `json:"forSale"`
-	Price       *float64 `json:"price"`
+	Private     bool     `json:"private"`
+	ForSale     bool     `json:"forSale"`
+	Price       float64  `json:"price"`
 }
 
 type UpdateUserInput struct {
-	Username *string `json:"username"`
-	Email    *string `json:"email"`
-	Bio      *string `json:"bio"`
-	Avatar   *string `json:"avatar"`
+	Username string          `json:"username"`
+	Email    string          `json:"email"`
+	Bio      string          `json:"bio"`
+	Avatar   *graphql.Upload `json:"avatar"`
 }
 
 type UserFilterInput struct {

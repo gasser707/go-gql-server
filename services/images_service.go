@@ -5,10 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
-
-	"github.com/gasser707/go-gql-server/auth"
 	"github.com/gasser707/go-gql-server/custom"
-	db "github.com/gasser707/go-gql-server/databases"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	"github.com/gasser707/go-gql-server/graph/model"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -24,12 +21,17 @@ type ImagesServiceInterface interface {
 var _ ImagesServiceInterface = &imagesService{}
 type imagesService struct{
 	DB *sql.DB
+	AuthService AuthServiceInterface
+}
+
+func NewImagesService( db *sql.DB ) *imagesService {
+	return &imagesService{DB: db}
 }
 
 
 
 func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
-	userId, err := auth.AuthService.GetCredentials(ctx)
+	userId, err := s.AuthService.GetCredentials(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +43,7 @@ func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImag
 			ForSale: inputImg.ForSale, Price: inputImg.Price, UserID: int(userId),
 		}
 		fmt.Println(inputImg.File)
-		err := image.Insert(ctx, db.MysqlDB, boil.Infer())
+		err := image.Insert(ctx, s.DB, boil.Infer())
 		if err != nil {
 			return nil, err
 		}
@@ -51,7 +53,7 @@ func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImag
 				Tag:     inputLabel,
 				ImageID: image.ID,
 			}
-			err := label.Insert(ctx, db.MysqlDB, boil.Infer())
+			err := label.Insert(ctx, s.DB, boil.Infer())
 			if err != nil {
 				return nil, err
 			}
@@ -76,21 +78,21 @@ func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImag
 
 
 func (s *imagesService)  DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
-	userId, err := auth.AuthService.GetCredentials(ctx)
+	userId, err := s.AuthService.GetCredentials(ctx)
 	if err != nil {
 		return false, err
 	}
 
 	for _, delImg := range input {
 		delImgId, _ := strconv.Atoi(delImg.ID)
-		img, err := dbModels.FindImage(ctx, db.MysqlDB, delImgId)
+		img, err := dbModels.FindImage(ctx, s.DB, delImgId)
 		if err != nil {
 			return false, err
 		}
 		if img.UserID != int(userId) {
 			return false, fmt.Errorf("an image from the list doesn't belong to you")
 		}
-		_, err = img.Delete(ctx, db.MysqlDB)
+		_, err = img.Delete(ctx, s.DB)
 		if err != nil {
 			return false, err
 		}

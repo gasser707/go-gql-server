@@ -5,9 +5,8 @@ import (
 	"errors"
 	"net/http"
 	"time"
-
-	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/securecookie"
 )
 
 type CookieAccess struct {
@@ -15,14 +14,14 @@ type CookieAccess struct {
     encodedCookie   string
 }
 // method to write cookie
-func (ca *CookieAccess) SetToken(at string, rt string) {
+func (ca *CookieAccess) SetToken(at string, rt string, sm *securecookie.SecureCookie) {
 
     value := map[string]string{
 		"access_token": at,
         "refresh_token": rt,
 	}
 
-	if encoded, err := helpers.SecureCookieManager.Encode("cookie-name", value); err == nil {
+	if encoded, err := sm.Encode("cookie-name", value); err == nil {
 		cookie := &http.Cookie{
 			Name:  "cookie-name",
 			Value: encoded,
