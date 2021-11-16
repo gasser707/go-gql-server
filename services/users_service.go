@@ -38,9 +38,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 		return nil, err
 	}
 
-	if input.Avatar != nil {
-		user.Avatar = *input.Avatar
-	}
+
 	if input.Bio != nil {
 		user.Bio = *input.Bio
 	}
