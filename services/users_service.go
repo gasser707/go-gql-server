@@ -39,10 +39,6 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 	}
 
 
-
-	if input.Username != nil {
-		user.Username = *input.Username
-	}
 	if input.Email != nil {
 		user.Username = *input.Email
 	}
