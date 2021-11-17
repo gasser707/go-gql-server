@@ -6,8 +6,11 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gasser707/go-gql-server/auth"
+	"github.com/gasser707/go-gql-server/databases"
 	"github.com/gasser707/go-gql-server/graph"
 	"github.com/gasser707/go-gql-server/graph/generated"
+	"github.com/gasser707/go-gql-server/helpers"
+	"github.com/gasser707/go-gql-server/services"
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -17,7 +20,15 @@ func graphqlHandler() gin.HandlerFunc {
 	// NewExecutableSchema and Config are in the generated.go file
 	// Resolver is in the resolver.go file
 
-	c :=  generated.Config{Resolvers: &graph.Resolver{}} 
+	sc := helpers.NewSecureCookie()
+	tk:= auth.NewTokenService(sc)
+	rd:= auth.NewRedisStore()
+	mysqlDB:= databases.NewMysqlClient()
+	authSrv:= services.NewAuthService(rd, tk, mysqlDB, sc )
+	usrSrv := services.NewUsersService(mysqlDB, authSrv)
+	imgSrv := services.NewImagesService(mysqlDB, authSrv)
+	
+	c :=  generated.Config{Resolvers: &graph.Resolver{AuthService: authSrv, ImagesService: imgSrv, UsersService: usrSrv}} 
 			
 	h := handler.NewDefaultServer(generated.NewExecutableSchema(c))
 

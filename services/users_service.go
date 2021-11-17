@@ -17,6 +17,7 @@ type UsersServiceInterface interface {
 	RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error)
 }
 
+
 //UsersService implements the usersServiceInterface
 var _ UsersServiceInterface = &usersService{}
 type usersService struct{
@@ -24,28 +25,37 @@ type usersService struct{
 	AuthService AuthServiceInterface
 
 }
+func NewUsersService( db *sql.DB, authSrv AuthServiceInterface ) *usersService {
+	return &usersService{DB: db, AuthService: authSrv}
+}
 
 func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInput)(*custom.User, error){
 
-	userId, err := s.AuthService.GetCredentials(ctx)
+	userId, _, err := s.AuthService.validateCredentials(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	user, err := dbModels.FindUser(ctx, s.DB, int(userId))
-
 	if err != nil {
 		return nil, err
 	}
 
+	user.Username = input.Username
+	user.Bio = input.Bio
+	user.Email = input.Email
 
-	if input.Email != nil {
-		user.Username = *input.Email
+	var newAvatarUrl string
+	if (input.Avatar != nil){
+		//upload avatar to google image
+	}
+
+	if(newAvatarUrl != ""){
+		user.Avatar = newAvatarUrl
 	}
 
 	_, err = user.Update(ctx, s.DB, boil.Infer())
-
-	if err != nil {
+	if(err !=nil){
 		return nil, err
 	}
 
@@ -66,14 +76,20 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 	if err != nil {
 		return nil, err
 	}
+
+	var avatarUrl string
+
+	//upload to google cloud
+
 	insertedUser := &dbModels.User{
 		Email:    input.Email,
 		Password: pwd,
 		Username: input.Username,
 		Bio:      input.Bio,
-		Avatar:   input.Avatar,
+		Avatar:   avatarUrl,
 		Role:     model.RoleUser.String(),
 	}
+
 	err = insertedUser.Insert(ctx, s.DB, boil.Infer())
 	if err != nil {
 		return nil, err
@@ -83,10 +99,9 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 		Username: input.Username,
 		Email:    input.Email,
 		Bio:      input.Bio,
-		Avatar:   input.Avatar,
+		Avatar:   avatarUrl,
 		Joined:   &insertedUser.CreatedAt,
 	}
+
 	return returnedUser, nil
-
-
 } 

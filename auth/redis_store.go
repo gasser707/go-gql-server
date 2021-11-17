@@ -3,8 +3,10 @@ package auth
 import (
 	"errors"
 	"fmt"
-	"github.com/go-redis/redis/v7"
 	"time"
+
+	"github.com/gasser707/go-gql-server/databases"
+	"github.com/go-redis/redis/v7"
 )
 
 type RedisServiceInterface interface {
@@ -21,8 +23,8 @@ type redisStoreService struct {
 var _ RedisServiceInterface = &redisStoreService{}
 
 
-func NewRedisStore(client *redis.Client) *redisStoreService{
-	return &redisStoreService{client: client}
+func NewRedisStore() *redisStoreService{
+	return &redisStoreService{client: databases.NewRedisClient()}
 }
 
 //Save token metadata to Redis

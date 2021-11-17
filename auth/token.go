@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/gasser707/go-gql-server/graph/model"
-	"github.com/gasser707/go-gql-server/helpers"
 )
 
 
@@ -93,7 +92,7 @@ func (t *tokenservice) CreateToken(userId string, userRole model.Role) (*TokenDe
 }
 
 func (t *tokenservice) TokenValid(c context.Context) error {
-	token, err := verifyToken(c)
+	token, err := t.verifyToken(c)
 	if err != nil {
 		return err
 	}
@@ -103,8 +102,8 @@ func (t *tokenservice) TokenValid(c context.Context) error {
 	return nil
 }
 
-func verifyToken(c context.Context) (*jwt.Token, error) {
-	tokenMap, err := getTokensFromCookie(c)
+func (t *tokenservice) verifyToken(c context.Context) (*jwt.Token, error) {
+	tokenMap, err := t.getTokensFromCookie(c)
 	if(err != nil) {
 		return nil, err
 	}
@@ -152,7 +151,7 @@ func extract(token *jwt.Token) (*AccessDetails, error) {
 }
 
 func (t *tokenservice) ExtractTokenMetadata(c context.Context) (*AccessDetails, error) {
-	token, err := verifyToken(c)
+	token, err := t.verifyToken(c)
 	if err != nil {
 		return nil, err
 	}
@@ -163,14 +162,14 @@ func (t *tokenservice) ExtractTokenMetadata(c context.Context) (*AccessDetails, 
 	return acc, nil
 }
 
-func  getTokensFromCookie(c context.Context) (map[string]string, error){
+func (t *tokenservice) getTokensFromCookie(c context.Context) (map[string]string, error){
 	ca, err:= GetCookieAccess(c)
 	if(err !=nil){
 		return nil, err
 	}
 	ec := ca.encodedCookie
 	value := make(map[string]string)
-		if err = helpers.SecureCookieManager.Decode("cookie-name", ec, &value); err != nil {
+		if err = t.sc.Decode("cookie-name", ec, &value); err != nil {
 			return nil, err
 	}
 

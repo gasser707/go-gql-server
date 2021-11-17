@@ -24,11 +24,9 @@ type imagesService struct{
 	AuthService AuthServiceInterface
 }
 
-func NewImagesService( db *sql.DB ) *imagesService {
-	return &imagesService{DB: db}
+func NewImagesService( db *sql.DB, authSrv AuthServiceInterface ) *imagesService {
+	return &imagesService{DB: db, AuthService: authSrv}
 }
-
-
 
 func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
 	userId, err := s.AuthService.GetCredentials(ctx)

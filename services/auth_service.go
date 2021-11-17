@@ -20,7 +20,7 @@ import (
 
 type AuthServiceInterface interface {
 	Login(ctx context.Context, input model.LoginInput) (bool, error)
-	validateCredentials(c context.Context) (UserID, model.Role, error)
+	validateCredentials(c context.Context) (intUserID, model.Role, error)
 	GetCredentials(c context.Context) (intUserID, error)
 	Logout(c context.Context) (bool, error)
 	Refresh(c *gin.Context)
@@ -77,17 +77,22 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 }
 
 
-func (s *authService) validateCredentials(c context.Context) (UserID, model.Role, error){
+func (s *authService) validateCredentials(c context.Context) (intUserID, model.Role, error){
 	metadata, err := s.tk.ExtractTokenMetadata(c)
 	if(err !=nil){
-		return "", "",err
+		return -1, "",err
 	}
 	userId, err := s.rd.FetchAuth(metadata.TokenUuid)
 	if err != nil {
-		return "", "",err
+		return -1, "",err
 	}
 
-	return UserID(userId), metadata.UserRole ,nil
+	id, err:= strconv.Atoi(userId)
+	if err != nil {
+		return -1, "",err
+	}
+
+	return  intUserID(id), metadata.UserRole ,nil
 }
 
 func (s *authService) Logout(c context.Context) (bool, error) {

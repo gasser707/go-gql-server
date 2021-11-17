@@ -7,9 +7,8 @@ import (
 )
 
 
-var SecureCookieManager *securecookie.SecureCookie
 
-func init(){
+func NewSecureCookie()  *securecookie.SecureCookie{
 	// Hash keys should be at least 32 bytes long
 
 key := make([]byte, 32)
@@ -24,5 +23,6 @@ var hashKey = key
 // Shorter keys may weaken the encryption used.
 var blockKey = key
 
-SecureCookieManager = securecookie.New(hashKey, blockKey)
+SecureCookieManager := securecookie.New(hashKey, blockKey)
+return SecureCookieManager
 }
