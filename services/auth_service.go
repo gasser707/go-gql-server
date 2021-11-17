@@ -48,14 +48,12 @@ type intUserID int64
 func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, error) {
 
 	user, err := dbModels.Users(Where("email = ?",input.Email)).One(ctx, s.DB)
-	if(err!=nil){
-		return false, err
-	}
-	ok:= helpers.CheckPasswordHash(input.Password, user.Password)
 
-	if(!ok){
+	ok:= helpers.CheckPasswordHash(input.Password, user.Password)
+	if(!ok || err != nil){
 		return false, fmt.Errorf("wrong email password combination")
 	}
+	
 	id := fmt.Sprintf("%v",user.ID)
 	role := fmt.Sprintf("%v",user.Role)
 

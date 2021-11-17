@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+
 	"github.com/gasser707/go-gql-server/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	"github.com/gasser707/go-gql-server/graph/model"
+	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	// . "github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
@@ -22,10 +24,11 @@ var _ ImagesServiceInterface = &imagesService{}
 type imagesService struct{
 	DB *sql.DB
 	AuthService AuthServiceInterface
+	uploader helpers.UploaderInterface
 }
 
-func NewImagesService( db *sql.DB, authSrv AuthServiceInterface ) *imagesService {
-	return &imagesService{DB: db, AuthService: authSrv}
+func NewImagesService( db *sql.DB, authSrv AuthServiceInterface, uploader helpers.UploaderInterface ) *imagesService {
+	return &imagesService{DB: db, AuthService: authSrv, uploader: uploader}
 }
 
 func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
@@ -40,7 +43,6 @@ func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImag
 		    Private: inputImg.Private,
 			ForSale: inputImg.ForSale, Price: inputImg.Price, UserID: int(userId),
 		}
-		fmt.Println(inputImg.File)
 		err := image.Insert(ctx, s.DB, boil.Infer())
 		if err != nil {
 			return nil, err
@@ -65,7 +67,7 @@ func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImag
 		image := &custom.Image{
 			ID: imgId, Title: dbImg.Title, Description: dbImg.Description,
 			URL: dbImg.URL, Private: dbImg.Private,
-			ForSale: dbImg.ForSale, Price: dbImg.Price, UserID: string(userId),
+			ForSale: dbImg.ForSale, Price: dbImg.Price, UserID: fmt.Sprintf("%v",userId),
 			Created: &dbImg.CreatedAt,
 		}
 		images = append(images, image)

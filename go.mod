@@ -3,6 +3,7 @@ module github.com/gasser707/go-gql-server
 go 1.16
 
 require (
+	cloud.google.com/go/storage v1.18.2
 	github.com/99designs/gqlgen v0.14.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/friendsofgo/errors v0.9.2
@@ -19,5 +20,6 @@ require (
 	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa
 	golang.org/x/sys v0.0.0-20211109184856-51b60fd695b3 // indirect
 	golang.org/x/text v0.3.7 // indirect
+	google.golang.org/api v0.58.0
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
 )

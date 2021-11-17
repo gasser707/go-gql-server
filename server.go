@@ -3,6 +3,9 @@ package main
 //go:generate sqlboiler --wipe --no-tests -o databases/models -p databases mysql
 
 import (
+	"context"
+	"log"
+
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gasser707/go-gql-server/auth"
@@ -19,14 +22,19 @@ import (
 func graphqlHandler() gin.HandlerFunc {
 	// NewExecutableSchema and Config are in the generated.go file
 	// Resolver is in the resolver.go file
+	ctx := context.Background()
+	uploader,err:= helpers.NewUploader(ctx)
+	if(err!=nil){
+		log.Panic(err)
+	}
 
 	sc := helpers.NewSecureCookie()
 	tk:= auth.NewTokenService(sc)
 	rd:= auth.NewRedisStore()
 	mysqlDB:= databases.NewMysqlClient()
 	authSrv:= services.NewAuthService(rd, tk, mysqlDB, sc )
-	usrSrv := services.NewUsersService(mysqlDB, authSrv)
-	imgSrv := services.NewImagesService(mysqlDB, authSrv)
+	usrSrv := services.NewUsersService(mysqlDB, authSrv, uploader)
+	imgSrv := services.NewImagesService(mysqlDB, authSrv, uploader)
 	
 	c :=  generated.Config{Resolvers: &graph.Resolver{AuthService: authSrv, ImagesService: imgSrv, UsersService: usrSrv}} 
 			

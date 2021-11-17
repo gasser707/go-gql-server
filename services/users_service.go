@@ -23,10 +23,11 @@ var _ UsersServiceInterface = &usersService{}
 type usersService struct{
 	DB *sql.DB
 	AuthService AuthServiceInterface
+	uploader helpers.UploaderInterface
 
 }
-func NewUsersService( db *sql.DB, authSrv AuthServiceInterface ) *usersService {
-	return &usersService{DB: db, AuthService: authSrv}
+func NewUsersService( db *sql.DB, authSrv AuthServiceInterface, uploader helpers.UploaderInterface ) *usersService {
+	return &usersService{DB: db, AuthService: authSrv, uploader: uploader}
 }
 
 func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInput)(*custom.User, error){
@@ -44,10 +45,13 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 	user.Username = input.Username
 	user.Bio = input.Bio
 	user.Email = input.Email
-
+	
 	var newAvatarUrl string
 	if (input.Avatar != nil){
-		//upload avatar to google image
+		newAvatarUrl, err = s.uploader.UploadImage(ctx, input.Avatar, "avatar", fmt.Sprintf("%v", userId))
+		if(err !=nil){
+			return nil, err
+		}
 	}
 
 	if(newAvatarUrl != ""){
@@ -66,7 +70,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 
 func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error){
 
-	c, _ := dbModels.Users(Where("email = ?", input.Email)).Count(ctx, s.DB)
+	c, _ := dbModels.Users(Where("email=?", input.Email)).Count(ctx, s.DB)
 
 	if c != 0 {
 		return nil, fmt.Errorf("user already exists")
