@@ -47,8 +47,8 @@ input ImageFilterInput {
   id: ID
   userId: ID
   title: String
-  description: String
   labels: [String!]
+  allLabels: Boolean
   private: Boolean
   forSale: Boolean
   price: Float
@@ -58,8 +58,6 @@ input UserFilterInput {
     id: ID
     username: String
     email: String
-    role: Role
-    bio: String
 }
 
 

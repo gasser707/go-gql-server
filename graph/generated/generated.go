@@ -542,8 +542,8 @@ input ImageFilterInput {
   id: ID
   userId: ID
   title: String
-  description: String
   labels: [String!]
+  allLabels: Boolean
   private: Boolean
   forSale: Boolean
   price: Float
@@ -553,8 +553,6 @@ input UserFilterInput {
     id: ID
     username: String
     email: String
-    role: Role
-    bio: String
 }
 
 
@@ -3363,19 +3361,19 @@ func (ec *executionContext) unmarshalInputImageFilterInput(ctx context.Context, 
 			if err != nil {
 				return it, err
 			}
-		case "description":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		case "labels":
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("labels"))
 			it.Labels, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "allLabels":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("allLabels"))
+			it.AllLabels, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3714,22 +3712,6 @@ func (ec *executionContext) unmarshalInputUserFilterInput(ctx context.Context, o
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
 			it.Email, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "role":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
-			it.Role, err = ec.unmarshalORole2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐRole(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "bio":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bio"))
-			it.Bio, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5000,22 +4982,6 @@ func (ec *executionContext) unmarshalOImageFilterInput2ᚖgithubᚗcomᚋgasser7
 	}
 	res, err := ec.unmarshalInputImageFilterInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalORole2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐRole(ctx context.Context, v interface{}) (*model.Role, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var res = new(model.Role)
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalORole2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐRole(ctx context.Context, sel ast.SelectionSet, v *model.Role) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return v
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

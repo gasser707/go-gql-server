@@ -20,14 +20,14 @@ type DeleteImageInput struct {
 }
 
 type ImageFilterInput struct {
-	ID          *string  `json:"id"`
-	UserID      *string  `json:"userId"`
-	Title       *string  `json:"title"`
-	Description *string  `json:"description"`
-	Labels      []string `json:"labels"`
-	Private     *bool    `json:"private"`
-	ForSale     *bool    `json:"forSale"`
-	Price       *float64 `json:"price"`
+	ID        *string  `json:"id"`
+	UserID    *string  `json:"userId"`
+	Title     *string  `json:"title"`
+	Labels    []string `json:"labels"`
+	AllLabels *bool    `json:"allLabels"`
+	Private   *bool    `json:"private"`
+	ForSale   *bool    `json:"forSale"`
+	Price     *float64 `json:"price"`
 }
 
 type LoginInput struct {
@@ -74,8 +74,6 @@ type UserFilterInput struct {
 	ID       *string `json:"id"`
 	Username *string `json:"username"`
 	Email    *string `json:"email"`
-	Role     *Role   `json:"role"`
-	Bio      *string `json:"bio"`
 }
 
 type Role string

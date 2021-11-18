@@ -23,7 +23,7 @@ func graphqlHandler() gin.HandlerFunc {
 	// NewExecutableSchema and Config are in the generated.go file
 	// Resolver is in the resolver.go file
 	ctx := context.Background()
-	uploader,err:= helpers.NewUploader(ctx)
+	co,err:= helpers.NewCloudOperator(ctx)
 	if(err!=nil){
 		log.Panic(err)
 	}
@@ -33,8 +33,8 @@ func graphqlHandler() gin.HandlerFunc {
 	rd:= auth.NewRedisStore()
 	mysqlDB:= databases.NewMysqlClient()
 	authSrv:= services.NewAuthService(rd, tk, mysqlDB, sc )
-	usrSrv := services.NewUsersService(mysqlDB, authSrv, uploader)
-	imgSrv := services.NewImagesService(mysqlDB, authSrv, uploader)
+	usrSrv := services.NewUsersService(mysqlDB, authSrv, co)
+	imgSrv := services.NewImagesService(mysqlDB, authSrv, co)
 	
 	c :=  generated.Config{Resolvers: &graph.Resolver{AuthService: authSrv, ImagesService: imgSrv, UsersService: usrSrv}} 
 			

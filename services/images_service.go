@@ -21,14 +21,15 @@ type ImagesServiceInterface interface {
 
 //UsersService implements the usersServiceInterface
 var _ ImagesServiceInterface = &imagesService{}
-type imagesService struct{
-	DB *sql.DB
+
+type imagesService struct {
+	DB          *sql.DB
 	AuthService AuthServiceInterface
-	uploader helpers.UploaderInterface
+	cloudOperator    helpers.CloudOperatorInterface
 }
 
-func NewImagesService( db *sql.DB, authSrv AuthServiceInterface, uploader helpers.UploaderInterface ) *imagesService {
-	return &imagesService{DB: db, AuthService: authSrv, uploader: uploader}
+func NewImagesService(db *sql.DB, authSrv AuthServiceInterface, cloudOperator helpers.CloudOperatorInterface) *imagesService {
+	return &imagesService{DB: db, AuthService: authSrv, cloudOperator: cloudOperator}
 }
 
 func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
@@ -40,7 +41,7 @@ func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImag
 	for _, inputImg := range input {
 		image := dbModels.Image{
 			Title: inputImg.Title, Description: inputImg.Description,
-		    Private: inputImg.Private,
+			Private: inputImg.Private,
 			ForSale: inputImg.ForSale, Price: inputImg.Price, UserID: int(userId),
 		}
 		err := image.Insert(ctx, s.DB, boil.Infer())
@@ -67,7 +68,7 @@ func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImag
 		image := &custom.Image{
 			ID: imgId, Title: dbImg.Title, Description: dbImg.Description,
 			URL: dbImg.URL, Private: dbImg.Private,
-			ForSale: dbImg.ForSale, Price: dbImg.Price, UserID: fmt.Sprintf("%v",userId),
+			ForSale: dbImg.ForSale, Price: dbImg.Price, UserID: fmt.Sprintf("%v", userId),
 			Created: &dbImg.CreatedAt,
 		}
 		images = append(images, image)
@@ -76,13 +77,11 @@ func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImag
 	return images, nil
 }
 
-
-func (s *imagesService)  DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
+func (s *imagesService) DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
 	userId, err := s.AuthService.GetCredentials(ctx)
 	if err != nil {
 		return false, err
 	}
-
 	for _, delImg := range input {
 		delImgId, _ := strconv.Atoi(delImg.ID)
 		img, err := dbModels.FindImage(ctx, s.DB, delImgId)
@@ -97,6 +96,5 @@ func (s *imagesService)  DeleteImages(ctx context.Context, input []*model.Delete
 			return false, err
 		}
 	}
-
 	return true, nil
 }

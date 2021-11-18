@@ -12,8 +12,8 @@ import (
 	"github.com/gasser707/go-gql-server/graph/model"
 )
 
-func (r *imageResolver) User(ctx context.Context, obj *custom.Image) (*custom.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *imageResolver) User(ctx context.Context, img *custom.Image) (*custom.User, error) {
+	return r.UsersService.GetUserById(ctx, img.UserID)
 }
 
 func (r *mutationResolver) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error) {
@@ -53,19 +53,19 @@ func (r *queryResolver) Images(ctx context.Context, input *model.ImageFilterInpu
 }
 
 func (r *queryResolver) Users(ctx context.Context, input *model.UserFilterInput) ([]*custom.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	return r.UsersService.GetUsers(ctx, *input)
 }
 
 func (r *saleResolver) Image(ctx context.Context, obj *custom.Sale) (*custom.Image, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *saleResolver) Buyer(ctx context.Context, obj *custom.Sale) (*custom.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *saleResolver) Buyer(ctx context.Context, sale *custom.Sale) (*custom.User, error) {
+	return r.UsersService.GetUserById(ctx, sale.BuyerID)
 }
 
-func (r *saleResolver) Seller(ctx context.Context, obj *custom.Sale) (*custom.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *saleResolver) Seller(ctx context.Context, sale *custom.Sale) (*custom.User, error) {
+	return r.UsersService.GetUserById(ctx, sale.SellerID)
 }
 
 func (r *userResolver) Role(ctx context.Context, obj *custom.User) (model.Role, error) {
