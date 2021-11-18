@@ -38,12 +38,12 @@ func NewCloudOperator(ctx context.Context) (*cloudOperator, error) {
 	}, nil
 }
 
-func (co *cloudOperator) UploadImage(ctx context.Context, img *graphql.Upload, imgName string, path string) (url string, err error) {
+func (co *cloudOperator) UploadImage(ctx context.Context, img *graphql.Upload, imgName string, userId string) (url string, err error) {
 	bucket := os.Getenv(bucketName)
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
 	defer cancel()
-	sw := co.storageClient.Bucket(bucket).Object(path + "/" + imgName).NewWriter(ctx)
+	sw := co.storageClient.Bucket(bucket).Object(userId + "/" + imgName).NewWriter(ctx)
 	if _, err = io.Copy(sw, img.File); err != nil {
 		return "", fmt.Errorf("io.Copy: %v", err)
 	}
@@ -55,10 +55,8 @@ func (co *cloudOperator) UploadImage(ctx context.Context, img *graphql.Upload, i
 	return url, nil
 }
 
-
-
 // deleteFile removes specified object.
-func (co *cloudOperator) DeleteImage(ctx context.Context, path string ) error {
+func (co *cloudOperator) DeleteImage(ctx context.Context, path string) error {
 	bucket := os.Getenv(bucketName)
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
@@ -66,7 +64,7 @@ func (co *cloudOperator) DeleteImage(ctx context.Context, path string ) error {
 
 	o := co.storageClient.Bucket(bucket).Object(path)
 	if err := o.Delete(ctx); err != nil {
-			return fmt.Errorf("Object(%q).Delete: %v", path, err)
+		return fmt.Errorf("Object(%q).Delete: %v", path, err)
 	}
 
 	return nil
