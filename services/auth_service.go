@@ -28,34 +28,35 @@ type AuthServiceInterface interface {
 
 //UsersService implements the usersServiceInterface
 var _ AuthServiceInterface = &authService{}
-type authService struct{
+
+type authService struct {
 	rd auth.RedisServiceInterface
-	tk auth.TokenServiceInterface 
+	tk auth.TokenServiceInterface
 	DB *sql.DB
-	sc  *securecookie.SecureCookie
+	sc *securecookie.SecureCookie
 }
 
-func NewAuthService(rd auth.RedisServiceInterface, tk auth.TokenServiceInterface,db *sql.DB, 
-	sc *securecookie.SecureCookie ) *authService {
+func NewAuthService(db *sql.DB) *authService {
+	sc := helpers.NewSecureCookie()
+	tk := auth.NewTokenService(sc)
+	rd := auth.NewRedisStore()
 	return &authService{rd, tk, db, sc}
 }
-
 
 type UserID string
 type intUserID int64
 
-
 func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, error) {
 
-	user, err := dbModels.Users(Where("email = ?",input.Email)).One(ctx, s.DB)
+	user, err := dbModels.Users(Where("email = ?", input.Email)).One(ctx, s.DB)
 
-	ok:= helpers.CheckPasswordHash(input.Password, user.Password)
-	if(!ok || err != nil){
+	ok := helpers.CheckPasswordHash(input.Password, user.Password)
+	if !ok || err != nil {
 		return false, fmt.Errorf("wrong email password combination")
 	}
-	
-	id := fmt.Sprintf("%v",user.ID)
-	role := fmt.Sprintf("%v",user.Role)
+
+	id := fmt.Sprintf("%v", user.ID)
+	role := fmt.Sprintf("%v", user.Role)
 
 	ts, err := s.tk.CreateToken(id, model.Role(role))
 	if err != nil {
@@ -74,23 +75,22 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 	return true, nil
 }
 
-
-func (s *authService) validateCredentials(c context.Context) (intUserID, model.Role, error){
+func (s *authService) validateCredentials(c context.Context) (intUserID, model.Role, error) {
 	metadata, err := s.tk.ExtractTokenMetadata(c)
-	if(err !=nil){
-		return -1, "",err
+	if err != nil {
+		return -1, "", err
 	}
 	userId, err := s.rd.FetchAuth(metadata.TokenUuid)
 	if err != nil {
-		return -1, "",err
+		return -1, "", err
 	}
 
-	id, err:= strconv.Atoi(userId)
+	id, err := strconv.Atoi(userId)
 	if err != nil {
-		return -1, "",err
+		return -1, "", err
 	}
 
-	return  intUserID(id), metadata.UserRole ,nil
+	return intUserID(id), metadata.UserRole, nil
 }
 
 func (s *authService) Logout(c context.Context) (bool, error) {
@@ -104,8 +104,7 @@ func (s *authService) Logout(c context.Context) (bool, error) {
 
 }
 
-
-func (s *authService) GetCredentials(c context.Context) (intUserID, error){
+func (s *authService) GetCredentials(c context.Context) (intUserID, error) {
 	metadata, _ := s.tk.ExtractTokenMetadata(c)
 	userId, _ := s.rd.FetchAuth(metadata.TokenUuid)
 	id, err := strconv.Atoi(string(userId))
@@ -115,7 +114,7 @@ func (s *authService) GetCredentials(c context.Context) (intUserID, error){
 	return intUserID(id), nil
 }
 
-func (s *authService)Refresh(c *gin.Context) {
+func (s *authService) Refresh(c *gin.Context) {
 	mapToken := map[string]string{}
 	if err := c.ShouldBindJSON(&mapToken); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, err.Error())

@@ -5,12 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
-	// "sync"
 
+	"github.com/gasser707/go-gql-server/cloud"
 	"github.com/gasser707/go-gql-server/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	"github.com/gasser707/go-gql-server/graph/model"
-	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/twinj/uuid"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"golang.org/x/sync/errgroup"
@@ -28,11 +27,11 @@ var _ ImagesServiceInterface = &imagesService{}
 type imagesService struct {
 	DB            *sql.DB
 	AuthService   AuthServiceInterface
-	cloudOperator helpers.CloudOperatorInterface
+	storageOperator cloud.StorageOperatorInterface
 }
 
-func NewImagesService(db *sql.DB, authSrv AuthServiceInterface, cloudOperator helpers.CloudOperatorInterface) *imagesService {
-	return &imagesService{DB: db, AuthService: authSrv, cloudOperator: cloudOperator}
+func NewImagesService(db *sql.DB, authSrv AuthServiceInterface, storageOperator cloud.StorageOperatorInterface) *imagesService {
+	return &imagesService{DB: db, AuthService: authSrv, storageOperator: storageOperator}
 }
 
 func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
@@ -46,59 +45,51 @@ func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImag
 		i := inputImg
 		errs.Go(
 			func() error {
-				fmt.Println(11)
 				return s.processUploadImage(ctx, ch, i, userId)
 			})
 	}
 	go func() {
-		err = errs.Wait()
+		errs.Wait()
 		close(ch)
 	}()
-	if err != nil {
-		return nil, err
-	}
 
 	// read from channel as they come in until its closed
 	images := []*custom.Image{}
 	for img := range ch {
-		fmt.Println(12)
 		images = append(images, img)
 	}
 
-	return images, nil
+	return images, errs.Wait()
 }
 
 func (s *imagesService) DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
-	userId, err := s.AuthService.GetCredentials(ctx)
+	userId, _, err := s.AuthService.validateCredentials(ctx)
 	if err != nil {
 		return false, err
 	}
+	errs, ctx := errgroup.WithContext(ctx)
 	for _, delImg := range input {
-		delImgId, _ := strconv.Atoi(delImg.ID)
-		img, err := dbModels.FindImage(ctx, s.DB, delImgId)
-		if err != nil {
-			return false, err
-		}
-		if img.UserID != int(userId) {
-			return false, fmt.Errorf("an image from the list doesn't belong to you")
-		}
-		_, err = img.Delete(ctx, s.DB)
-		if err != nil {
-			return false, err
-		}
+		i := delImg
+		errs.Go(
+			func() error {
+				return s.processDeleteImage(ctx, i, userId)
+			})
+	}
+	err = errs.Wait()
+	if err != nil {
+		return false, err
 	}
 	return true, nil
 }
 
 func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.Image, inputImg *model.NewImageInput,
 	userId intUserID) (err error) {
-	fmt.Println(13)
-	// defer (*wg).Done()
+		fmt.Println(2)
 
 	if err != nil {
 		return err
 	}
-	url, err := s.cloudOperator.UploadImage(ctx, &inputImg.File, uuid.NewV4().String(), fmt.Sprintf("%v", userId))
+	url, err := s.storageOperator.UploadImage(ctx, &inputImg.File, uuid.NewV4().String(), fmt.Sprintf("%v", userId))
 	if err != nil {
 		return err
 	}
@@ -118,6 +109,30 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 		ForSale: dbImg.ForSale, Price: dbImg.Price, UserID: fmt.Sprintf("%v", userId),
 		Created: &dbImg.CreatedAt,
 	}
+
 	ch <- image
+	return nil
+}
+
+func (s *imagesService) processDeleteImage(ctx context.Context, input *model.DeleteImageInput,
+	userId intUserID) (err error) {
+
+	delImgId, _ := strconv.Atoi(input.ID)
+	img, err := dbModels.FindImage(ctx, s.DB, delImgId)
+	if err != nil {
+		return err
+	}
+	if img.UserID != int(userId) {
+		return fmt.Errorf("an image from the list doesn't belong to you")
+	}
+	err = s.storageOperator.DeleteImage(ctx, img.URL)
+	if err != nil {
+		return err
+	}
+	_, err = img.Delete(ctx, s.DB)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

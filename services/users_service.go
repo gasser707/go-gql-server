@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/gasser707/go-gql-server/cloud"
 	"github.com/gasser707/go-gql-server/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	"github.com/gasser707/go-gql-server/graph/model"
@@ -27,11 +28,11 @@ var _ UsersServiceInterface = &usersService{}
 type usersService struct {
 	DB            *sql.DB
 	AuthService   AuthServiceInterface
-	cloudOperator helpers.CloudOperatorInterface
+	storageOperator cloud.StorageOperatorInterface
 }
 
-func NewUsersService(db *sql.DB, authSrv AuthServiceInterface, cloudOperator helpers.CloudOperatorInterface) *usersService {
-	return &usersService{DB: db, AuthService: authSrv, cloudOperator: cloudOperator}
+func NewUsersService(db *sql.DB, authSrv AuthServiceInterface, storageOperator cloud.StorageOperatorInterface) *usersService {
+	return &usersService{DB: db, AuthService: authSrv, storageOperator: storageOperator}
 }
 
 func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error) {
@@ -52,7 +53,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 
 	var newAvatarUrl string
 	if input.Avatar != nil {
-		newAvatarUrl, err = s.cloudOperator.UploadImage(ctx, input.Avatar, "avatar", fmt.Sprintf("%v", userId))
+		newAvatarUrl, err = s.storageOperator.UploadImage(ctx, input.Avatar, "avatar", fmt.Sprintf("%v", userId))
 		if err != nil {
 			return nil, err
 		}
@@ -96,7 +97,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 		return nil, err
 	}
 
-	avatarUrl, err := s.cloudOperator.UploadImage(ctx, &input.Avatar, "avatar", fmt.Sprintf("%v", insertedUser.ID))
+	avatarUrl, err := s.storageOperator.UploadImage(ctx, &input.Avatar, "avatar", fmt.Sprintf("%v", insertedUser.ID))
 	if err != nil {
 		return nil, err
 	}
