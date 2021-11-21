@@ -18,7 +18,7 @@ import (
 type UsersServiceInterface interface {
 	UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error)
 	RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error)
-	GetUsers(ctx context.Context, input model.UserFilterInput) ([]*custom.User, error)
+	GetUsers(ctx context.Context, input *model.UserFilterInput) ([]*custom.User, error)
 	GetUserById(ctx context.Context, ID string) (*custom.User, error)
 }
 
@@ -115,10 +115,13 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 	return returnedUser, nil
 }
 
-func (s *usersService) GetUsers(ctx context.Context, input model.UserFilterInput) ([]*custom.User, error) {
+func (s *usersService) GetUsers(ctx context.Context, input *model.UserFilterInput) ([]*custom.User, error) {
 	_, _, err := s.AuthService.validateCredentials(ctx)
 	if err != nil {
 		return nil, err
+	}
+	if(input== nil){
+		return s.GetAllUsers(ctx)
 	}
 
 	if input.ID != nil {

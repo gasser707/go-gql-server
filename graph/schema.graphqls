@@ -48,10 +48,9 @@ input ImageFilterInput {
   userId: ID
   title: String
   labels: [String!]
-  allLabels: Boolean
   private: Boolean
   forSale: Boolean
-  price: Float
+  priceLimit: Float
 }
 
 input UserFilterInput {

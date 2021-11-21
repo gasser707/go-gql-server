@@ -49,11 +49,11 @@ func (r *mutationResolver) Logout(ctx context.Context, input *bool) (bool, error
 }
 
 func (r *queryResolver) Images(ctx context.Context, input *model.ImageFilterInput) ([]*custom.Image, error) {
-	panic(fmt.Errorf("not implemented"))
+	return r.ImagesService.GetImages(ctx, input)
 }
 
 func (r *queryResolver) Users(ctx context.Context, input *model.UserFilterInput) ([]*custom.User, error) {
-	return r.UsersService.GetUsers(ctx, *input)
+	return r.UsersService.GetUsers(ctx, input)
 }
 
 func (r *saleResolver) Image(ctx context.Context, obj *custom.Sale) (*custom.Image, error) {
