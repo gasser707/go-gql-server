@@ -342,6 +342,9 @@ func parseLabels(labels []string) string{
 }
 
 func (s *imagesService) insertLabels(labels []string, imgId int) error{
+	if len (labels)==0{
+		return nil
+	}
 	insertStr:="insert into labels (tag,image_id) values "
 	for _, tag := range labels {
 		insertStr= insertStr+fmt.Sprintf("('%s', %v),",tag, imgId)
