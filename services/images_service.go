@@ -258,35 +258,29 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 	if err != nil {
 		return nil, err
 	}
-	
-	_,err = dbModels.Labels(Where("image_id=?",img.ID)).DeleteAll(ctx,s.DB)
-	if err != nil {
-		return nil, err
+
+	if(input.Labels!=nil){
+		_,err = dbModels.Labels(Where("image_id=?",img.ID)).DeleteAll(ctx,s.DB)
+		if err != nil {
+			return nil, err
+		}
+		err = s.insertLabels(input.Labels, img.ID)
+		if err != nil {
+			return nil, err
+		}	
 	}
-	err = s.insertLabels(input.Labels, img.ID)
-	if err != nil {
-		return nil, err
-	}	
+	
+
 	return &custom.Image{
 		Title: img.Title,
 		Description: img.Description,
 		ForSale: img.ForSale,
 		Private: img.Private,
-		Labels: input.Labels,
 		UserID: fmt.Sprintf("%v",img.UserID),
 		Price: img.Price,
 		ID: input.ID,		
 	}, nil
 }
-
-func labelSliceToString(slice dbModels.LabelSlice) []string {
-	strArr := []string{}
-	for _, l := range slice {
-		strArr = append(strArr, l.Tag)
-	}
-	return strArr
-}
-
 
 func parseFilter(input *model.ImageFilterInput, userID intUserID) string{
 	queryStr := []string{}
@@ -300,7 +294,12 @@ func parseFilter(input *model.ImageFilterInput, userID intUserID) string{
 	}else{
 		filterStart = "select * from images where "
 	}
-	if input.UserID!=nil{
+	if input.UserID!=nil && input.Private !=nil && fmt.Sprintf("%v", userID) == *input.UserID{
+		filterStr = "images.private = "+ fmt.Sprintf("%t", *input.Private)
+		queryStr = append(queryStr, filterStr)
+		filterAdded=true
+
+	} else if input.UserID!=nil{
 		filterStr = "images.user_id = "+ *input.UserID
 		if(fmt.Sprintf("%v", userID)!= *input.UserID){
 			filterStr = filterStr+"And images.private= False"
@@ -308,11 +307,7 @@ func parseFilter(input *model.ImageFilterInput, userID intUserID) string{
 		queryStr = append(queryStr, filterStr)
 		filterAdded=true
 	}
-	if input.UserID!=nil && input.Private !=nil && fmt.Sprintf("%v", userID) == *input.UserID{
-		filterStr = "images.private = "+ fmt.Sprintf("%t", *input.Private)
-		queryStr = append(queryStr, filterStr)
-		filterAdded=true
-	}
+
 	if(input.ForSale!=nil){
 		filterStr= "images.forSale= "+ fmt.Sprintf("%t", *input.ForSale)
 		queryStr = append(queryStr, filterStr)
@@ -357,4 +352,12 @@ func (s *imagesService) insertLabels(labels []string, imgId int) error{
 		return err
 	}
 	return nil
+}
+
+func labelSliceToString(slice dbModels.LabelSlice) []string {
+	strArr := []string{}
+	for _, l := range slice {
+		strArr = append(strArr, l.Tag)
+	}
+	return strArr
 }
