@@ -104,12 +104,7 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 	if err != nil {
 		return err
 	}
-	insertStr:="insert into labels (tag,image_id) values "
-	for _, tag := range inputImg.Labels {
-		insertStr= insertStr+fmt.Sprintf("('%s', %v),",tag, dbImg.ID)
-	}
-	insertStr = insertStr[0:len(insertStr)-1]
-	_,err=s.DB.Exec(insertStr)
+	err = s.insertLabels(inputImg.Labels, dbImg.ID)
 	if err != nil {
 		return err
 	}
