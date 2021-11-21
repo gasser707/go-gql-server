@@ -324,7 +324,7 @@ func parseFilter(input *model.ImageFilterInput, userID intUserID) string{
 		filterAdded=true
 	}
 	if(input.PriceLimit!=nil){
-		filterStr= "images.price< " +fmt.Sprintf("%v", input.PriceLimit)
+		filterStr= "images.price<= " +fmt.Sprintf("%v", input.PriceLimit)
 		queryStr = append(queryStr, filterStr)
 		filterAdded=true
 	}

@@ -41,6 +41,7 @@ type Image {
 type Query {
     images(input: ImageFilterInput): [Image!]! 
     users(input: UserFilterInput): [User!]! 
+    sales:[Sale!]!
 }
 
 input ImageFilterInput {

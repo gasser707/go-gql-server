@@ -10,4 +10,5 @@ type Resolver struct{
 	UsersService services.UsersServiceInterface
 	ImagesService  services.ImagesServiceInterface
 	AuthService    services.AuthServiceInterface
+	SaleService services.SalesServiceInterface
 }

@@ -5,7 +5,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"github.com/gasser707/go-gql-server/custom"
 	"github.com/gasser707/go-gql-server/graph/generated"
 	"github.com/gasser707/go-gql-server/graph/model"
@@ -20,7 +19,7 @@ func (r *mutationResolver) RegisterUser(ctx context.Context, input model.NewUser
 }
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error) {
-	return r.UsersService.UpdateUser(ctx, &input)
+	return r.UsersService.UpdateUser(ctx, input)
 }
 
 func (r *mutationResolver) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
@@ -36,7 +35,7 @@ func (r *mutationResolver) UpdateImage(ctx context.Context, input model.UpdateIm
 }
 
 func (r *mutationResolver) BuyImage(ctx context.Context, input *model.BuyImageInput) (*custom.Sale, error) {
-	panic(fmt.Errorf("not implemented"))
+	return r.SaleService.BuyImage(ctx, *input)
 }
 
 func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (bool, error) {
@@ -53,6 +52,10 @@ func (r *queryResolver) Images(ctx context.Context, input *model.ImageFilterInpu
 
 func (r *queryResolver) Users(ctx context.Context, input *model.UserFilterInput) ([]*custom.User, error) {
 	return r.UsersService.GetUsers(ctx, input)
+}
+
+func (r *queryResolver) Sales(ctx context.Context) ([]*custom.Sale, error) {
+	return r.SaleService.GetSales(ctx)
 }
 
 func (r *saleResolver) Image(ctx context.Context, sale *custom.Sale) (*custom.Image, error) {

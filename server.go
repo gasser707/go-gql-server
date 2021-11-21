@@ -32,8 +32,10 @@ func graphqlHandler() gin.HandlerFunc {
 	authSrv := services.NewAuthService( mysqlDB)
 	usrSrv := services.NewUsersService(mysqlDB, authSrv, so)
 	imgSrv := services.NewImagesService(mysqlDB, authSrv, so)
+	saleSrv:= services.NewSalesService(mysqlDB, authSrv)
 
-	c := generated.Config{Resolvers: &graph.Resolver{AuthService: authSrv, ImagesService: imgSrv, UsersService: usrSrv}}
+	c := generated.Config{Resolvers: &graph.Resolver{AuthService: authSrv, 
+		ImagesService: imgSrv, UsersService: usrSrv, SaleService: saleSrv, }}
 
 	h := handler.NewDefaultServer(generated.NewExecutableSchema(c))
 
