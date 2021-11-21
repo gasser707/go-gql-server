@@ -22,6 +22,8 @@ type ImagesServiceInterface interface {
 	UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error)
 	DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error)
 	GetImages(ctx context.Context, input *model.ImageFilterInput) ([]*custom.Image, error)
+	GetImageById(ctx context.Context, ID string) (*custom.Image, error)
+	UpdateImage(ctx context.Context, input *model.UpdateImageInput)(*custom.Image, error)
 }
 
 //UsersService implements the usersServiceInterface
@@ -102,14 +104,16 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 	if err != nil {
 		return err
 	}
-
+	insertStr:="insert into labels (tag,image_id) values "
 	for _, tag := range inputImg.Labels {
-		label := dbModels.Label{Tag: tag, ImageID: dbImg.ID}
-		err = label.Insert(ctx, s.DB, boil.Infer())
-		if err != nil {
-			return err
-		}
+		insertStr= insertStr+fmt.Sprintf("('%s', %v),",tag, dbImg.ID)
 	}
+	insertStr = insertStr[0:len(insertStr)-1]
+	_,err=s.DB.Exec(insertStr)
+	if err != nil {
+		return err
+	}
+
 	image := &custom.Image{
 		ID: fmt.Sprintf("%v", dbImg.ID), Title: dbImg.Title, Description: dbImg.Description,
 		URL: dbImg.URL, Private: dbImg.Private,
@@ -154,7 +158,7 @@ func (s *imagesService) GetImages(ctx context.Context, input *model.ImageFilterI
 	}
 
 	if input.ID != nil {
-		img, err := s.GetImageById(ctx, *input.ID, userId)
+		img, err := s.GetImageById(ctx, *input.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -166,15 +170,18 @@ func (s *imagesService) GetImages(ctx context.Context, input *model.ImageFilterI
 
 }
 
-func (s *imagesService) GetImageById(ctx context.Context, ID string, userID intUserID) (*custom.Image, error) {
-
+func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Image, error) {
+	userId, _, err := s.AuthService.validateCredentials(ctx)
+	if err != nil {
+		return nil, err
+	}
 	inputId, err := strconv.Atoi(ID)
 	if err != nil {
 		return nil, err
 	}
 
 	img, err := dbModels.FindImage(ctx, s.DB, inputId)
-	if err != nil || (img.UserID!=int(userID) && img.Private) {
+	if err != nil || (img.UserID!=int(userId) && img.Private) {
 		return nil, fmt.Errorf("image not available")
 	}
 
@@ -235,6 +242,48 @@ func (s *imagesService) GetAllPublicImgs(ctx context.Context) ([]*custom.Image, 
 	return imgList,nil
 }
 
+func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImageInput) (*custom.Image, error){
+	userId, _, err := s.AuthService.validateCredentials(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	img, err:= dbModels.Images(Where("id=? And images.user_Id=?",input.ID, userId )).One(ctx, s.DB)
+	if err != nil {
+		return nil, fmt.Errorf("image doesn't exist or doesn't belong to you")
+	}
+
+	img.Title = input.Title
+	img.ForSale = input.ForSale
+	img.Private = input.Private
+	img.Description = input.Description
+	img.Price = input.Price
+
+	_,err = img.Update(ctx,s.DB,boil.Infer())
+	if err != nil {
+		return nil, err
+	}
+	
+	_,err = dbModels.Labels(Where("image_id=?",img.ID)).DeleteAll(ctx,s.DB)
+	if err != nil {
+		return nil, err
+	}
+	err = s.insertLabels(input.Labels, img.ID)
+	if err != nil {
+		return nil, err
+	}	
+	return &custom.Image{
+		Title: img.Title,
+		Description: img.Description,
+		ForSale: img.ForSale,
+		Private: img.Private,
+		Labels: input.Labels,
+		UserID: fmt.Sprintf("%v",img.UserID),
+		Price: img.Price,
+		ID: input.ID,		
+	}, nil
+}
+
 func labelSliceToString(slice dbModels.LabelSlice) []string {
 	strArr := []string{}
 	for _, l := range slice {
@@ -242,6 +291,7 @@ func labelSliceToString(slice dbModels.LabelSlice) []string {
 	}
 	return strArr
 }
+
 
 func parseFilter(input *model.ImageFilterInput, userID intUserID) string{
 	queryStr := []string{}
@@ -299,4 +349,17 @@ func parseLabels(labels []string) string{
 	str = str[0:len(str)-1]
 	str= "("+ str+")"
 	return str
+}
+
+func (s *imagesService) insertLabels(labels []string, imgId int) error{
+	insertStr:="insert into labels (tag,image_id) values "
+	for _, tag := range labels {
+		insertStr= insertStr+fmt.Sprintf("('%s', %v),",tag, imgId)
+	}
+	insertStr = insertStr[0:len(insertStr)-1]
+	_,err:=s.DB.Exec(insertStr)
+	if err != nil {
+		return err
+	}
+	return nil
 }

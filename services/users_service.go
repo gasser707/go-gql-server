@@ -16,7 +16,7 @@ import (
 )
 
 type UsersServiceInterface interface {
-	UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error)
+	UpdateUser(ctx context.Context, input *model.UpdateUserInput) (*custom.User, error)
 	RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error)
 	GetUsers(ctx context.Context, input *model.UserFilterInput) ([]*custom.User, error)
 	GetUserById(ctx context.Context, ID string) (*custom.User, error)
@@ -35,7 +35,7 @@ func NewUsersService(db *sql.DB, authSrv AuthServiceInterface, storageOperator c
 	return &usersService{DB: db, AuthService: authSrv, storageOperator: storageOperator}
 }
 
-func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error) {
+func (s *usersService) UpdateUser(ctx context.Context, input *model.UpdateUserInput) (*custom.User, error) {
 
 	userId, _, err := s.AuthService.validateCredentials(ctx)
 	if err != nil {

@@ -6,7 +6,6 @@ package graph
 import (
 	"context"
 	"fmt"
-
 	"github.com/gasser707/go-gql-server/custom"
 	"github.com/gasser707/go-gql-server/graph/generated"
 	"github.com/gasser707/go-gql-server/graph/model"
@@ -21,7 +20,7 @@ func (r *mutationResolver) RegisterUser(ctx context.Context, input model.NewUser
 }
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error) {
-	return r.UsersService.UpdateUser(ctx, input)
+	return r.UsersService.UpdateUser(ctx, &input)
 }
 
 func (r *mutationResolver) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
@@ -33,7 +32,7 @@ func (r *mutationResolver) DeleteImages(ctx context.Context, input []*model.Dele
 }
 
 func (r *mutationResolver) UpdateImage(ctx context.Context, input model.UpdateImageInput) (*custom.Image, error) {
-	panic(fmt.Errorf("not implemented"))
+	return r.ImagesService.UpdateImage(ctx, &input)
 }
 
 func (r *mutationResolver) BuyImage(ctx context.Context, input *model.BuyImageInput) (*custom.Sale, error) {
@@ -56,8 +55,8 @@ func (r *queryResolver) Users(ctx context.Context, input *model.UserFilterInput)
 	return r.UsersService.GetUsers(ctx, input)
 }
 
-func (r *saleResolver) Image(ctx context.Context, obj *custom.Sale) (*custom.Image, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *saleResolver) Image(ctx context.Context, sale *custom.Sale) (*custom.Image, error) {
+	return r.ImagesService.GetImageById(ctx, sale.ImageID)
 }
 
 func (r *saleResolver) Buyer(ctx context.Context, sale *custom.Sale) (*custom.User, error) {
@@ -68,12 +67,12 @@ func (r *saleResolver) Seller(ctx context.Context, sale *custom.Sale) (*custom.U
 	return r.UsersService.GetUserById(ctx, sale.SellerID)
 }
 
-func (r *userResolver) Role(ctx context.Context, obj *custom.User) (model.Role, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *userResolver) Role(ctx context.Context, user *custom.User) (model.Role, error) {
+	return model.Role(user.Role), nil
 }
 
-func (r *userResolver) Images(ctx context.Context, obj *custom.User) ([]*custom.Image, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *userResolver) Images(ctx context.Context, user *custom.User) ([]*custom.Image, error) {
+	return r.ImagesService.GetImages(ctx, &model.ImageFilterInput{UserID: &user.ID})
 }
 
 // Image returns generated.ImageResolver implementation.
