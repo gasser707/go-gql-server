@@ -6,10 +6,8 @@ import (
 	"io"
 	"os"
 	"time"
-
 	"cloud.google.com/go/storage"
 	"github.com/99designs/gqlgen/graphql"
-	"google.golang.org/api/option"
 )
 
 type StorageOperatorInterface interface {
@@ -28,7 +26,7 @@ type storageOperator struct {
 
 func NewStorageOperator(ctx context.Context) (*storageOperator, error) {
 
-	storageClient, err := storage.NewClient(ctx, option.WithCredentialsFile("bucket-keys.json"))
+	storageClient, err := storage.NewClient(ctx)
 	if err != nil {
 		return nil, err
 	}
