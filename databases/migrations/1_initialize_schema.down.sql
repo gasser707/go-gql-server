@@ -1,0 +1,1 @@
+drop DATABASE if exists shotify_db

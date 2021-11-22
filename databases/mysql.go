@@ -28,7 +28,7 @@ var (
 func NewMysqlClient() *sql.DB {
 
 	//username:password@protocol(address)/dbname?param=value
-	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true",
+	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&multiStatements=true",
 		username, password, host, schema,
 	)
 
