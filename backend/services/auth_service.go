@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gasser707/go-gql-server/auth"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
@@ -49,6 +48,9 @@ type intUserID int64
 func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, error) {
 
 	user, err := dbModels.Users(Where("email = ?", input.Email)).One(ctx, s.DB)
+	if err != nil {
+		return false, err
+	}
 
 	ok := helpers.CheckPasswordHash(input.Password, user.Password)
 	if !ok || err != nil {
