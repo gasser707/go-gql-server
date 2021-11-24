@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shotify-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-gql
+  template:
+    metadata:
+      labels:
+        app: go-gql
+    spec:
+      volumes:
+      - name: google-cloud-key
+        secret:
+          secretName: bucket-keys
+      containers:
+        - name: go-gql
+          image: gasser707/go-gql-server
+          volumeMounts:
+          - name: google-cloud-key
+            mountPath: /var/secrets/google
+          env:
+            - name: REDIS_URI
+              value: 'redis://redis-srv:6379'
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/secrets/google/bucket-keys.json
+            - name: ACCESS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: access-secret
+                  key: ACCESS_SECRET
+            - name: REFRESH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: refresh-secret
+                  key: REFRESH_SECRET
+            - name: COOKIE_HASH_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cookie-hash-key
+                  key: COOKIE_HASH_KEY
+            - name: COOKIE_BLOCK_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cookie-block-key
+                  key: COOKIE_BLOCK_KEY
+            - name: BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: bucket-name
+                  key: BUCKET_NAME
+            - name: MYSQL_DBNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-dbname
+                  key: MYSQL_DBNAME
+            - name: MYSQL_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-pass
+                  key: MYSQL_PASS
+            - name: MYSQL_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-host
+                  key: MYSQL_HOST
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-user
+                  key: MYSQL_USER
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-gql-srv
+spec:
+  selector:
+    app: go-gql
+  ports:
+    - name: go-gql
+      protocol: TCP
+      port: 4000
+      targetPort: 4000

@@ -1,0 +1,29 @@
+apiVersion: skaffold/v2alpha3
+kind: Config
+deploy:
+  kubectl:
+    manifests:
+      - ./infra/k8s/*
+      - ./infra/k8s-dev/*
+build:
+  local:
+    push: false
+  artifacts:
+    - image: gasser707/go-gql-server
+      context: backend
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: '**/*.go'
+            dest: .
+    - image: gasser707/shotify-client
+      context: client
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: '**/*.js'
+            dest: .
+          - src: '**/*.css'
+            dest: .

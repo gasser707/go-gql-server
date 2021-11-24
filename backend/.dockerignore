@@ -1,2 +1,4 @@
 .env
 sqlboiler.toml
+gqlgen.yaml
+bucket-keys.json
