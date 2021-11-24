@@ -24,7 +24,7 @@ spec:
             mountPath: /var/secrets/google
           env:
             - name: REDIS_URI
-              value: 'redis://redis-srv:6379'
+              value: 'redis-srv:6379'
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /var/secrets/google/bucket-keys.json
             - name: ACCESS_SECRET
@@ -77,12 +77,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: go-gql-srv
+  name: shotify-srv
 spec:
   selector:
     app: go-gql
   ports:
     - name: go-gql
       protocol: TCP
-      port: 4000
-      targetPort: 4000
+      port: 8080
+      targetPort: 8080

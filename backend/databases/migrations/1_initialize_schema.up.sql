@@ -1,4 +1,3 @@
-CREATE DATABASE IF NOT EXISTS shotify_db;
 USE shotify_db;
 
 CREATE TABLE IF NOT EXISTS `images` (
