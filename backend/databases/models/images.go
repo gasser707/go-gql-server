@@ -32,6 +32,7 @@ type Image struct {
 	Price       float64   `boil:"price" json:"price" toml:"price" yaml:"price"`
 	ForSale     bool      `boil:"forSale" json:"forSale" toml:"forSale" yaml:"forSale"`
 	Private     bool      `boil:"private" json:"private" toml:"private" yaml:"private"`
+	Archived    bool      `boil:"archived" json:"archived" toml:"archived" yaml:"archived"`
 
 	R *imageR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L imageL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -47,6 +48,7 @@ var ImageColumns = struct {
 	Price       string
 	ForSale     string
 	Private     string
+	Archived    string
 }{
 	ID:          "id",
 	CreatedAt:   "created_at",
@@ -57,6 +59,7 @@ var ImageColumns = struct {
 	Price:       "price",
 	ForSale:     "forSale",
 	Private:     "private",
+	Archived:    "archived",
 }
 
 var ImageTableColumns = struct {
@@ -69,6 +72,7 @@ var ImageTableColumns = struct {
 	Price       string
 	ForSale     string
 	Private     string
+	Archived    string
 }{
 	ID:          "images.id",
 	CreatedAt:   "images.created_at",
@@ -79,6 +83,7 @@ var ImageTableColumns = struct {
 	Price:       "images.price",
 	ForSale:     "images.forSale",
 	Private:     "images.private",
+	Archived:    "images.archived",
 }
 
 // Generated where
@@ -198,6 +203,7 @@ var ImageWhere = struct {
 	Price       whereHelperfloat64
 	ForSale     whereHelperbool
 	Private     whereHelperbool
+	Archived    whereHelperbool
 }{
 	ID:          whereHelperint{field: "`images`.`id`"},
 	CreatedAt:   whereHelpertime_Time{field: "`images`.`created_at`"},
@@ -208,6 +214,7 @@ var ImageWhere = struct {
 	Price:       whereHelperfloat64{field: "`images`.`price`"},
 	ForSale:     whereHelperbool{field: "`images`.`forSale`"},
 	Private:     whereHelperbool{field: "`images`.`private`"},
+	Archived:    whereHelperbool{field: "`images`.`archived`"},
 }
 
 // ImageRels is where relationship names are stored.
@@ -237,9 +244,9 @@ func (*imageR) NewStruct() *imageR {
 type imageL struct{}
 
 var (
-	imageAllColumns            = []string{"id", "created_at", "url", "description", "user_id", "title", "price", "forSale", "private"}
+	imageAllColumns            = []string{"id", "created_at", "url", "description", "user_id", "title", "price", "forSale", "private", "archived"}
 	imageColumnsWithoutDefault = []string{"url", "description", "user_id", "title", "price", "forSale", "private"}
-	imageColumnsWithDefault    = []string{"id", "created_at"}
+	imageColumnsWithDefault    = []string{"id", "created_at", "archived"}
 	imagePrimaryKeyColumns     = []string{"id"}
 )
 

@@ -131,6 +131,15 @@ func (s *imagesService) processDeleteImage(ctx context.Context, input *model.Del
 	if img.UserID != int(userId) {
 		return fmt.Errorf("an image from the list doesn't belong to you")
 	}
+	c, err:= img.Sales().Count(ctx, s.DB)
+	if err != nil {
+		return err
+	}
+	if c!=0{
+		img.Archived = true
+		img.Update(ctx, s.DB, boil.Infer())
+		return nil
+	}
 	err = s.storageOperator.DeleteImage(ctx, img.URL)
 	if err != nil {
 		return err
@@ -287,10 +296,22 @@ func parseFilter(input *model.ImageFilterInput, userID intUserID) string{
 	filterStart := ""
 	filterStr:=""
 	filterAdded:=false
-	if(input.Labels!=nil && len(input.Labels)>0){
+	if(input.Labels!=nil && len(input.Labels)>0 && input.MatchAll!= nil &&*input.MatchAll == true){
+		filterStr = "select distinct images.id, created_at, url, description, user_id, title, price, forSale, private From labels join images on images.id = labels.image_id where "
+		matcher := []string{}
+		for _,label:= range input.Labels{
+			matcher= append(matcher, fmt.Sprintf("image_id in (select image_id from labels where labels.tag='%s')",label))
+		}
+		filterStr= filterStr + strings.Join(matcher[:], " And ")
+		queryStr = append(queryStr, filterStr)
+		filterAdded = true
+
+	}else if(input.Labels!=nil && len(input.Labels)>0) {
 		filterStr = "select images.id, created_at, url, description, user_id, title, price, forSale, private From labels join images on images.id = labels.image_id where "
 		filterStr = filterStr+ "labels.tag in "+ parseLabels(input.Labels)
 		queryStr = append(queryStr, filterStr)
+		filterAdded = true
+
 	}else{
 		filterStart = "select * from images where "
 	}

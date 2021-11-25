@@ -10,11 +10,6 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
-type BuyImageInput struct {
-	ImageID string  `json:"imageId"`
-	Price   float64 `json:"price"`
-}
-
 type DeleteImageInput struct {
 	ID string `json:"id"`
 }
@@ -24,6 +19,7 @@ type ImageFilterInput struct {
 	UserID     *string  `json:"userId"`
 	Title      *string  `json:"title"`
 	Labels     []string `json:"labels"`
+	MatchAll   *bool    `json:"matchAll"`
 	Private    *bool    `json:"private"`
 	ForSale    *bool    `json:"forSale"`
 	PriceLimit *float64 `json:"priceLimit"`

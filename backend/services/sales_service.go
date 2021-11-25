@@ -8,14 +8,13 @@ import (
 
 	"github.com/gasser707/go-gql-server/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
-	"github.com/gasser707/go-gql-server/graph/model"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 
 type SalesServiceInterface interface {
-	BuyImage(ctx context.Context, input model.BuyImageInput) (*custom.Sale, error)
+	BuyImage(ctx context.Context, id string) (*custom.Sale, error)
 	GetSales(ctx context.Context)([]*custom.Sale,error)
 }
 
@@ -31,12 +30,12 @@ func NewSalesService(db *sql.DB, authSrv AuthServiceInterface) *salesService {
 	return &salesService{DB: db, AuthService: authSrv}
 }
 
-func(s *salesService) BuyImage(ctx context.Context, input model.BuyImageInput)(*custom.Sale, error){
+func(s *salesService) BuyImage(ctx context.Context, id string)(*custom.Sale, error){
 	userId, _, err := s.AuthService.validateCredentials(ctx)
 	if err != nil {
 		return nil, err
 	}
-	imgId,err:= strconv.Atoi(input.ImageID)
+	imgId,err:= strconv.Atoi(id)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +45,7 @@ func(s *salesService) BuyImage(ctx context.Context, input model.BuyImageInput)(*
 		return nil, fmt.Errorf("image doesn't exist or can't be sold to you")
 	}
 	sale := &dbModels.Sale{
-		Price: input.Price,
+		Price: img.Price,
 		ImageID: imgId,
 		BuyerID: int(userId),
 		SellerID:img.UserID,		
@@ -58,7 +57,7 @@ func(s *salesService) BuyImage(ctx context.Context, input model.BuyImageInput)(*
 
 	return &custom.Sale{
 		Price: sale.Price,
-		ImageID: input.ImageID,
+		ImageID: id,
 		BuyerID: fmt.Sprintf("%v",userId),
 		SellerID: fmt.Sprintf("%v",sale.SellerID),
 		Time: &sale.CreatedAt,
