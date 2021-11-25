@@ -34,8 +34,8 @@ func (r *mutationResolver) UpdateImage(ctx context.Context, input model.UpdateIm
 	return r.ImagesService.UpdateImage(ctx, &input)
 }
 
-func (r *mutationResolver) BuyImage(ctx context.Context, input *model.BuyImageInput) (*custom.Sale, error) {
-	return r.SaleService.BuyImage(ctx, *input)
+func (r *mutationResolver) BuyImage(ctx context.Context, id string) (*custom.Sale, error) {
+	return r.SaleService.BuyImage(ctx, id)
 }
 
 func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (bool, error) {

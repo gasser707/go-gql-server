@@ -49,6 +49,7 @@ input ImageFilterInput {
   userId: ID
   title: String
   labels: [String!]
+  matchAll: Boolean
   private: Boolean
   forSale: Boolean
   priceLimit: Float
@@ -96,11 +97,6 @@ input UpdateImageInput {
   price: Float!
 }
 
-input BuyImageInput {
-  imageId: ID!
-  price: Float!
-}
-
 input DeleteImageInput{
   id: ID!
 }
@@ -116,7 +112,7 @@ type Mutation{
   uploadImages(input: [NewImageInput!]!): [Image!]! 
   deleteImages(input: [DeleteImageInput!]!): Boolean! 
   updateImage(input: UpdateImageInput!): Image! 
-  buyImage(input: BuyImageInput): Sale! 
+  buyImage(id: ID!): Sale! 
   login(input: LoginInput!): Boolean!
   logout(input: Boolean ):Boolean! 
 }

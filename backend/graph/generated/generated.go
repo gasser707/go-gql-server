@@ -62,7 +62,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		BuyImage     func(childComplexity int, input *model.BuyImageInput) int
+		BuyImage     func(childComplexity int, id string) int
 		DeleteImages func(childComplexity int, input []*model.DeleteImageInput) int
 		Login        func(childComplexity int, input model.LoginInput) int
 		Logout       func(childComplexity int, input *bool) int
@@ -108,7 +108,7 @@ type MutationResolver interface {
 	UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error)
 	DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error)
 	UpdateImage(ctx context.Context, input model.UpdateImageInput) (*custom.Image, error)
-	BuyImage(ctx context.Context, input *model.BuyImageInput) (*custom.Sale, error)
+	BuyImage(ctx context.Context, id string) (*custom.Sale, error)
 	Login(ctx context.Context, input model.LoginInput) (bool, error)
 	Logout(ctx context.Context, input *bool) (bool, error)
 }
@@ -223,7 +223,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.BuyImage(childComplexity, args["input"].(*model.BuyImageInput)), true
+		return e.complexity.Mutation.BuyImage(childComplexity, args["id"].(string)), true
 
 	case "Mutation.deleteImages":
 		if e.complexity.Mutation.DeleteImages == nil {
@@ -553,6 +553,7 @@ input ImageFilterInput {
   userId: ID
   title: String
   labels: [String!]
+  matchAll: Boolean
   private: Boolean
   forSale: Boolean
   priceLimit: Float
@@ -600,11 +601,6 @@ input UpdateImageInput {
   price: Float!
 }
 
-input BuyImageInput {
-  imageId: ID!
-  price: Float!
-}
-
 input DeleteImageInput{
   id: ID!
 }
@@ -620,7 +616,7 @@ type Mutation{
   uploadImages(input: [NewImageInput!]!): [Image!]! 
   deleteImages(input: [DeleteImageInput!]!): Boolean! 
   updateImage(input: UpdateImageInput!): Image! 
-  buyImage(input: BuyImageInput): Sale! 
+  buyImage(id: ID!): Sale! 
   login(input: LoginInput!): Boolean!
   logout(input: Boolean ):Boolean! 
 }
@@ -639,15 +635,15 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) field_Mutation_buyImage_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.BuyImageInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalOBuyImageInput2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐBuyImageInput(ctx, tmp)
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg0
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -1421,7 +1417,7 @@ func (ec *executionContext) _Mutation_buyImage(ctx context.Context, field graphq
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().BuyImage(rctx, args["input"].(*model.BuyImageInput))
+		return ec.resolvers.Mutation().BuyImage(rctx, args["id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3318,37 +3314,6 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputBuyImageInput(ctx context.Context, obj interface{}) (model.BuyImageInput, error) {
-	var it model.BuyImageInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "imageId":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageId"))
-			it.ImageID, err = ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "price":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("price"))
-			it.Price, err = ec.unmarshalNFloat2float64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputDeleteImageInput(ctx context.Context, obj interface{}) (model.DeleteImageInput, error) {
 	var it model.DeleteImageInput
 	asMap := map[string]interface{}{}
@@ -3410,6 +3375,14 @@ func (ec *executionContext) unmarshalInputImageFilterInput(ctx context.Context, 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("labels"))
 			it.Labels, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "matchAll":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matchAll"))
+			it.MatchAll, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5030,14 +5003,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return graphql.MarshalBoolean(*v)
-}
-
-func (ec *executionContext) unmarshalOBuyImageInput2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphᚋmodelᚐBuyImageInput(ctx context.Context, v interface{}) (*model.BuyImageInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputBuyImageInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {
