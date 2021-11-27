@@ -557,6 +557,7 @@ input ImageFilterInput {
   private: Boolean
   forSale: Boolean
   priceLimit: Float
+  archived:Boolean
 }
 
 input UserFilterInput {
@@ -3407,6 +3408,14 @@ func (ec *executionContext) unmarshalInputImageFilterInput(ctx context.Context, 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priceLimit"))
 			it.PriceLimit, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "archived":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("archived"))
+			it.Archived, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
