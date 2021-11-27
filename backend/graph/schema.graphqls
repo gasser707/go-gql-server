@@ -53,6 +53,7 @@ input ImageFilterInput {
   private: Boolean
   forSale: Boolean
   priceLimit: Float
+  archived:Boolean
 }
 
 input UserFilterInput {

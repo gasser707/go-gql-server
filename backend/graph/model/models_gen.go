@@ -23,6 +23,7 @@ type ImageFilterInput struct {
 	Private    *bool    `json:"private"`
 	ForSale    *bool    `json:"forSale"`
 	PriceLimit *float64 `json:"priceLimit"`
+	Archived   *bool    `json:"archived"`
 }
 
 type LoginInput struct {

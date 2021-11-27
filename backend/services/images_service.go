@@ -16,6 +16,8 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	. "github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"golang.org/x/sync/errgroup"
+	"github.com/gasser707/go-gql-server/helpers"
+
 )
 
 type ImagesServiceInterface interface {
@@ -169,7 +171,7 @@ func (s *imagesService) GetImages(ctx context.Context, input *model.ImageFilterI
 		return []*custom.Image{img}, nil
 	}
 
-	filter:= parseFilter(input, userId)
+	filter:= helpers.ParseFilter(input, int(userId))
 	return s.GetImagesByFilter(ctx, userId, filter)
 
 }
@@ -193,7 +195,7 @@ func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Im
 	if err != nil {
 		return nil, err
 	}
-	labels := labelSliceToString(ls)
+	labels := helpers.LabelSliceToString(ls)
 
 	return &custom.Image{
 		ID: ID, UserID: fmt.Sprintf("%v", img.UserID), Created: &img.CreatedAt,
@@ -214,7 +216,7 @@ func (s *imagesService) GetImagesByFilter(ctx context.Context, userID intUserID,
 		if err != nil {
 			return nil, err
 		}
-		labels := labelSliceToString(ls)
+		labels := helpers.LabelSliceToString(ls)
 		imgList = append(imgList, &custom.Image{
 			ID: fmt.Sprintf("%v",img.ID), UserID: fmt.Sprintf("%v", img.UserID), Created: &img.CreatedAt,
 			Title: img.Title, URL: img.URL, Description: img.Description, Private: img.Private,
@@ -226,7 +228,7 @@ func (s *imagesService) GetImagesByFilter(ctx context.Context, userID intUserID,
 
 func (s *imagesService) GetAllPublicImgs(ctx context.Context) ([]*custom.Image, error) {
 
-	dbImgs, err := dbModels.Images(Where("images.private = False")).All(ctx, s.DB)
+	dbImgs, err := dbModels.Images(Where("images.private=False And images.archived=False")).All(ctx, s.DB)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +238,7 @@ func (s *imagesService) GetAllPublicImgs(ctx context.Context) ([]*custom.Image, 
 		if err != nil {
 			return nil, err
 		}
-		labels := labelSliceToString(ls)
+		labels := helpers.LabelSliceToString(ls)
 		imgList = append(imgList, &custom.Image{
 			ID: fmt.Sprintf("%v",img.ID), UserID: fmt.Sprintf("%v", img.UserID), Created: &img.CreatedAt,
 			Title: img.Title, URL: img.URL, Description: img.Description, Private: img.Private,
@@ -291,84 +293,13 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 	}, nil
 }
 
-func parseFilter(input *model.ImageFilterInput, userID intUserID) string{
-	queryStr := []string{}
-	filterStart := ""
-	filterStr:=""
-	filterAdded:=false
-	if(input.Labels!=nil && len(input.Labels)>0 && input.MatchAll!= nil &&*input.MatchAll == true){
-		filterStr = "select distinct images.id, created_at, url, description, user_id, title, price, forSale, private From labels join images on images.id = labels.image_id where "
-		matcher := []string{}
-		for _,label:= range input.Labels{
-			matcher= append(matcher, fmt.Sprintf("image_id in (select image_id from labels where labels.tag='%s')",label))
-		}
-		filterStr= filterStr + strings.Join(matcher[:], " And ")
-		queryStr = append(queryStr, filterStr)
-		filterAdded = true
-
-	}else if(input.Labels!=nil && len(input.Labels)>0) {
-		filterStr = "select images.id, created_at, url, description, user_id, title, price, forSale, private From labels join images on images.id = labels.image_id where "
-		filterStr = filterStr+ "labels.tag in "+ parseLabels(input.Labels)
-		queryStr = append(queryStr, filterStr)
-		filterAdded = true
-
-	}else{
-		filterStart = "select * from images where "
-	}
-	if input.UserID!=nil && input.Private !=nil && fmt.Sprintf("%v", userID) == *input.UserID{
-		filterStr = "images.private = "+ fmt.Sprintf("%t", *input.Private)
-		queryStr = append(queryStr, filterStr)
-		filterAdded=true
-
-	} else if input.UserID!=nil{
-		filterStr = "images.user_id = "+ *input.UserID
-		if(fmt.Sprintf("%v", userID)!= *input.UserID){
-			filterStr = filterStr+"And images.private= False"
-		}
-		queryStr = append(queryStr, filterStr)
-		filterAdded=true
-	}
-
-	if(input.ForSale!=nil){
-		filterStr= "images.forSale= "+ fmt.Sprintf("%t", *input.ForSale)
-		queryStr = append(queryStr, filterStr)
-		filterAdded=true
-	}
-	if(input.PriceLimit!=nil){
-		filterStr= "images.price<= " +fmt.Sprintf("%v", input.PriceLimit)
-		queryStr = append(queryStr, filterStr)
-		filterAdded=true
-	}
-	if(input.Title!=nil){
-		filterStr= "images.title= "+ fmt.Sprintf("'%s'", *input.Title)
-		queryStr = append(queryStr, filterStr)
-		filterAdded=true
-	}
-	if(!filterAdded){
-		return filterStart+"images.private=False"
-	}
-
-	return filterStart + strings.Join(queryStr[:], " And ")
-}
-
-func parseLabels(labels []string) string{
-	str:=""
-	for _, l:= range labels{
-	str= str+ fmt.Sprintf("'%s',", l)
-	}
-
-	str = str[0:len(str)-1]
-	str= "("+ str+")"
-	return str
-}
-
 func (s *imagesService) insertLabels(labels []string, imgId int) error{
 	if len (labels)==0{
 		return nil
 	}
 	insertStr:="insert into labels (tag,image_id) values "
 	for _, tag := range labels {
-		insertStr= insertStr+fmt.Sprintf("('%s', %v),",tag, imgId)
+		insertStr= insertStr+fmt.Sprintf("('%s', %v),",strings.ToLower(tag), imgId)
 	}
 	insertStr = insertStr[0:len(insertStr)-1]
 	_,err:=s.DB.Exec(insertStr)
@@ -376,12 +307,4 @@ func (s *imagesService) insertLabels(labels []string, imgId int) error{
 		return err
 	}
 	return nil
-}
-
-func labelSliceToString(slice dbModels.LabelSlice) []string {
-	strArr := []string{}
-	for _, l := range slice {
-		strArr = append(strArr, l.Tag)
-	}
-	return strArr
 }
