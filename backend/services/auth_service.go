@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gasser707/go-gql-server/auth"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
+	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/gasser707/go-gql-server/graph/model"
 	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gin-gonic/gin"
@@ -20,7 +22,6 @@ import (
 type AuthServiceInterface interface {
 	Login(ctx context.Context, input model.LoginInput) (bool, error)
 	validateCredentials(c context.Context) (intUserID, model.Role, error)
-	GetCredentials(c context.Context) (intUserID, error)
 	Logout(c context.Context) (bool, error)
 	Refresh(c *gin.Context)
 }
@@ -49,12 +50,12 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 
 	user, err := dbModels.Users(Where("email = ?", input.Email)).One(ctx, s.DB)
 	if err != nil {
-		return false, err
+		return false, customErr.NoAuth(ctx, err.Error())
 	}
 
 	ok := helpers.CheckPasswordHash(input.Password, user.Password)
 	if !ok || err != nil {
-		return false, fmt.Errorf("wrong email password combination")
+		return false, customErr.BadRequest(ctx, err.Error())
 	}
 
 	id := fmt.Sprintf("%v", user.ID)
@@ -77,8 +78,8 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 	return true, nil
 }
 
-func (s *authService) validateCredentials(c context.Context) (intUserID, model.Role, error) {
-	metadata, err := s.tk.ExtractTokenMetadata(c)
+func (s *authService) validateCredentials(ctx context.Context) (intUserID, model.Role, error) {
+	metadata, err := s.tk.ExtractTokenMetadata(ctx)
 	if err != nil {
 		return -1, "", err
 	}
@@ -89,31 +90,24 @@ func (s *authService) validateCredentials(c context.Context) (intUserID, model.R
 
 	id, err := strconv.Atoi(userId)
 	if err != nil {
-		return -1, "", err
+		return -1, "", customErr.Internal(ctx, err.Error())
 	}
 
 	return intUserID(id), metadata.UserRole, nil
 }
 
-func (s *authService) Logout(c context.Context) (bool, error) {
+func (s *authService) Logout(ctx context.Context) (bool, error) {
 	//If metadata is passed and the tokens valid, delete them from the redis store
-	metadata, _ := s.tk.ExtractTokenMetadata(c)
-	deleteErr := s.rd.DeleteTokens(metadata)
-	if deleteErr != nil {
-		return false, deleteErr
+	metadata, err := s.tk.ExtractTokenMetadata(ctx)
+	if err != nil {
+		return false, err
+	}
+	err = s.rd.DeleteTokens(metadata)
+	if err != nil {
+		return false, err
 	}
 	return true, nil
 
-}
-
-func (s *authService) GetCredentials(c context.Context) (intUserID, error) {
-	metadata, _ := s.tk.ExtractTokenMetadata(c)
-	userId, _ := s.rd.FetchAuth(metadata.TokenUuid)
-	id, err := strconv.Atoi(string(userId))
-	if err != nil {
-		return -1, err
-	}
-	return intUserID(id), nil
 }
 
 func (s *authService) Refresh(c *gin.Context) {

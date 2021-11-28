@@ -2,11 +2,11 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"time"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/securecookie"
+    customErr"github.com/gasser707/go-gql-server/errors"
 )
 
 type CookieAccess struct {
@@ -48,7 +48,7 @@ func GetCookieAccess(ctx context.Context) (*CookieAccess, error) {
 
     ca, ok :=  ctx.Value("cookie-name").(*CookieAccess)
     if(!ok){
-        return nil, errors.New("cookie not found")
+        return nil, customErr.NoAuth(ctx, "cookie not found")
     }
     return ca, nil
 }
