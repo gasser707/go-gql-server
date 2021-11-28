@@ -12,7 +12,7 @@ import (
 )
 
 type VisionOperatorInterface interface {
-	DetectImgProps(ctx context.Context, source string, limit int) (labels []string, err error)
+	DetectImgProps(ctx context.Context, source string) (labels []string, err error)
 }
 
 //UsersService implements the usersServiceInterface
@@ -33,7 +33,7 @@ func NewVisionOperator(ctx context.Context) (*visionOperator, error) {
 	}, nil
 }
 
-func (v *visionOperator) DetectImgProps(ctx context.Context, source string, limit int) (labels []string, err error) {
+func (v *visionOperator) DetectImgProps(ctx context.Context, source string) (labels []string, err error) {
 	imgUrl := fmt.Sprintf("gs://%s/%s", os.Getenv(bucketName), source)
 	image := vision.NewImageFromURI(imgUrl)
 	errs, ctx := errgroup.WithContext(ctx)

@@ -62,14 +62,15 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		BuyImage     func(childComplexity int, id string) int
-		DeleteImages func(childComplexity int, input []*model.DeleteImageInput) int
-		Login        func(childComplexity int, input model.LoginInput) int
-		Logout       func(childComplexity int, input *bool) int
-		RegisterUser func(childComplexity int, input model.NewUserInput) int
-		UpdateImage  func(childComplexity int, input model.UpdateImageInput) int
-		UpdateUser   func(childComplexity int, input model.UpdateUserInput) int
-		UploadImages func(childComplexity int, input []*model.NewImageInput) int
+		AutoGenerateLabels func(childComplexity int, id string) int
+		BuyImage           func(childComplexity int, id string) int
+		DeleteImages       func(childComplexity int, input []*model.DeleteImageInput) int
+		Login              func(childComplexity int, input model.LoginInput) int
+		Logout             func(childComplexity int, input *bool) int
+		RegisterUser       func(childComplexity int, input model.NewUserInput) int
+		UpdateImage        func(childComplexity int, input model.UpdateImageInput) int
+		UpdateUser         func(childComplexity int, input model.UpdateUserInput) int
+		UploadImages       func(childComplexity int, input []*model.NewImageInput) int
 	}
 
 	Query struct {
@@ -108,6 +109,7 @@ type MutationResolver interface {
 	UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error)
 	DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error)
 	UpdateImage(ctx context.Context, input model.UpdateImageInput) (*custom.Image, error)
+	AutoGenerateLabels(ctx context.Context, id string) ([]string, error)
 	BuyImage(ctx context.Context, id string) (*custom.Sale, error)
 	Login(ctx context.Context, input model.LoginInput) (bool, error)
 	Logout(ctx context.Context, input *bool) (bool, error)
@@ -212,6 +214,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Image.User(childComplexity), true
+
+	case "Mutation.autoGenerateLabels":
+		if e.complexity.Mutation.AutoGenerateLabels == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_autoGenerateLabels_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AutoGenerateLabels(childComplexity, args["id"].(string)), true
 
 	case "Mutation.buyImage":
 		if e.complexity.Mutation.BuyImage == nil {
@@ -617,6 +631,7 @@ type Mutation{
   uploadImages(input: [NewImageInput!]!): [Image!]! 
   deleteImages(input: [DeleteImageInput!]!): Boolean! 
   updateImage(input: UpdateImageInput!): Image! 
+  autoGenerateLabels(id: ID!): [String!]!
   buyImage(id: ID!): Sale! 
   login(input: LoginInput!): Boolean!
   logout(input: Boolean ):Boolean! 
@@ -632,6 +647,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_autoGenerateLabels_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_buyImage_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -1391,6 +1421,48 @@ func (ec *executionContext) _Mutation_updateImage(ctx context.Context, field gra
 	res := resTmp.(*custom.Image)
 	fc.Result = res
 	return ec.marshalNImage2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋcustomᚐImage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_autoGenerateLabels(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_autoGenerateLabels_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AutoGenerateLabels(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_buyImage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3862,6 +3934,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "updateImage":
 			out.Values[i] = ec._Mutation_updateImage(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "autoGenerateLabels":
+			out.Values[i] = ec._Mutation_autoGenerateLabels(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

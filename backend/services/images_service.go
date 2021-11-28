@@ -26,6 +26,7 @@ type ImagesServiceInterface interface {
 	GetImages(ctx context.Context, input *model.ImageFilterInput) ([]*custom.Image, error)
 	GetImageById(ctx context.Context, ID string) (*custom.Image, error)
 	UpdateImage(ctx context.Context, input *model.UpdateImageInput)(*custom.Image, error)
+	AutoGenerateLabels(ctx context.Context, imageId string) ([]string, error)
 }
 
 //UsersService implements the usersServiceInterface
@@ -35,10 +36,15 @@ type imagesService struct {
 	DB              *sql.DB
 	AuthService     AuthServiceInterface
 	storageOperator cloud.StorageOperatorInterface
+	visionOperator cloud.VisionOperatorInterface
 }
 
-func NewImagesService(db *sql.DB, authSrv AuthServiceInterface, storageOperator cloud.StorageOperatorInterface) *imagesService {
-	return &imagesService{DB: db, AuthService: authSrv, storageOperator: storageOperator}
+func NewImagesService( ctx context.Context, db *sql.DB, authSrv AuthServiceInterface, storageOperator cloud.StorageOperatorInterface) *imagesService {
+	vo, err:= cloud.NewVisionOperator(ctx)
+	if(err!=nil){
+		panic(err)
+	}
+	return &imagesService{DB: db, AuthService: authSrv, storageOperator: storageOperator, visionOperator: vo}
 }
 
 func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
@@ -307,4 +313,27 @@ func (s *imagesService) insertLabels(labels []string, imgId int) error{
 		return err
 	}
 	return nil
+}
+
+func (s *imagesService) AutoGenerateLabels(ctx context.Context, imageId string) ([]string, error){
+	userId, _, err := s.AuthService.validateCredentials(ctx)
+	if err != nil {
+		return nil, err
+	}
+	img, err:= dbModels.Images(Where("images.id=? And images.user_id=?", imageId, userId )).One(ctx, s.DB)
+	if(err!=nil){
+		return nil, err
+	}
+	generatedLabels, err:= s.visionOperator.DetectImgProps(ctx, img.URL)
+	dbLabels, err:= img.Labels().All(ctx, s.DB)
+	if(err!=nil){
+		return nil, err
+	}
+	oldLabels:= helpers.LabelSliceToString(dbLabels)
+	newLabels:= helpers.RemoveDuplicate(generatedLabels, oldLabels)
+	err= s.insertLabels(newLabels, img.ID)
+	if(err!=nil){
+		return nil, err
+	}
+	return append(newLabels, oldLabels...), nil
 }
