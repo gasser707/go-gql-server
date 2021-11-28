@@ -78,6 +78,10 @@ func (r *userResolver) Images(ctx context.Context, user *custom.User) ([]*custom
 	return r.ImagesService.GetImages(ctx, &model.ImageFilterInput{UserID: &user.ID})
 }
 
+func (r *mutationResolver) AutoGenerateLabels(ctx context.Context, id string) ([]string, error){
+	return r.ImagesService.AutoGenerateLabels(ctx, id)
+}
+
 // Image returns generated.ImageResolver implementation.
 func (r *Resolver) Image() generated.ImageResolver { return &imageResolver{r} }
 

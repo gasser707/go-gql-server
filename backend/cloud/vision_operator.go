@@ -7,12 +7,13 @@ import (
 	"strings"
 
 	vision "cloud.google.com/go/vision/apiv1"
+	customErr "github.com/gasser707/go-gql-server/errors"
 	"golang.org/x/sync/errgroup"
 	visionpb "google.golang.org/genproto/googleapis/cloud/vision/v1"
 )
 
 type VisionOperatorInterface interface {
-	DetectImgProps(ctx context.Context, source string, limit int) (labels []string, err error)
+	DetectImgProps(ctx context.Context, source string) (labels []string, err error)
 }
 
 //UsersService implements the usersServiceInterface
@@ -26,14 +27,14 @@ func NewVisionOperator(ctx context.Context) (*visionOperator, error) {
 
 	visionClient, err := vision.NewImageAnnotatorClient(ctx)
 	if err != nil {
-		return nil, err
+		return nil, customErr.Internal(ctx, err.Error())
 	}
 	return &visionOperator{
 		visionClient: visionClient,
 	}, nil
 }
 
-func (v *visionOperator) DetectImgProps(ctx context.Context, source string, limit int) (labels []string, err error) {
+func (v *visionOperator) DetectImgProps(ctx context.Context, source string) (labels []string, err error) {
 	imgUrl := fmt.Sprintf("gs://%s/%s", os.Getenv(bucketName), source)
 	image := vision.NewImageFromURI(imgUrl)
 	errs, ctx := errgroup.WithContext(ctx)
@@ -75,7 +76,7 @@ func (v *visionOperator) getLabels(ctx context.Context, ch chan string, img *vis
 
 	annotations, err := v.visionClient.DetectLabels(ctx, img, nil, limit)
 	if err != nil {
-		return err
+		return customErr.Internal(ctx, err.Error())
 	}
 	for _, annotation := range annotations {
 		ch <- strings.ToLower(annotation.Description)
@@ -89,7 +90,7 @@ func (v *visionOperator) getLandMarks(ctx context.Context, ch chan string, img *
 
 	annotations, err := v.visionClient.DetectLandmarks(ctx, img, nil, limit)
 	if err != nil {
-		return err
+		return customErr.Internal(ctx, err.Error())
 	}
 	for _, annotation := range annotations {
 		ch <- strings.ToLower(annotation.Description)
@@ -103,7 +104,7 @@ func (v *visionOperator) getLogos(ctx context.Context, ch chan string, img *visi
 
 	annotations, err := v.visionClient.DetectLogos(ctx, img, nil, limit)
 	if err != nil {
-		return err
+		return customErr.Internal(ctx, err.Error())
 	}
 	for _, annotation := range annotations {
 		ch <- strings.ToLower(annotation.Description)
@@ -117,10 +118,10 @@ func (v *visionOperator) getObjects(ctx context.Context, ch chan string, img *vi
 
 	annotations, err := v.visionClient.LocalizeObjects(ctx, img, nil)
 	if err != nil {
-		return err
+		return customErr.Internal(ctx, err.Error())
 	}
 	for _, annotation := range annotations {
-		ch <- strings.ToLower( annotation.Name)
+		ch <- strings.ToLower(annotation.Name)
 	}
 
 	return nil

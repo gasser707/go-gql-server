@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
-
 	"github.com/gasser707/go-gql-server/cloud"
 	"github.com/gasser707/go-gql-server/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
+	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/gasser707/go-gql-server/graph/model"
 	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -43,8 +43,10 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 	}
 
 	user, err := dbModels.FindUser(ctx, s.DB, int(userId))
-	if err != nil {
-		return nil, err
+	if err != nil && err != sql.ErrNoRows {
+		return nil, customErr.Internal(ctx, err.Error())
+	}else if err == sql.ErrNoRows{
+		return nil, customErr.NotFound(ctx, err.Error())
 	}
 
 	user.Username = input.Username
@@ -63,7 +65,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 	}
 	_, err = user.Update(ctx, s.DB, boil.Infer())
 	if err != nil {
-		return nil, err
+		return nil, customErr.Internal(ctx, err.Error())
 	}
 
 	returnUser := &custom.User{Avatar: user.Avatar, Email: user.Email,
@@ -94,7 +96,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 
 	err = insertedUser.Insert(ctx, s.DB, boil.Infer())
 	if err != nil {
-		return nil, err
+		return nil, customErr.Internal(ctx, err.Error())
 	}
 
 	avatarUrl, err := s.storageOperator.UploadImage(ctx, &input.Avatar, "avatar", fmt.Sprintf("%v", insertedUser.ID))
@@ -130,7 +132,7 @@ func (s *usersService) GetUsers(ctx context.Context, input *model.UserFilterInpu
 		if(err!=nil){
 			return nil, err
 		}
-		return []*custom.User{user},nil
+		return []*custom.User{user}, nil
 	}
 
 	if input.Email != nil {
@@ -148,13 +150,16 @@ func (s *usersService) GetUserById(ctx context.Context, ID string) (*custom.User
 	
 	inputId, err := strconv.Atoi(ID)
 	if err != nil {
-		return nil, err
+		return nil, customErr.Internal(ctx, err.Error())
 	}
 
 	user, err := dbModels.FindUser(ctx, s.DB, inputId)
-	if err != nil {
-		return nil, err
+	if err != nil && err!= sql.ErrNoRows {
+		return nil, customErr.Internal(ctx, err.Error())
+	} else if err == sql.ErrNoRows{
+		return nil, customErr.NotFound(ctx, err.Error())
 	}
+
 	return &custom.User{
 		ID: fmt.Sprintf("%v", user.ID), Username: user.Username, 
 		Email: user.Email, Avatar: user.Avatar, Joined: &user.CreatedAt,
@@ -165,9 +170,12 @@ func (s *usersService) GetUserById(ctx context.Context, ID string) (*custom.User
 func (s *usersService) GetUserByEmail(ctx context.Context, email string) ([]*custom.User, error) {
 
 	user, err := dbModels.Users(Where("email = ?", email)).One(ctx, s.DB)
-		if err != nil {
-			return nil, err
+		if err != nil && err!=sql.ErrNoRows{
+			return nil, customErr.Internal(ctx, err.Error())
+		}else if err == sql.ErrNoRows{
+			return nil, customErr.NotFound(ctx, err.Error())
 		}
+		
 		return []*custom.User{
 			{ID: fmt.Sprintf("%v", user.ID),
 				Username: user.Username, Email: user.Email, Avatar: user.Avatar, Joined: &user.CreatedAt,
@@ -180,12 +188,12 @@ func (s *usersService) GetUsersByUserName(ctx context.Context, username string) 
 
 	userList := []*custom.User{}
 	users, err := dbModels.Users(Where("username = ?", username)).All(ctx, s.DB)
-	if err != nil {
-		return nil, err
+	if err!=nil && err!= sql.ErrNoRows {
+		return nil, customErr.Internal(ctx, err.Error())
+	} else if err == sql.ErrNoRows{
+		return nil, customErr.NotFound(ctx, err.Error())
 	}
-	if len(users) == 0 {
-		return nil, fmt.Errorf("no users with this username found")
-	}
+
 	for _, user := range users {
 		userList = append(userList, &custom.User{ID: fmt.Sprintf("%v", user.ID),
 			Username: user.Username, Email: user.Email, Avatar: user.Avatar, Joined: &user.CreatedAt})
@@ -197,7 +205,7 @@ func (s *usersService) GetAllUsers(ctx context.Context) ([]*custom.User, error) 
 	userList := []*custom.User{}
 	users, err := dbModels.Users().All(ctx, s.DB)
 	if err != nil {
-		return nil, err
+		return nil, customErr.Internal(ctx, err.Error())
 	}
 	for _, user := range users {
 		userList = append(userList, &custom.User{ID: fmt.Sprintf("%v", user.ID),

@@ -2,26 +2,21 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
-
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gorilla/securecookie"
-	"github.com/twinj/uuid"
-
-	// "net/http"
 	"os"
-	// "strings"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
+	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/gasser707/go-gql-server/graph/model"
+	"github.com/gorilla/securecookie"
+	"github.com/twinj/uuid"
 )
-
 
 type AccessDetails struct {
 	TokenUuid string
 	UserId    string
-	UserRole model.Role
+	UserRole  model.Role
 }
 
 type TokenDetails struct {
@@ -36,21 +31,20 @@ type TokenDetails struct {
 type TokenServiceInterface interface {
 	CreateToken(userId string, userRole model.Role) (*TokenDetails, error)
 	ExtractTokenMetadata(c context.Context) (*AccessDetails, error)
-	TokenValid(c context.Context)(error)
 }
 
 //Token implements the TokenInterface
 var _ TokenServiceInterface = &tokenservice{}
-type tokenservice struct{
-	sc  *securecookie.SecureCookie
+
+type tokenservice struct {
+	sc *securecookie.SecureCookie
 }
 
-func NewTokenService(sc  *securecookie.SecureCookie) *tokenservice {
+func NewTokenService(sc *securecookie.SecureCookie) *tokenservice {
 	return &tokenservice{
 		sc: sc,
 	}
 }
-
 
 func (t *tokenservice) CreateToken(userId string, userRole model.Role) (*TokenDetails, error) {
 	td := &TokenDetails{}
@@ -69,7 +63,7 @@ func (t *tokenservice) CreateToken(userId string, userRole model.Role) (*TokenDe
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 	td.AccessToken, err = at.SignedString([]byte(os.Getenv("ACCESS_SECRET")))
 	if err != nil {
-		return nil, err
+		return nil, customErr.Internal(context.Background(), err.Error())
 	}
 
 	//Creating Refresh Token
@@ -86,25 +80,14 @@ func (t *tokenservice) CreateToken(userId string, userRole model.Role) (*TokenDe
 
 	td.RefreshToken, err = rt.SignedString([]byte(os.Getenv("REFRESH_SECRET")))
 	if err != nil {
-		return nil, err
+		return nil, customErr.Internal(context.Background(), err.Error())
 	}
 	return td, nil
 }
 
-func (t *tokenservice) TokenValid(c context.Context) error {
-	token, err := t.verifyToken(c)
+func (t *tokenservice) verifyToken(ctx context.Context) (*jwt.Token, error) {
+	tokenMap, err := t.getTokensFromCookie(ctx)
 	if err != nil {
-		return err
-	}
-	if _, ok := token.Claims.(jwt.Claims); !ok && !token.Valid {
-		return err
-	}
-	return nil
-}
-
-func (t *tokenservice) verifyToken(c context.Context) (*jwt.Token, error) {
-	tokenMap, err := t.getTokensFromCookie(c)
-	if(err != nil) {
 		return nil, err
 	}
 	tokenString := tokenMap["access_token"]
@@ -115,20 +98,11 @@ func (t *tokenservice) verifyToken(c context.Context) (*jwt.Token, error) {
 		return []byte(os.Getenv("ACCESS_SECRET")), nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, customErr.NoAuth(ctx, err.Error())
+
 	}
 	return token, nil
 }
-
-//get the token from the request body
-// func extractToken(c *gin.Context) string {
-// 	bearToken := r.Header.Get("Authorization")
-// 	strArr := strings.Split(bearToken, " ")
-// 	if len(strArr) == 2 {
-// 		return strArr[1]
-// 	}
-// 	return ""
-// }
 
 func extract(token *jwt.Token) (*AccessDetails, error) {
 
@@ -137,40 +111,42 @@ func extract(token *jwt.Token) (*AccessDetails, error) {
 		accessUuid, ok := claims["access_uuid"].(string)
 		userId, userOk := claims["user_id"].(string)
 		role, roleOk := claims["user_role"].(string)
-		if !ok  || !userOk || !roleOk  {
-			return nil, errors.New("unauthorized")
+		if !ok || !userOk || !roleOk {
+			return nil, customErr.NoAuth(context.Background(), "unauthorized")
+
 		} else {
 			return &AccessDetails{
 				TokenUuid: accessUuid,
 				UserId:    userId,
-				UserRole: model.Role(role),
+				UserRole:  model.Role(role),
 			}, nil
 		}
 	}
-	return nil, errors.New("something went wrong")
+	return nil, customErr.NoAuth(context.Background(), "something went wrong")
+
 }
 
-func (t *tokenservice) ExtractTokenMetadata(c context.Context) (*AccessDetails, error) {
-	token, err := t.verifyToken(c)
+func (t *tokenservice) ExtractTokenMetadata(ctx context.Context) (*AccessDetails, error) {
+	token, err := t.verifyToken(ctx)
 	if err != nil {
-		return nil, err
+		return nil, customErr.NoAuth(ctx, err.Error())
 	}
 	acc, err := extract(token)
 	if err != nil {
-		return nil, err
+		return nil, customErr.NoAuth(ctx, err.Error())
 	}
 	return acc, nil
 }
 
-func (t *tokenservice) getTokensFromCookie(c context.Context) (map[string]string, error){
-	ca, err:= GetCookieAccess(c)
-	if(err !=nil){
+func (t *tokenservice) getTokensFromCookie(ctx context.Context) (map[string]string, error) {
+	ca, err := GetCookieAccess(ctx)
+	if err != nil {
 		return nil, err
 	}
 	ec := ca.encodedCookie
 	value := make(map[string]string)
-		if err = t.sc.Decode("cookie-name", ec, &value); err != nil {
-			return nil, err
+	if err = t.sc.Decode("cookie-name", ec, &value); err != nil {
+		return nil, customErr.NoAuth(ctx, err.Error())
 	}
 
 	return value, nil

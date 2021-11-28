@@ -8,6 +8,7 @@ import (
 
 	"github.com/gasser707/go-gql-server/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
+	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
@@ -37,12 +38,12 @@ func(s *salesService) BuyImage(ctx context.Context, id string)(*custom.Sale, err
 	}
 	imgId,err:= strconv.Atoi(id)
 	if err != nil {
-		return nil, err
+		return nil, customErr.Internal(ctx, err.Error())
 	}
 
 	img,err:= dbModels.FindImage(ctx, s.DB, imgId)
 	if err != nil || !img.ForSale || img.UserID == int(userId) {
-		return nil, fmt.Errorf("image doesn't exist or can't be sold to you")
+		return nil, customErr.Forbidden(ctx, err.Error())
 	}
 	sale := &dbModels.Sale{
 		Price: img.Price,
@@ -52,7 +53,7 @@ func(s *salesService) BuyImage(ctx context.Context, id string)(*custom.Sale, err
 	}
 	err= sale.Insert(ctx,s.DB, boil.Infer())
 	if err != nil {
-		return nil, err
+		return nil, customErr.Internal(ctx, err.Error())
 	}
 
 	return &custom.Sale{
@@ -72,7 +73,7 @@ func(s *salesService) GetSales(ctx context.Context) ([]*custom.Sale, error){
 	}
 	dbSales,err:= dbModels.Sales(qm.Where("buyer_id = ? or seller_id = ?", userId, userId)).All(ctx, s.DB)
 	if err != nil {
-		return nil, err
+		return nil, customErr.Internal(ctx, err.Error())
 	}
 
 	sales:= []*custom.Sale{}
