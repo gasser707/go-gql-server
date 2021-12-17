@@ -28,25 +28,25 @@ type TokenDetails struct {
 	RtExpires    int64
 }
 
-type TokenServiceInterface interface {
+type TokenOperatorInterface interface {
 	CreateToken(userId string, userRole model.Role) (*TokenDetails, error)
 	ExtractTokenMetadata(c context.Context) (*AccessDetails, error)
 }
 
 //Token implements the TokenInterface
-var _ TokenServiceInterface = &tokenservice{}
+var _ TokenOperatorInterface = &tokenOperator{}
 
-type tokenservice struct {
+type tokenOperator struct {
 	sc *securecookie.SecureCookie
 }
 
-func NewTokenService(sc *securecookie.SecureCookie) *tokenservice {
-	return &tokenservice{
+func NewTokenOperator(sc *securecookie.SecureCookie) *tokenOperator {
+	return &tokenOperator{
 		sc: sc,
 	}
 }
 
-func (t *tokenservice) CreateToken(userId string, userRole model.Role) (*TokenDetails, error) {
+func (t *tokenOperator) CreateToken(userId string, userRole model.Role) (*TokenDetails, error) {
 	td := &TokenDetails{}
 	td.AtExpires = time.Now().Add(time.Minute * 30).Unix() //expires after 30 min
 	td.TokenUuid = uuid.NewV4().String()
@@ -85,7 +85,7 @@ func (t *tokenservice) CreateToken(userId string, userRole model.Role) (*TokenDe
 	return td, nil
 }
 
-func (t *tokenservice) verifyToken(ctx context.Context) (*jwt.Token, error) {
+func (t *tokenOperator) verifyToken(ctx context.Context) (*jwt.Token, error) {
 	tokenMap, err := t.getTokensFromCookie(ctx)
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func extract(token *jwt.Token) (*AccessDetails, error) {
 
 }
 
-func (t *tokenservice) ExtractTokenMetadata(ctx context.Context) (*AccessDetails, error) {
+func (t *tokenOperator) ExtractTokenMetadata(ctx context.Context) (*AccessDetails, error) {
 	token, err := t.verifyToken(ctx)
 	if err != nil {
 		return nil, customErr.NoAuth(ctx, err.Error())
@@ -138,7 +138,7 @@ func (t *tokenservice) ExtractTokenMetadata(ctx context.Context) (*AccessDetails
 	return acc, nil
 }
 
-func (t *tokenservice) getTokensFromCookie(ctx context.Context) (map[string]string, error) {
+func (t *tokenOperator) getTokensFromCookie(ctx context.Context) (map[string]string, error) {
 	ca, err := GetCookieAccess(ctx)
 	if err != nil {
 		return nil, err

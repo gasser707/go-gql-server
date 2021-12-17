@@ -10,25 +10,25 @@ import (
 	"github.com/go-redis/redis/v7"
 )
 
-type RedisServiceInterface interface {
+type RedisOperatorInterface interface {
 	CreateAuth(string, *TokenDetails) error
 	FetchAuth(string) (string, error)
 	DeleteRefresh(string) error
 	DeleteTokens(*AccessDetails) error
 }
 
-type redisStoreService struct {
+type redisOperatorStore struct {
 	client *redis.Client
 }
 
-var _ RedisServiceInterface = &redisStoreService{}
+var _ RedisOperatorInterface = &redisOperatorStore{}
 
-func NewRedisStore() *redisStoreService {
-	return &redisStoreService{client: databases.NewRedisClient()}
+func NewRedisStore() *redisOperatorStore {
+	return &redisOperatorStore{client: databases.NewRedisClient()}
 }
 
 //Save token metadata to Redis
-func (tk *redisStoreService) CreateAuth(userId string, td *TokenDetails) error {
+func (tk *redisOperatorStore) CreateAuth(userId string, td *TokenDetails) error {
 	at := time.Unix(td.AtExpires, 0) //converting Unix to UTC(to Time object)
 	rt := time.Unix(td.RtExpires, 0)
 	now := time.Now()
@@ -48,7 +48,7 @@ func (tk *redisStoreService) CreateAuth(userId string, td *TokenDetails) error {
 }
 
 //Check the metadata saved
-func (tk *redisStoreService) FetchAuth(tokenUuid string) (string, error) {
+func (tk *redisOperatorStore) FetchAuth(tokenUuid string) (string, error) {
 	userid, err := tk.client.Get(tokenUuid).Result()
 	if err != nil {
 		return "", customErr.NoAuth(context.Background(), err.Error())
@@ -58,7 +58,7 @@ func (tk *redisStoreService) FetchAuth(tokenUuid string) (string, error) {
 }
 
 //Once a user row in the token table
-func (tk *redisStoreService) DeleteTokens(authD *AccessDetails) error {
+func (tk *redisOperatorStore) DeleteTokens(authD *AccessDetails) error {
 	//get the refresh uuid
 	refreshUuid := fmt.Sprintf("%s++%s", authD.TokenUuid, authD.UserId)
 	//delete access token
@@ -79,7 +79,7 @@ func (tk *redisStoreService) DeleteTokens(authD *AccessDetails) error {
 	return nil
 }
 
-func (tk *redisStoreService) DeleteRefresh(refreshUuid string) error {
+func (tk *redisOperatorStore) DeleteRefresh(refreshUuid string) error {
 	//delete refresh token
 	deleted, err := tk.client.Del(refreshUuid).Result()
 	if err != nil || deleted == 0 {

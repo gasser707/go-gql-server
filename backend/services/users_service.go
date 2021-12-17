@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+
 	"github.com/gasser707/go-gql-server/cloud"
 	"github.com/gasser707/go-gql-server/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
+	"github.com/gasser707/go-gql-server/errors"
 	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/gasser707/go-gql-server/graph/model"
 	"github.com/gasser707/go-gql-server/helpers"
@@ -26,26 +28,25 @@ type UsersServiceInterface interface {
 var _ UsersServiceInterface = &usersService{}
 
 type usersService struct {
-	DB            *sql.DB
-	AuthService   AuthServiceInterface
+	DB              *sql.DB
 	storageOperator cloud.StorageOperatorInterface
 }
 
-func NewUsersService(db *sql.DB, authSrv AuthServiceInterface, storageOperator cloud.StorageOperatorInterface) *usersService {
-	return &usersService{DB: db, AuthService: authSrv, storageOperator: storageOperator}
+func NewUsersService(db *sql.DB, storageOperator cloud.StorageOperatorInterface) *usersService {
+	return &usersService{DB: db, storageOperator: storageOperator}
 }
 
 func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error) {
 
-	userId, _, err := s.AuthService.validateCredentials(ctx)
-	if err != nil {
-		return nil, err
+	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	if !ok {
+		return nil, errors.Internal(ctx, "userId not found in ctx")
 	}
 
 	user, err := dbModels.FindUser(ctx, s.DB, int(userId))
 	if err != nil && err != sql.ErrNoRows {
 		return nil, customErr.Internal(ctx, err.Error())
-	}else if err == sql.ErrNoRows{
+	} else if err == sql.ErrNoRows {
 		return nil, customErr.NotFound(ctx, err.Error())
 	}
 
@@ -112,24 +113,24 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 		Bio:      input.Bio,
 		Avatar:   avatarUrl,
 		Joined:   &insertedUser.CreatedAt,
-		ID:  fmt.Sprintf("%v", insertedUser.ID),
+		ID:       fmt.Sprintf("%v", insertedUser.ID),
 	}
 
 	return returnedUser, nil
 }
 
 func (s *usersService) GetUsers(ctx context.Context, input *model.UserFilterInput) ([]*custom.User, error) {
-	_, _, err := s.AuthService.validateCredentials(ctx)
-	if err != nil {
-		return nil, err
+	_, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	if !ok {
+		return nil, errors.Internal(ctx, "userId not found in ctx")
 	}
-	if(input== nil){
+	if input == nil {
 		return s.GetAllUsers(ctx)
 	}
 
 	if input.ID != nil {
 		user, err := s.GetUserById(ctx, *input.ID)
-		if(err!=nil){
+		if err != nil {
 			return nil, err
 		}
 		return []*custom.User{user}, nil
@@ -145,52 +146,49 @@ func (s *usersService) GetUsers(ctx context.Context, input *model.UserFilterInpu
 
 }
 
-
 func (s *usersService) GetUserById(ctx context.Context, ID string) (*custom.User, error) {
-	
+
 	inputId, err := strconv.Atoi(ID)
 	if err != nil {
 		return nil, customErr.Internal(ctx, err.Error())
 	}
 
 	user, err := dbModels.FindUser(ctx, s.DB, inputId)
-	if err != nil && err!= sql.ErrNoRows {
+	if err != nil && err != sql.ErrNoRows {
 		return nil, customErr.Internal(ctx, err.Error())
-	} else if err == sql.ErrNoRows{
+	} else if err == sql.ErrNoRows {
 		return nil, customErr.NotFound(ctx, err.Error())
 	}
 
 	return &custom.User{
-		ID: fmt.Sprintf("%v", user.ID), Username: user.Username, 
+		ID: fmt.Sprintf("%v", user.ID), Username: user.Username,
 		Email: user.Email, Avatar: user.Avatar, Joined: &user.CreatedAt,
 	}, nil
 }
 
-
 func (s *usersService) GetUserByEmail(ctx context.Context, email string) ([]*custom.User, error) {
 
 	user, err := dbModels.Users(Where("email = ?", email)).One(ctx, s.DB)
-		if err != nil && err!=sql.ErrNoRows{
-			return nil, customErr.Internal(ctx, err.Error())
-		}else if err == sql.ErrNoRows{
-			return nil, customErr.NotFound(ctx, err.Error())
-		}
-		
-		return []*custom.User{
-			{ID: fmt.Sprintf("%v", user.ID),
-				Username: user.Username, Email: user.Email, Avatar: user.Avatar, Joined: &user.CreatedAt,
-			},
-		}, nil
-}
+	if err != nil && err != sql.ErrNoRows {
+		return nil, customErr.Internal(ctx, err.Error())
+	} else if err == sql.ErrNoRows {
+		return nil, customErr.NotFound(ctx, err.Error())
+	}
 
+	return []*custom.User{
+		{ID: fmt.Sprintf("%v", user.ID),
+			Username: user.Username, Email: user.Email, Avatar: user.Avatar, Joined: &user.CreatedAt,
+		},
+	}, nil
+}
 
 func (s *usersService) GetUsersByUserName(ctx context.Context, username string) ([]*custom.User, error) {
 
 	userList := []*custom.User{}
 	users, err := dbModels.Users(Where("username = ?", username)).All(ctx, s.DB)
-	if err!=nil && err!= sql.ErrNoRows {
+	if err != nil && err != sql.ErrNoRows {
 		return nil, customErr.Internal(ctx, err.Error())
-	} else if err == sql.ErrNoRows{
+	} else if err == sql.ErrNoRows {
 		return nil, customErr.NotFound(ctx, err.Error())
 	}
 

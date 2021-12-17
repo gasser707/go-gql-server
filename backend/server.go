@@ -4,7 +4,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gasser707/go-gql-server/auth"
@@ -12,6 +15,7 @@ import (
 	"github.com/gasser707/go-gql-server/databases"
 	"github.com/gasser707/go-gql-server/graph"
 	"github.com/gasser707/go-gql-server/graph/generated"
+	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gasser707/go-gql-server/services"
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
@@ -29,12 +33,22 @@ func graphqlHandler() gin.HandlerFunc {
 	}
 	mysqlDB := databases.NewMysqlClient()
 	authSrv := services.NewAuthService(mysqlDB)
-	usrSrv := services.NewUsersService(mysqlDB, authSrv, so)
-	imgSrv := services.NewImagesService(ctx, mysqlDB, authSrv, so)
+	userSrv := services.NewUsersService(mysqlDB, so)
+	imgSrv := services.NewImagesService(ctx, mysqlDB, so)
 	saleSrv := services.NewSalesService(mysqlDB, authSrv)
 
 	c := generated.Config{Resolvers: &graph.Resolver{AuthService: authSrv,
-		ImagesService: imgSrv, UsersService: usrSrv, SaleService: saleSrv}}
+		ImagesService: imgSrv, UsersService: userSrv, SaleService: saleSrv}}
+
+	c.Directives.IsLoggedIn = func(ctx context.Context, obj interface{}, next graphql.Resolver) (interface{}, error) {
+		fmt.Println(1212)
+		userId, _, err := authSrv.ValidateCredentials(ctx)
+		if err != nil {
+			return nil, err
+		}
+		newCtx := context.WithValue(ctx, helpers.UserIdKey, userId)
+		return next(newCtx)
+	}
 
 	h := handler.NewDefaultServer(generated.NewExecutableSchema(c))
 
@@ -54,7 +68,6 @@ func playgroundHandler() gin.HandlerFunc {
 }
 
 func main() {
-
 
 	// Setting up Gin
 	r := gin.Default()

@@ -39,9 +39,9 @@ type Image {
 }
 
 type Query {
-    images(input: ImageFilterInput): [Image!]! 
-    users(input: UserFilterInput): [User!]! 
-    sales:[Sale!]!
+    images(input: ImageFilterInput): [Image!]! @isLoggedIn
+    users(input: UserFilterInput): [User!]! @isLoggedIn
+    sales:[Sale!]! @isLoggedIn
 }
 
 input ImageFilterInput {
@@ -109,16 +109,17 @@ input LoginInput {
 
 type Mutation{
   registerUser(input: NewUserInput!): User! 
-  updateUser(input: UpdateUserInput!): User! 
-  uploadImages(input: [NewImageInput!]!): [Image!]! 
-  deleteImages(input: [DeleteImageInput!]!): Boolean! 
-  updateImage(input: UpdateImageInput!): Image! 
-  autoGenerateLabels(id: ID!): [String!]!
-  buyImage(id: ID!): Sale! 
+  updateUser(input: UpdateUserInput!): User! @isLoggedIn
+  uploadImages(input: [NewImageInput!]!): [Image!]! @isLoggedIn
+  deleteImages(input: [DeleteImageInput!]!): Boolean! @isLoggedIn
+  updateImage(input: UpdateImageInput!): Image! @isLoggedIn
+  autoGenerateLabels(id: ID!): [String!]! @isLoggedIn
+  buyImage(id: ID!): Sale! @isLoggedIn
   login(input: LoginInput!): Boolean!
-  logout(input: Boolean ):Boolean! 
+  logout(input: Boolean ):Boolean! @isLoggedIn
 }
 
 scalar Time
 scalar Upload
 
+directive @isLoggedIn on FIELD_DEFINITION
