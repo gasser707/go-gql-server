@@ -37,7 +37,7 @@ func (s *salesService) BuyImage(ctx context.Context, id string) (*custom.Sale, e
 	}
 	imgId, err := strconv.Atoi(id)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.BadRequest(ctx, err.Error())
 	}
 	img := &dbModels.Image{}
 	err = s.DB.Get(img, "SELECT * FROM images WHERE id = ?", imgId)
@@ -54,7 +54,7 @@ func (s *salesService) BuyImage(ctx context.Context, id string) (*custom.Sale, e
 	result, err := s.DB.NamedExec(`INSERT INTO images(image_id, buyer_id, seller_id, price, created_at) VALUES (:image_id,
 		 :buyer_id, :seller_id, :price, :created_at)`, sale)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.DB(ctx, err)
 	}
 	saleId, _ := result.LastInsertId()
 
@@ -76,7 +76,7 @@ func (s *salesService) GetSales(ctx context.Context) ([]*custom.Sale, error) {
 	dbSales := []dbModels.Sale{}
 	err := s.DB.Select(&dbSales,"SELECT * FROM sales WHERE buyer_id=? OR seller_id=?", userId, userId)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.DB(ctx, err)
 	}
 
 	sales := []*custom.Sale{}

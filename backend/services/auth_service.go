@@ -50,7 +50,7 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 	user := dbModels.User{}
 	err := s.DB.Get(&user,"SELECT * FROM users WHERE email=?", input.Email)
 	if err != nil {
-		return false, customErr.NoAuth(ctx, err.Error())
+		return false, customErr.BadRequest(ctx, err.Error())
 	}
 
 	ok := helpers.CheckPasswordHash(input.Password, user.Password)

@@ -2,6 +2,7 @@ package errors
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 	"os"
 
@@ -111,6 +112,14 @@ func NotFound(ctx context.Context,message string) *gqlerror.Error {
 	}
 	return newErr
 }
+
+func DB(ctx context.Context, err error) *gqlerror.Error {
+	if(err == sql.ErrNoRows){
+		return NotFound(ctx, err.Error())
+	}
+	return Internal(ctx, err.Error())
+}
+
 
 
 

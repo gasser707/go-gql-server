@@ -43,13 +43,8 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 	user := &dbModels.User{}
 	err := s.DB.Get(user, "SELECT * FROM users WHERE id = ?", userId)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.DB(ctx, err)
 	}
-	// if err != nil && err != sql.ErrNoRows {
-	// 	return nil, customErr.Internal(ctx, err.Error())
-	// } else if err == sql.ErrNoRows {
-	// 	return nil, customErr.NotFound(ctx, err.Error())
-	// }
 
 	user.Username = input.Username
 	user.Bio = input.Bio
@@ -76,7 +71,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 	_, err = s.DB.NamedExec(fmt.Sprintf(`UPDATE users SET username=:username, bio=:bio, email=:email, 
 	avatar=:avatar WHERE id = %d`, userId), user)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.DB(ctx, err)
 	}
 
 	returnUser := &custom.User{Avatar: user.Avatar, Email: user.Email,
@@ -109,7 +104,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 	result, err := s.DB.NamedExec(`INSERT INTO users(email, password, username, bio, role, created_at) VALUES(
 		:email, :password, :username, :bio, :role, :created_at)`, insertedUser)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.DB(ctx, err)
 	}
 	userId, _ := result.LastInsertId()
 
@@ -118,9 +113,9 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 		return nil, err
 	}
 	insertedUser.Avatar = avatarUrl
-	result, err = s.DB.NamedExec(`UPDATE users SET avatar=:avatar`, insertedUser)
+	_, err = s.DB.NamedExec(`UPDATE users SET avatar=:avatar`, insertedUser)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.DB(ctx, err)
 	}
 	returnedUser := &custom.User{
 		Username: input.Username,
@@ -165,12 +160,12 @@ func (s *usersService) GetUserById(ctx context.Context, ID string) (*custom.User
 
 	inputId, err := strconv.Atoi(ID)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.BadRequest(ctx, err.Error())
 	}
 	user := dbModels.User{}
 	err = s.DB.Get(&user, "SELECT * FROM users WHERE id=?", inputId)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.DB(ctx, err)
 	}
 
 	return &custom.User{
@@ -184,7 +179,7 @@ func (s *usersService) GetUserByEmail(ctx context.Context, email string) ([]*cus
 	user := dbModels.User{}
 	err := s.DB.Get(&user, "SELECT * FROM users WHERE email=?", email)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.DB(ctx, err)
 	}
 	return []*custom.User{
 		{ID: fmt.Sprintf("%v", user.ID),
@@ -197,9 +192,9 @@ func (s *usersService) GetUsersByUserName(ctx context.Context, username string) 
 
 	userList := []*custom.User{}
 	users := []dbModels.User{}
-	err := s.DB.Get(&users, "SELECT * FROM users WHERE id=?", username)
+	err := s.DB.Get(&users, "SELECT * FROM users WHERE username=?", username)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.DB(ctx, err)
 	}
 	for _, user := range users {
 		userList = append(userList, &custom.User{ID: fmt.Sprintf("%v", user.ID),
@@ -213,7 +208,7 @@ func (s *usersService) GetAllUsers(ctx context.Context) ([]*custom.User, error) 
 	users := []dbModels.User{}
 	err := s.DB.Select(&users, "SELECT * FROM users")
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.DB(ctx, err)
 	}
 	for _, user := range users {
 		userList = append(userList, &custom.User{ID: fmt.Sprintf("%v", user.ID),

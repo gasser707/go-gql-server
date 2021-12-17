@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -38,7 +37,6 @@ func graphqlHandler() gin.HandlerFunc {
 		ImagesService: imgSrv, UsersService: userSrv, SaleService: saleSrv}}
 
 	c.Directives.IsLoggedIn = func(ctx context.Context, obj interface{}, next graphql.Resolver) (interface{}, error) {
-		fmt.Println(1212)
 		userId, _, err := authSrv.ValidateCredentials(ctx)
 		if err != nil {
 			return nil, err
