@@ -1,12 +1,9 @@
 package main
 
-//go:generate sqlboiler --wipe --no-tests -o databases/models -p databases mysql
-
 import (
 	"context"
 	"fmt"
 	"log"
-
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"

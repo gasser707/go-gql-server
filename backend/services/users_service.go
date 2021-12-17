@@ -2,19 +2,17 @@ package services
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/gasser707/go-gql-server/cloud"
 	"github.com/gasser707/go-gql-server/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
-	"github.com/gasser707/go-gql-server/errors"
 	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/gasser707/go-gql-server/graph/model"
 	"github.com/gasser707/go-gql-server/helpers"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	. "github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/jmoiron/sqlx"
 )
 
 type UsersServiceInterface interface {
@@ -28,11 +26,11 @@ type UsersServiceInterface interface {
 var _ UsersServiceInterface = &usersService{}
 
 type usersService struct {
-	DB              *sql.DB
+	DB              *sqlx.DB
 	storageOperator cloud.StorageOperatorInterface
 }
 
-func NewUsersService(db *sql.DB, storageOperator cloud.StorageOperatorInterface) *usersService {
+func NewUsersService(db *sqlx.DB, storageOperator cloud.StorageOperatorInterface) *usersService {
 	return &usersService{DB: db, storageOperator: storageOperator}
 }
 
@@ -40,18 +38,29 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 
 	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
 	if !ok {
-		return nil, errors.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal(ctx, "userId not found in ctx")
 	}
-
-	user, err := dbModels.FindUser(ctx, s.DB, int(userId))
-	if err != nil && err != sql.ErrNoRows {
+	user := &dbModels.User{}
+	err := s.DB.Get(user, "SELECT * FROM users WHERE id = ?", userId)
+	if err != nil {
 		return nil, customErr.Internal(ctx, err.Error())
-	} else if err == sql.ErrNoRows {
-		return nil, customErr.NotFound(ctx, err.Error())
 	}
+	// if err != nil && err != sql.ErrNoRows {
+	// 	return nil, customErr.Internal(ctx, err.Error())
+	// } else if err == sql.ErrNoRows {
+	// 	return nil, customErr.NotFound(ctx, err.Error())
+	// }
 
 	user.Username = input.Username
 	user.Bio = input.Bio
+
+	if input.Email != user.Email {
+		c := 0
+		s.DB.Get(&c, "SELECT COUNT(*) FROM users WHERE email=?", input.Email)
+		if c != 0 {
+			return nil, customErr.BadRequest(ctx, "A user with this email already exists")
+		}
+	}
 	user.Email = input.Email
 
 	var newAvatarUrl string
@@ -64,7 +73,8 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 	if newAvatarUrl != "" {
 		user.Avatar = newAvatarUrl
 	}
-	_, err = user.Update(ctx, s.DB, boil.Infer())
+	_, err = s.DB.NamedExec(fmt.Sprintf(`UPDATE users SET username=:username, bio=:bio, email=:email, 
+	avatar=:avatar WHERE id = %d`, userId), user)
 	if err != nil {
 		return nil, customErr.Internal(ctx, err.Error())
 	}
@@ -76,10 +86,10 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 
 func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error) {
 
-	c, _ := dbModels.Users(Where("email=?", input.Email)).Count(ctx, s.DB)
-
+	c := 0
+	s.DB.Get(&c, "SELECT COUNT(*) FROM users WHERE email=?", input.Email)
 	if c != 0 {
-		return nil, fmt.Errorf("user already exists")
+		return nil, customErr.BadRequest(ctx, "A user with this email already exists")
 	}
 
 	pwd, err := helpers.HashPassword(input.Password)
@@ -88,25 +98,30 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 	}
 
 	insertedUser := &dbModels.User{
-		Email:    input.Email,
-		Password: pwd,
-		Username: input.Username,
-		Bio:      input.Bio,
-		Role:     model.RoleUser.String(),
+		Email:     input.Email,
+		Password:  pwd,
+		Username:  input.Username,
+		Bio:       input.Bio,
+		Role:      model.RoleUser.String(),
+		CreatedAt: time.Now(),
 	}
 
-	err = insertedUser.Insert(ctx, s.DB, boil.Infer())
+	result, err := s.DB.NamedExec(`INSERT INTO users(email, password, username, bio, role, created_at) VALUES(
+		:email, :password, :username, :bio, :role, :created_at)`, insertedUser)
 	if err != nil {
 		return nil, customErr.Internal(ctx, err.Error())
 	}
+	userId, _ := result.LastInsertId()
 
-	avatarUrl, err := s.storageOperator.UploadImage(ctx, &input.Avatar, "avatar", fmt.Sprintf("%v", insertedUser.ID))
+	avatarUrl, err := s.storageOperator.UploadImage(ctx, &input.Avatar, "avatar", fmt.Sprintf("%v", userId))
 	if err != nil {
 		return nil, err
 	}
 	insertedUser.Avatar = avatarUrl
-	insertedUser.Update(ctx, s.DB, boil.Infer())
-
+	result, err = s.DB.NamedExec(`UPDATE users SET avatar=:avatar`, insertedUser)
+	if err != nil {
+		return nil, customErr.Internal(ctx, err.Error())
+	}
 	returnedUser := &custom.User{
 		Username: input.Username,
 		Email:    input.Email,
@@ -122,7 +137,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 func (s *usersService) GetUsers(ctx context.Context, input *model.UserFilterInput) ([]*custom.User, error) {
 	_, ok := ctx.Value(helpers.UserIdKey).(intUserID)
 	if !ok {
-		return nil, errors.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal(ctx, "userId not found in ctx")
 	}
 	if input == nil {
 		return s.GetAllUsers(ctx)
@@ -152,12 +167,10 @@ func (s *usersService) GetUserById(ctx context.Context, ID string) (*custom.User
 	if err != nil {
 		return nil, customErr.Internal(ctx, err.Error())
 	}
-
-	user, err := dbModels.FindUser(ctx, s.DB, inputId)
-	if err != nil && err != sql.ErrNoRows {
+	user := dbModels.User{}
+	err = s.DB.Get(&user, "SELECT * FROM users WHERE id=?", inputId)
+	if err != nil {
 		return nil, customErr.Internal(ctx, err.Error())
-	} else if err == sql.ErrNoRows {
-		return nil, customErr.NotFound(ctx, err.Error())
 	}
 
 	return &custom.User{
@@ -168,13 +181,11 @@ func (s *usersService) GetUserById(ctx context.Context, ID string) (*custom.User
 
 func (s *usersService) GetUserByEmail(ctx context.Context, email string) ([]*custom.User, error) {
 
-	user, err := dbModels.Users(Where("email = ?", email)).One(ctx, s.DB)
-	if err != nil && err != sql.ErrNoRows {
+	user := dbModels.User{}
+	err := s.DB.Get(&user, "SELECT * FROM users WHERE email=?", email)
+	if err != nil {
 		return nil, customErr.Internal(ctx, err.Error())
-	} else if err == sql.ErrNoRows {
-		return nil, customErr.NotFound(ctx, err.Error())
 	}
-
 	return []*custom.User{
 		{ID: fmt.Sprintf("%v", user.ID),
 			Username: user.Username, Email: user.Email, Avatar: user.Avatar, Joined: &user.CreatedAt,
@@ -185,13 +196,11 @@ func (s *usersService) GetUserByEmail(ctx context.Context, email string) ([]*cus
 func (s *usersService) GetUsersByUserName(ctx context.Context, username string) ([]*custom.User, error) {
 
 	userList := []*custom.User{}
-	users, err := dbModels.Users(Where("username = ?", username)).All(ctx, s.DB)
-	if err != nil && err != sql.ErrNoRows {
+	users := []dbModels.User{}
+	err := s.DB.Get(&users, "SELECT * FROM users WHERE id=?", username)
+	if err != nil {
 		return nil, customErr.Internal(ctx, err.Error())
-	} else if err == sql.ErrNoRows {
-		return nil, customErr.NotFound(ctx, err.Error())
 	}
-
 	for _, user := range users {
 		userList = append(userList, &custom.User{ID: fmt.Sprintf("%v", user.ID),
 			Username: user.Username, Email: user.Email, Avatar: user.Avatar, Joined: &user.CreatedAt})
@@ -201,7 +210,8 @@ func (s *usersService) GetUsersByUserName(ctx context.Context, username string) 
 
 func (s *usersService) GetAllUsers(ctx context.Context) ([]*custom.User, error) {
 	userList := []*custom.User{}
-	users, err := dbModels.Users().All(ctx, s.DB)
+	users := []dbModels.User{}
+	err := s.DB.Select(&users, "SELECT * FROM users")
 	if err != nil {
 		return nil, customErr.Internal(ctx, err.Error())
 	}

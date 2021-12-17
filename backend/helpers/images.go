@@ -3,7 +3,6 @@ package helpers
 import (
 	"fmt"
 	"strings"
-	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	"github.com/gasser707/go-gql-server/graph/model"
 )
 
@@ -17,15 +16,6 @@ func ParseLabels(labels []string) string{
 	str = str[0:len(str)-1]
 	str= "("+ str+")"
 	return str
-}
-
-
-func LabelSliceToString(slice dbModels.LabelSlice) []string {
-	strArr := []string{}
-	for _, l := range slice {
-		strArr = append(strArr, l.Tag)
-	}
-	return strArr
 }
 
 func ParseFilter(input *model.ImageFilterInput, userID int) string{

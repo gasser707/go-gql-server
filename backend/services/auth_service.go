@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,7 +15,7 @@ import (
 	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/securecookie"
-	. "github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/jmoiron/sqlx"
 )
 
 type AuthServiceInterface interface {
@@ -32,11 +31,11 @@ var _ AuthServiceInterface = &authService{}
 type authService struct {
 	rd auth.RedisOperatorInterface
 	tk auth.TokenOperatorInterface
-	DB *sql.DB
+	DB *sqlx.DB
 	sc *securecookie.SecureCookie
 }
 
-func NewAuthService(db *sql.DB) *authService {
+func NewAuthService(db *sqlx.DB) *authService {
 	sc := helpers.NewSecureCookie()
 	tk := auth.NewTokenOperator(sc)
 	rd := auth.NewRedisStore()
@@ -48,7 +47,8 @@ type intUserID int64
 
 func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, error) {
 
-	user, err := dbModels.Users(Where("email = ?", input.Email)).One(ctx, s.DB)
+	user := dbModels.User{}
+	err := s.DB.Get(&user,"SELECT * FROM users WHERE email=?", input.Email)
 	if err != nil {
 		return false, customErr.NoAuth(ctx, err.Error())
 	}
