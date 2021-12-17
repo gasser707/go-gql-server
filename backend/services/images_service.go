@@ -10,6 +10,7 @@ import (
 	"github.com/gasser707/go-gql-server/cloud"
 	"github.com/gasser707/go-gql-server/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
+	"github.com/gasser707/go-gql-server/errors"
 	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/gasser707/go-gql-server/graph/model"
 	"github.com/gasser707/go-gql-server/helpers"
@@ -34,23 +35,22 @@ var _ ImagesServiceInterface = &imagesService{}
 
 type imagesService struct {
 	DB              *sql.DB
-	AuthService     AuthServiceInterface
 	storageOperator cloud.StorageOperatorInterface
 	visionOperator  cloud.VisionOperatorInterface
 }
 
-func NewImagesService(ctx context.Context, db *sql.DB, authSrv AuthServiceInterface, storageOperator cloud.StorageOperatorInterface) *imagesService {
+func NewImagesService(ctx context.Context, db *sql.DB, storageOperator cloud.StorageOperatorInterface) *imagesService {
 	vo, err := cloud.NewVisionOperator(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return &imagesService{DB: db, AuthService: authSrv, storageOperator: storageOperator, visionOperator: vo}
+	return &imagesService{DB: db, storageOperator: storageOperator, visionOperator: vo}
 }
 
 func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
-	userId, _, err := s.AuthService.validateCredentials(ctx)
-	if err != nil {
-		return nil, err
+	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	if !ok {
+		return nil, errors.Internal(ctx, "userId not found in ctx")
 	}
 	errs, ctx := errgroup.WithContext(ctx)
 	ch := make(chan *custom.Image)
@@ -76,9 +76,9 @@ func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImag
 }
 
 func (s *imagesService) DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
-	userId, _, err := s.AuthService.validateCredentials(ctx)
-	if err != nil {
-		return false, err
+	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	if !ok {
+		return false, errors.Internal(ctx, "userId not found in ctx")
 	}
 	errs, ctx := errgroup.WithContext(ctx)
 	for _, delImg := range input {
@@ -88,7 +88,7 @@ func (s *imagesService) DeleteImages(ctx context.Context, input []*model.DeleteI
 				return s.processDeleteImage(ctx, i, userId)
 			})
 	}
-	err = errs.Wait()
+	err := errs.Wait()
 	if err != nil {
 		return false, err
 	}
@@ -133,8 +133,10 @@ func (s *imagesService) processDeleteImage(ctx context.Context, input *model.Del
 
 	delImgId, _ := strconv.Atoi(input.ID)
 	img, err := dbModels.FindImage(ctx, s.DB, delImgId)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return customErr.Internal(ctx, err.Error())
+	} else if err == sql.ErrNoRows {
+		return customErr.NotFound(ctx, err.Error())
 	}
 	if img.UserID != int(userId) {
 		return customErr.Forbidden(ctx, err.Error())
@@ -161,9 +163,9 @@ func (s *imagesService) processDeleteImage(ctx context.Context, input *model.Del
 }
 
 func (s *imagesService) GetImages(ctx context.Context, input *model.ImageFilterInput) ([]*custom.Image, error) {
-	userId, _, err := s.AuthService.validateCredentials(ctx)
-	if err != nil {
-		return nil, err
+	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	if !ok {
+		return nil, errors.Internal(ctx, "userId not found in ctx")
 	}
 	if input == nil {
 		return s.GetAllPublicImgs(ctx)
@@ -183,9 +185,9 @@ func (s *imagesService) GetImages(ctx context.Context, input *model.ImageFilterI
 }
 
 func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Image, error) {
-	userId, _, err := s.AuthService.validateCredentials(ctx)
-	if err != nil {
-		return nil, err
+	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	if !ok {
+		return nil, errors.Internal(ctx, "userId not found in ctx")
 	}
 	inputId, err := strconv.Atoi(ID)
 	if err != nil {
@@ -255,9 +257,9 @@ func (s *imagesService) GetAllPublicImgs(ctx context.Context) ([]*custom.Image, 
 }
 
 func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImageInput) (*custom.Image, error) {
-	userId, _, err := s.AuthService.validateCredentials(ctx)
-	if err != nil {
-		return nil, err
+	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	if !ok {
+		return nil, errors.Internal(ctx, "userId not found in ctx")
 	}
 
 	img, err := dbModels.Images(Where("id=? And images.user_Id=?", input.ID, userId)).One(ctx, s.DB)
@@ -315,9 +317,9 @@ func (s *imagesService) insertLabels(ctx context.Context, labels []string, imgId
 }
 
 func (s *imagesService) AutoGenerateLabels(ctx context.Context, imageId string) ([]string, error) {
-	userId, _, err := s.AuthService.validateCredentials(ctx)
-	if err != nil {
-		return nil, err
+	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	if !ok {
+		return nil, errors.Internal(ctx, "userId not found in ctx")
 	}
 	img, err := dbModels.Images(Where("images.id=? And images.user_id=?", imageId, userId)).One(ctx, s.DB)
 	if err != nil {
@@ -330,7 +332,7 @@ func (s *imagesService) AutoGenerateLabels(ctx context.Context, imageId string) 
 	}
 	oldLabels := helpers.LabelSliceToString(dbLabels)
 	newLabels := helpers.RemoveDuplicate(generatedLabels, oldLabels)
-	err = s.insertLabels(ctx ,newLabels, img.ID)
+	err = s.insertLabels(ctx, newLabels, img.ID)
 	if err != nil {
 		return nil, err
 	}

@@ -4,10 +4,13 @@ import (
 	"context"
 	"net/http"
 	"time"
+
+	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/securecookie"
-    customErr"github.com/gasser707/go-gql-server/errors"
 )
+
+const cookieKey = "cookie-name" 
 
 type CookieAccess struct {
     Writer     http.ResponseWriter
@@ -40,13 +43,14 @@ func (ca *CookieAccess) SetToken(at string, rt string, sm *securecookie.SecureCo
 
 
 func setValInCtx(ctx *gin.Context, val interface{}) {
-    newCtx := context.WithValue(ctx.Request.Context(), "cookie-name", val)
+    cookieKey := cookieKey
+    newCtx := context.WithValue(ctx.Request.Context(), cookieKey, val)
     ctx.Request = ctx.Request.WithContext(newCtx)
 }
 
 func GetCookieAccess(ctx context.Context) (*CookieAccess, error) {
-
-    ca, ok :=  ctx.Value("cookie-name").(*CookieAccess)
+    cookieKey := cookieKey
+    ca, ok :=  ctx.Value(cookieKey).(*CookieAccess)
     if(!ok){
         return nil, customErr.NoAuth(ctx, "cookie not found")
     }
@@ -55,14 +59,15 @@ func GetCookieAccess(ctx context.Context) (*CookieAccess, error) {
 
 func Middleware() gin.HandlerFunc {
     return func(ctx *gin.Context) {
-        ec := ""
-        ca,err := ctx.Request.Cookie("cookie-name")
+        encodedCookie := ""
+        cookieKey := cookieKey
+        ca,err := ctx.Request.Cookie(string(cookieKey))
         if(err==nil){
-            ec = ca.Value
+            encodedCookie = ca.Value
         }
         cookieA := CookieAccess{
             Writer: ctx.Writer,
-            encodedCookie: ec,
+            encodedCookie: encodedCookie,
         }
 
         // &cookieA is a pointer so any changes in future is changing cookieA is context
@@ -70,7 +75,5 @@ func Middleware() gin.HandlerFunc {
 
        // calling the actual resolver
         ctx.Next()
-       // here will execute after resolver and all other middlewares was called
-       // so &cookieA is safe from garbage collector
     }
 }

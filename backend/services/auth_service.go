@@ -21,7 +21,7 @@ import (
 
 type AuthServiceInterface interface {
 	Login(ctx context.Context, input model.LoginInput) (bool, error)
-	validateCredentials(c context.Context) (intUserID, model.Role, error)
+	ValidateCredentials(c context.Context) (intUserID, model.Role, error)
 	Logout(c context.Context) (bool, error)
 	Refresh(c *gin.Context)
 }
@@ -30,15 +30,15 @@ type AuthServiceInterface interface {
 var _ AuthServiceInterface = &authService{}
 
 type authService struct {
-	rd auth.RedisServiceInterface
-	tk auth.TokenServiceInterface
+	rd auth.RedisOperatorInterface
+	tk auth.TokenOperatorInterface
 	DB *sql.DB
 	sc *securecookie.SecureCookie
 }
 
 func NewAuthService(db *sql.DB) *authService {
 	sc := helpers.NewSecureCookie()
-	tk := auth.NewTokenService(sc)
+	tk := auth.NewTokenOperator(sc)
 	rd := auth.NewRedisStore()
 	return &authService{rd, tk, db, sc}
 }
@@ -78,7 +78,7 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 	return true, nil
 }
 
-func (s *authService) validateCredentials(ctx context.Context) (intUserID, model.Role, error) {
+func (s *authService) ValidateCredentials(ctx context.Context) (intUserID, model.Role, error) {
 	metadata, err := s.tk.ExtractTokenMetadata(ctx)
 	if err != nil {
 		return -1, "", err
