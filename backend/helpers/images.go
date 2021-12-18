@@ -3,7 +3,7 @@ package helpers
 import (
 	"fmt"
 	"strings"
-	"github.com/gasser707/go-gql-server/graph/model"
+	"github.com/gasser707/go-gql-server/graphql/model"
 )
 
 

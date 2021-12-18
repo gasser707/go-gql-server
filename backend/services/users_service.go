@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/gasser707/go-gql-server/cloud"
-	"github.com/gasser707/go-gql-server/custom"
+	"github.com/gasser707/go-gql-server/graphql/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	customErr "github.com/gasser707/go-gql-server/errors"
-	"github.com/gasser707/go-gql-server/graph/model"
+	"github.com/gasser707/go-gql-server/graphql/model"
 	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/jmoiron/sqlx"
 )

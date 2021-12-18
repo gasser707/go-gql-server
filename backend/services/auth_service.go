@@ -11,8 +11,9 @@ import (
 	"github.com/gasser707/go-gql-server/auth"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	customErr "github.com/gasser707/go-gql-server/errors"
-	"github.com/gasser707/go-gql-server/graph/model"
+	"github.com/gasser707/go-gql-server/graphql/model"
 	"github.com/gasser707/go-gql-server/helpers"
+	"github.com/gasser707/go-gql-server/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/securecookie"
 	"github.com/jmoiron/sqlx"
@@ -70,7 +71,7 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 		return false, err
 	}
 
-	ca, err := auth.GetCookieAccess(ctx)
+	ca, err := middleware.GetCookieAccess(ctx)
 	if err != nil {
 		return false, err
 	}

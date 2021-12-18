@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gasser707/go-gql-server/custom"
+	"github.com/gasser707/go-gql-server/graphql/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/gasser707/go-gql-server/helpers"

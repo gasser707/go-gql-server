@@ -8,7 +8,8 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	customErr "github.com/gasser707/go-gql-server/errors"
-	"github.com/gasser707/go-gql-server/graph/model"
+	"github.com/gasser707/go-gql-server/graphql/model"
+	"github.com/gasser707/go-gql-server/middleware"
 	"github.com/gorilla/securecookie"
 	"github.com/twinj/uuid"
 )
@@ -139,11 +140,11 @@ func (t *tokenOperator) ExtractTokenMetadata(ctx context.Context) (*AccessDetail
 }
 
 func (t *tokenOperator) getTokensFromCookie(ctx context.Context) (map[string]string, error) {
-	ca, err := GetCookieAccess(ctx)
+	ca, err := middleware.GetCookieAccess(ctx)
 	if err != nil {
 		return nil, err
 	}
-	ec := ca.encodedCookie
+	ec := ca.EncodedCookie
 	value := make(map[string]string)
 	if err = t.sc.Decode("cookie-name", ec, &value); err != nil {
 		return nil, customErr.NoAuth(ctx, err.Error())

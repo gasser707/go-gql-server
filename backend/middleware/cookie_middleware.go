@@ -1,10 +1,9 @@
-package auth
+package middleware
 
 import (
 	"context"
 	"net/http"
 	"time"
-
 	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/securecookie"
@@ -14,7 +13,7 @@ const cookieKey = "cookie-name"
 
 type CookieAccess struct {
     Writer     http.ResponseWriter
-    encodedCookie   string
+    EncodedCookie   string
 }
 // method to write cookie
 func (ca *CookieAccess) SetToken(at string, rt string, sm *securecookie.SecureCookie) {
@@ -34,7 +33,7 @@ func (ca *CookieAccess) SetToken(at string, rt string, sm *securecookie.SecureCo
             Expires: time.Now().Add(time.Hour*24*7),
 		}
         http.SetCookie(ca.Writer,cookie)
-        ca.encodedCookie = encoded
+        ca.EncodedCookie = encoded
 	} else{
         println(err.Error())
     }
@@ -67,7 +66,7 @@ func Middleware() gin.HandlerFunc {
         }
         cookieA := CookieAccess{
             Writer: ctx.Writer,
-            encodedCookie: encodedCookie,
+            EncodedCookie: encodedCookie,
         }
 
         // &cookieA is a pointer so any changes in future is changing cookieA is context

@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"log"
+
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/gasser707/go-gql-server/auth"
 	"github.com/gasser707/go-gql-server/cloud"
 	"github.com/gasser707/go-gql-server/databases"
-	"github.com/gasser707/go-gql-server/graph"
-	"github.com/gasser707/go-gql-server/graph/generated"
+	"github.com/gasser707/go-gql-server/graphql/generated"
+	"github.com/gasser707/go-gql-server/graphql/resolvers"
 	"github.com/gasser707/go-gql-server/helpers"
+	"github.com/gasser707/go-gql-server/middleware"
 	"github.com/gasser707/go-gql-server/services"
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
@@ -33,7 +34,7 @@ func graphqlHandler() gin.HandlerFunc {
 	imgSrv := services.NewImagesService(ctx, mysqlDB, so)
 	saleSrv := services.NewSalesService(mysqlDB, authSrv)
 
-	c := generated.Config{Resolvers: &graph.Resolver{AuthService: authSrv,
+	c := generated.Config{Resolvers: &resolvers.Resolver{AuthService: authSrv,
 		ImagesService: imgSrv, UsersService: userSrv, SaleService: saleSrv}}
 
 	c.Directives.IsLoggedIn = func(ctx context.Context, obj interface{}, next graphql.Resolver) (interface{}, error) {
@@ -67,7 +68,7 @@ func main() {
 	// Setting up Gin
 	r := gin.Default()
 
-	r.Use(auth.Middleware())
+	r.Use(middleware.Middleware())
 
 	r.POST("/query", graphqlHandler())
 	r.GET("/", playgroundHandler())

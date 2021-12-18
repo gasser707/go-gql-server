@@ -1,0 +1,17 @@
+
+type Sale {
+    id: ID!
+    image: Image!
+    buyer: User!
+    seller: User!
+    time: Time
+    price: Float!
+}
+
+extend type Mutation{
+  buyImage(id: ID!): Sale! @isLoggedIn
+}
+
+extend type Query{
+    sales:[Sale!]! @isLoggedIn
+}
