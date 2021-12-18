@@ -2,17 +2,15 @@ package services
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strconv"
+	"time"
 
-	"github.com/gasser707/go-gql-server/custom"
+	"github.com/gasser707/go-gql-server/graphql/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
-	"github.com/gasser707/go-gql-server/errors"
 	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/gasser707/go-gql-server/helpers"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/jmoiron/sqlx"
 )
 
 type SalesServiceInterface interface {
@@ -24,38 +22,41 @@ type SalesServiceInterface interface {
 var _ SalesServiceInterface = &salesService{}
 
 type salesService struct {
-	DB          *sql.DB
+	DB          *sqlx.DB
 	AuthService AuthServiceInterface
 }
 
-func NewSalesService(db *sql.DB, authSrv AuthServiceInterface) *salesService {
+func NewSalesService(db *sqlx.DB, authSrv AuthServiceInterface) *salesService {
 	return &salesService{DB: db, AuthService: authSrv}
 }
 
 func (s *salesService) BuyImage(ctx context.Context, id string) (*custom.Sale, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
 	if !ok {
-		return nil, errors.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal(ctx, "userId not found in ctx")
 	}
 	imgId, err := strconv.Atoi(id)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.BadRequest(ctx, err.Error())
 	}
-
-	img, err := dbModels.FindImage(ctx, s.DB, imgId)
+	img := &dbModels.Image{}
+	err = s.DB.Get(img, "SELECT * FROM images WHERE id = ?", imgId)
 	if err != nil || !img.ForSale || img.UserID == int(userId) {
 		return nil, customErr.Forbidden(ctx, err.Error())
 	}
-	sale := &dbModels.Sale{
-		Price:    img.Price,
-		ImageID:  imgId,
-		BuyerID:  int(userId),
-		SellerID: img.UserID,
+	sale := dbModels.Sale{
+		Price:     img.Price,
+		ImageID:   imgId,
+		BuyerID:   int(userId),
+		SellerID:  img.UserID,
+		CreatedAt: time.Now(),
 	}
-	err = sale.Insert(ctx, s.DB, boil.Infer())
+	result, err := s.DB.NamedExec(`INSERT INTO images(image_id, buyer_id, seller_id, price, created_at) VALUES (:image_id,
+		 :buyer_id, :seller_id, :price, :created_at)`, sale)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.DB(ctx, err)
 	}
+	saleId, _ := result.LastInsertId()
 
 	return &custom.Sale{
 		Price:    sale.Price,
@@ -63,18 +64,19 @@ func (s *salesService) BuyImage(ctx context.Context, id string) (*custom.Sale, e
 		BuyerID:  fmt.Sprintf("%v", userId),
 		SellerID: fmt.Sprintf("%v", sale.SellerID),
 		Time:     &sale.CreatedAt,
-		ID:       fmt.Sprintf("%v", sale.ID),
+		ID:       fmt.Sprintf("%d", saleId),
 	}, nil
 }
 
 func (s *salesService) GetSales(ctx context.Context) ([]*custom.Sale, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
 	if !ok {
-		return nil, errors.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal(ctx, "userId not found in ctx")
 	}
-	dbSales, err := dbModels.Sales(qm.Where("buyer_id = ? or seller_id = ?", userId, userId)).All(ctx, s.DB)
+	dbSales := []dbModels.Sale{}
+	err := s.DB.Select(&dbSales,"SELECT * FROM sales WHERE buyer_id=? OR seller_id=?", userId, userId)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.DB(ctx, err)
 	}
 
 	sales := []*custom.Sale{}

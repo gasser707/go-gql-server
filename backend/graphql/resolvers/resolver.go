@@ -1,4 +1,4 @@
-package graph
+package resolvers
 
 import "github.com/gasser707/go-gql-server/services"
 

@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,11 +11,12 @@ import (
 	"github.com/gasser707/go-gql-server/auth"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	customErr "github.com/gasser707/go-gql-server/errors"
-	"github.com/gasser707/go-gql-server/graph/model"
+	"github.com/gasser707/go-gql-server/graphql/model"
 	"github.com/gasser707/go-gql-server/helpers"
+	"github.com/gasser707/go-gql-server/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/securecookie"
-	. "github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"github.com/jmoiron/sqlx"
 )
 
 type AuthServiceInterface interface {
@@ -32,11 +32,11 @@ var _ AuthServiceInterface = &authService{}
 type authService struct {
 	rd auth.RedisOperatorInterface
 	tk auth.TokenOperatorInterface
-	DB *sql.DB
+	DB *sqlx.DB
 	sc *securecookie.SecureCookie
 }
 
-func NewAuthService(db *sql.DB) *authService {
+func NewAuthService(db *sqlx.DB) *authService {
 	sc := helpers.NewSecureCookie()
 	tk := auth.NewTokenOperator(sc)
 	rd := auth.NewRedisStore()
@@ -48,9 +48,10 @@ type intUserID int64
 
 func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, error) {
 
-	user, err := dbModels.Users(Where("email = ?", input.Email)).One(ctx, s.DB)
+	user := dbModels.User{}
+	err := s.DB.Get(&user,"SELECT * FROM users WHERE email=?", input.Email)
 	if err != nil {
-		return false, customErr.NoAuth(ctx, err.Error())
+		return false, customErr.BadRequest(ctx, err.Error())
 	}
 
 	ok := helpers.CheckPasswordHash(input.Password, user.Password)
@@ -70,7 +71,7 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 		return false, err
 	}
 
-	ca, err := auth.GetCookieAccess(ctx)
+	ca, err := middleware.GetCookieAccess(ctx)
 	if err != nil {
 		return false, err
 	}

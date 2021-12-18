@@ -1,12 +1,12 @@
 package databases
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -24,18 +24,15 @@ var (
 	schema   = os.Getenv(mysqlUsersSchema)
 )
 
-func NewMysqlClient() *sql.DB {
+func NewMysqlClient() *sqlx.DB {
 
 	//username:password@protocol(address)/dbname?param=value
 	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&multiStatements=true",
 		username, password, host, schema,
 	)
 
-	mysqlClient, err := sql.Open("mysql", dataSourceName)
+	mysqlClient, err := sqlx.Connect("mysql", dataSourceName)
 	if err != nil {
-		panic(err)
-	}
-	if err = mysqlClient.Ping(); err != nil {
 		panic(err)
 	}
 

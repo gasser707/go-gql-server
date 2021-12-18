@@ -1,0 +1,48 @@
+
+type User {
+    id: ID!
+    username: String!
+    email: String!
+    role: Role!
+    bio: String!
+	avatar: String!
+    joined: Time
+    images: [Image!]!
+}
+
+enum Role {
+    ADMIN
+    USER
+    MODERATOR
+}
+
+input UserFilterInput {
+    id: ID
+    username: String
+    email: String
+}
+
+
+input NewUserInput {
+  username: String!
+  email: String!
+  password: String!
+  bio: String!
+  avatar: Upload!
+}
+
+input UpdateUserInput {
+    username: String!
+    email: String!
+    bio: String!
+    avatar: Upload
+}
+
+extend type Mutation {
+  registerUser(input: NewUserInput!): User! 
+  updateUser(input: UpdateUserInput!): User! @isLoggedIn
+  }
+
+extend type Query {
+    users(input: UserFilterInput): [User!]! @isLoggedIn
+}
