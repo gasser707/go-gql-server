@@ -7,11 +7,12 @@ import (
 	"time"
 
 	"github.com/gasser707/go-gql-server/cloud"
-	"github.com/gasser707/go-gql-server/graphql/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	customErr "github.com/gasser707/go-gql-server/errors"
+	"github.com/gasser707/go-gql-server/graphql/custom"
 	"github.com/gasser707/go-gql-server/graphql/model"
 	"github.com/gasser707/go-gql-server/helpers"
+	"github.com/gasser707/go-gql-server/repo"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -26,67 +27,24 @@ type UsersServiceInterface interface {
 var _ UsersServiceInterface = &usersService{}
 
 type usersService struct {
-	DB              *sqlx.DB
+	repo        repo.UsersRepoInterface
 	storageOperator cloud.StorageOperatorInterface
 }
 
 func NewUsersService(db *sqlx.DB, storageOperator cloud.StorageOperatorInterface) *usersService {
-	return &usersService{DB: db, storageOperator: storageOperator}
-}
-
-func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error) {
-
-	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
-	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
-	}
-	user := &dbModels.User{}
-	err := s.DB.Get(user, "SELECT * FROM users WHERE id = ?", userId)
-	if err != nil {
-		return nil, customErr.DB(ctx, err)
-	}
-
-	user.Username = input.Username
-	user.Bio = input.Bio
-
-	if input.Email != user.Email {
-		c := 0
-		s.DB.Get(&c, "SELECT COUNT(*) FROM users WHERE email=?", input.Email)
-		if c != 0 {
-			return nil, customErr.BadRequest(ctx, "A user with this email already exists")
-		}
-	}
-	user.Email = input.Email
-
-	var newAvatarUrl string
-	if input.Avatar != nil {
-		newAvatarUrl, err = s.storageOperator.UploadImage(ctx, input.Avatar, "avatar", fmt.Sprintf("%v", userId))
-		if err != nil {
-			return nil, err
-		}
-	}
-	if newAvatarUrl != "" {
-		user.Avatar = newAvatarUrl
-	}
-	_, err = s.DB.NamedExec(fmt.Sprintf(`UPDATE users SET username=:username, bio=:bio, email=:email, 
-	avatar=:avatar WHERE id = %d`, userId), user)
-	if err != nil {
-		return nil, customErr.DB(ctx, err)
-	}
-
-	returnUser := &custom.User{Avatar: user.Avatar, Email: user.Email,
-		Username: user.Username, Bio: user.Bio, ID: fmt.Sprintf("%v", userId)}
-	return returnUser, nil
+	
+	return &usersService{repo: repo.NewUsersRepo(db), storageOperator: storageOperator}
 }
 
 func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error) {
 
-	c := 0
-	s.DB.Get(&c, "SELECT COUNT(*) FROM users WHERE email=?", input.Email)
+	c, err := s.repo.CountByEmail(ctx, input.Email)
+	if err != nil {
+		return nil, err
+	}
 	if c != 0 {
 		return nil, customErr.BadRequest(ctx, "A user with this email already exists")
 	}
-
 	pwd, err := helpers.HashPassword(input.Password)
 	if err != nil {
 		return nil, err
@@ -100,22 +58,19 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 		Role:      model.RoleUser.String(),
 		CreatedAt: time.Now(),
 	}
-
-	result, err := s.DB.NamedExec(`INSERT INTO users(email, password, username, bio, role, created_at) VALUES(
-		:email, :password, :username, :bio, :role, :created_at)`, insertedUser)
+	userId, err := s.repo.Create(ctx, insertedUser)
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, err
 	}
-	userId, _ := result.LastInsertId()
 
 	avatarUrl, err := s.storageOperator.UploadImage(ctx, &input.Avatar, "avatar", fmt.Sprintf("%v", userId))
 	if err != nil {
 		return nil, err
 	}
 	insertedUser.Avatar = avatarUrl
-	_, err = s.DB.NamedExec(`UPDATE users SET avatar=:avatar`, insertedUser)
+	err = s.repo.Update(ctx, insertedUser.ID, insertedUser)
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, err
 	}
 	returnedUser := &custom.User{
 		Username: input.Username,
@@ -153,7 +108,6 @@ func (s *usersService) GetUsers(ctx context.Context, input *model.UserFilterInpu
 		return s.GetUsersByUserName(ctx, *input.Username)
 	}
 	return s.GetAllUsers(ctx)
-
 }
 
 func (s *usersService) GetUserById(ctx context.Context, ID string) (*custom.User, error) {
@@ -162,12 +116,10 @@ func (s *usersService) GetUserById(ctx context.Context, ID string) (*custom.User
 	if err != nil {
 		return nil, customErr.BadRequest(ctx, err.Error())
 	}
-	user := dbModels.User{}
-	err = s.DB.Get(&user, "SELECT * FROM users WHERE id=?", inputId)
+	user, err := s.repo.GetById(ctx, inputId)
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, err
 	}
-
 	return &custom.User{
 		ID: fmt.Sprintf("%v", user.ID), Username: user.Username,
 		Email: user.Email, Avatar: user.Avatar, Joined: &user.CreatedAt,
@@ -176,10 +128,9 @@ func (s *usersService) GetUserById(ctx context.Context, ID string) (*custom.User
 
 func (s *usersService) GetUserByEmail(ctx context.Context, email string) ([]*custom.User, error) {
 
-	user := dbModels.User{}
-	err := s.DB.Get(&user, "SELECT * FROM users WHERE email=?", email)
+	user, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, err
 	}
 	return []*custom.User{
 		{ID: fmt.Sprintf("%v", user.ID),
@@ -191,10 +142,9 @@ func (s *usersService) GetUserByEmail(ctx context.Context, email string) ([]*cus
 func (s *usersService) GetUsersByUserName(ctx context.Context, username string) ([]*custom.User, error) {
 
 	userList := []*custom.User{}
-	users := []dbModels.User{}
-	err := s.DB.Get(&users, "SELECT * FROM users WHERE username=?", username)
+	users, err := s.repo.GetByUsername(ctx, username)
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, err
 	}
 	for _, user := range users {
 		userList = append(userList, &custom.User{ID: fmt.Sprintf("%v", user.ID),
@@ -205,10 +155,9 @@ func (s *usersService) GetUsersByUserName(ctx context.Context, username string) 
 
 func (s *usersService) GetAllUsers(ctx context.Context) ([]*custom.User, error) {
 	userList := []*custom.User{}
-	users := []dbModels.User{}
-	err := s.DB.Select(&users, "SELECT * FROM users")
+	users, err := s.repo.GetAll(ctx)
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, err
 	}
 	for _, user := range users {
 		userList = append(userList, &custom.User{ID: fmt.Sprintf("%v", user.ID),
@@ -216,3 +165,50 @@ func (s *usersService) GetAllUsers(ctx context.Context) ([]*custom.User, error) 
 	}
 	return userList, nil
 }
+
+func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error) {
+
+	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	if !ok {
+		return nil, customErr.Internal(ctx, "userId not found in ctx")
+	}
+	user, err := s.repo.GetById(ctx, int(userId))
+	if err != nil {
+		return nil, err
+	}
+
+	user.Username = input.Username
+	user.Bio = input.Bio
+
+	if input.Email != user.Email {
+		c, err := s.repo.CountByEmail(ctx, input.Email)
+		if err != nil {
+			return nil, err
+		}
+		if c != 0 {
+			return nil, customErr.BadRequest(ctx, "A user with this email already exists")
+		}
+	}
+	user.Email = input.Email
+
+	var newAvatarUrl string
+	if input.Avatar != nil {
+		newAvatarUrl, err = s.storageOperator.UploadImage(ctx, input.Avatar, "avatar", fmt.Sprintf("%v", userId))
+		if err != nil {
+			return nil, err
+		}
+	}
+	if newAvatarUrl != "" {
+		user.Avatar = newAvatarUrl
+	}
+
+	err = s.repo.Update(ctx, int(userId), user)
+	if err != nil {
+		return nil, err
+	}
+
+	returnUser := &custom.User{Avatar: user.Avatar, Email: user.Email,
+		Username: user.Username, Bio: user.Bio, ID: fmt.Sprintf("%v", userId)}
+	return returnUser, nil
+}
+

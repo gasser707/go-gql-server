@@ -6,10 +6,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gasser707/go-gql-server/graphql/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	customErr "github.com/gasser707/go-gql-server/errors"
+	"github.com/gasser707/go-gql-server/graphql/custom"
 	"github.com/gasser707/go-gql-server/helpers"
+	"github.com/gasser707/go-gql-server/repo"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -22,12 +23,11 @@ type SalesServiceInterface interface {
 var _ SalesServiceInterface = &salesService{}
 
 type salesService struct {
-	DB          *sqlx.DB
-	AuthService AuthServiceInterface
+	repo         repo.SalesRepoInterface
 }
 
-func NewSalesService(db *sqlx.DB, authSrv AuthServiceInterface) *salesService {
-	return &salesService{DB: db, AuthService: authSrv}
+func NewSalesService(db *sqlx.DB) *salesService {
+	return &salesService{repo: repo.NewSalesRepo(db)}
 }
 
 func (s *salesService) BuyImage(ctx context.Context, id string) (*custom.Sale, error) {
@@ -39,8 +39,7 @@ func (s *salesService) BuyImage(ctx context.Context, id string) (*custom.Sale, e
 	if err != nil {
 		return nil, customErr.BadRequest(ctx, err.Error())
 	}
-	img := &dbModels.Image{}
-	err = s.DB.Get(img, "SELECT * FROM images WHERE id = ?", imgId)
+	img, err := s.repo.GetImageById(ctx, imgId, int(userId))
 	if err != nil || !img.ForSale || img.UserID == int(userId) {
 		return nil, customErr.Forbidden(ctx, err.Error())
 	}
@@ -51,12 +50,10 @@ func (s *salesService) BuyImage(ctx context.Context, id string) (*custom.Sale, e
 		SellerID:  img.UserID,
 		CreatedAt: time.Now(),
 	}
-	result, err := s.DB.NamedExec(`INSERT INTO images(image_id, buyer_id, seller_id, price, created_at) VALUES (:image_id,
-		 :buyer_id, :seller_id, :price, :created_at)`, sale)
+	saleId,err := s.repo.Create(ctx, &sale)
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, err
 	}
-	saleId, _ := result.LastInsertId()
 
 	return &custom.Sale{
 		Price:    sale.Price,
@@ -73,8 +70,7 @@ func (s *salesService) GetSales(ctx context.Context) ([]*custom.Sale, error) {
 	if !ok {
 		return nil, customErr.Internal(ctx, "userId not found in ctx")
 	}
-	dbSales := []dbModels.Sale{}
-	err := s.DB.Select(&dbSales,"SELECT * FROM sales WHERE buyer_id=? OR seller_id=?", userId, userId)
+	dbSales,err := s.repo.GetAll(ctx, int(userId))
 	if err != nil {
 		return nil, customErr.DB(ctx, err)
 	}

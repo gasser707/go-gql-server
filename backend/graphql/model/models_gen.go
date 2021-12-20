@@ -10,10 +10,6 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
-type DeleteImageInput struct {
-	ID string `json:"id"`
-}
-
 type ImageFilterInput struct {
 	ID         *string  `json:"id"`
 	UserID     *string  `json:"userId"`

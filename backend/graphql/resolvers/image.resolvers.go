@@ -19,7 +19,7 @@ func (r *mutationResolver) UploadImages(ctx context.Context, input []*model.NewI
 	return r.ImagesService.UploadImages(ctx, input)
 }
 
-func (r *mutationResolver) DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
+func (r *mutationResolver) DeleteImages(ctx context.Context, input []string) (bool, error) {
 	return r.ImagesService.DeleteImages(ctx, input)
 }
 
@@ -27,7 +27,7 @@ func (r *mutationResolver) UpdateImage(ctx context.Context, input model.UpdateIm
 	return r.ImagesService.UpdateImage(ctx, &input)
 }
 
-func (r *mutationResolver) AutoGenerateLabels(ctx context.Context, id string) ([]string, error){
+func (r *mutationResolver) AutoGenerateLabels(ctx context.Context, id string) ([]string, error) {
 	return r.ImagesService.AutoGenerateLabels(ctx, id)
 }
 
