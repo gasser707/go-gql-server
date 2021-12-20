@@ -5,7 +5,7 @@ package resolvers
 
 import (
 	"context"
-	
+
 	"github.com/gasser707/go-gql-server/graphql/custom"
 	"github.com/gasser707/go-gql-server/graphql/generated"
 )
@@ -17,7 +17,6 @@ func (r *mutationResolver) BuyImage(ctx context.Context, id string) (*custom.Sal
 func (r *queryResolver) Sales(ctx context.Context) ([]*custom.Sale, error) {
 	return r.SaleService.GetSales(ctx)
 }
-
 
 func (r *saleResolver) Image(ctx context.Context, sale *custom.Sale) (*custom.Image, error) {
 	return r.ImagesService.GetImageById(ctx, sale.ImageID)

@@ -14,11 +14,11 @@ import (
 var env = "ENV"
 
 var errCodeMap = map[int]string{
-	400: "There is a problem with the input you sent",
-	401:"Your auth credentials are invalid",
-	404: "No results found",
-	403:"You are trying to access a resource that doesn't belong to you",
-	500: "Sorry! There seems to be a problem on our end",
+	http.StatusBadRequest: "There is a problem with the input you sent",
+	http.StatusUnauthorized:"Your auth credentials are invalid",
+	http.StatusNotFound: "No results found",
+	http.StatusForbidden:"You are trying to access a resource that doesn't belong to you",
+	http.StatusInternalServerError: "Sorry! There seems to be a problem on our end",
 }
 
 func NewError(ctx context.Context,message string, code int) *gqlerror.Error {

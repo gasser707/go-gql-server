@@ -1,4 +1,0 @@
-scalar Time
-scalar Upload
-
-directive @isLoggedIn on FIELD_DEFINITION

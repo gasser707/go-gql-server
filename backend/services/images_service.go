@@ -6,12 +6,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
 	"github.com/gasser707/go-gql-server/cloud"
-	"github.com/gasser707/go-gql-server/graphql/custom"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	customErr "github.com/gasser707/go-gql-server/errors"
+	"github.com/gasser707/go-gql-server/graphql/custom"
 	"github.com/gasser707/go-gql-server/graphql/model"
 	"github.com/gasser707/go-gql-server/helpers"
+	"github.com/gasser707/go-gql-server/repo"
 	"github.com/jmoiron/sqlx"
 	"github.com/twinj/uuid"
 	"golang.org/x/sync/errgroup"
@@ -19,7 +21,7 @@ import (
 
 type ImagesServiceInterface interface {
 	UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error)
-	DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error)
+	DeleteImages(ctx context.Context, input []string) (bool, error)
 	GetImages(ctx context.Context, input *model.ImageFilterInput) ([]*custom.Image, error)
 	GetImageById(ctx context.Context, ID string) (*custom.Image, error)
 	UpdateImage(ctx context.Context, input *model.UpdateImageInput) (*custom.Image, error)
@@ -30,7 +32,7 @@ type ImagesServiceInterface interface {
 var _ ImagesServiceInterface = &imagesService{}
 
 type imagesService struct {
-	DB              *sqlx.DB
+	repo repo.ImagesRepoInterface
 	storageOperator cloud.StorageOperatorInterface
 	visionOperator  cloud.VisionOperatorInterface
 }
@@ -40,7 +42,7 @@ func NewImagesService(ctx context.Context, db *sqlx.DB, storageOperator cloud.St
 	if err != nil {
 		panic(err)
 	}
-	return &imagesService{DB: db, storageOperator: storageOperator, visionOperator: vo}
+	return &imagesService{repo: repo.NewImagesRepo(db), storageOperator: storageOperator, visionOperator: vo}
 }
 
 func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
@@ -71,7 +73,7 @@ func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImag
 	return images, errs.Wait()
 }
 
-func (s *imagesService) DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error) {
+func (s *imagesService) DeleteImages(ctx context.Context, input []string) (bool, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
 	if !ok {
 		return false, customErr.Internal(ctx, "userId not found in ctx")
@@ -105,13 +107,10 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 		UserID: int(userId), URL: url,
 		CreatedAt: time.Now(),
 	}
-	result, err := s.DB.NamedExec(`INSERT INTO images(title, description, private, forSale, price, user_id, created_at)
-		VALUES(:title, :description, :private, :forSale, :price, :user_id, :created_at)`, dbImg)
+	imgId, err := s.repo.Create(ctx, &dbImg)
 	if err != nil {
-		return customErr.DB(ctx, err)
+		return err
 	}
-	imgId, _ := result.LastInsertId()
-
 	err = s.insertLabels(ctx, inputImg.Labels, int(imgId))
 	if err != nil {
 		return err
@@ -128,40 +127,25 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 	return nil
 }
 
-func (s *imagesService) processDeleteImage(ctx context.Context, input *model.DeleteImageInput, userId intUserID) (err error) {
+func (s *imagesService) processDeleteImage(ctx context.Context, ID string, userId intUserID) (err error) {
 
-	delImgId, err := strconv.Atoi(input.ID)
-	if err != nil  {
+	delImgId, err := strconv.Atoi(ID)
+	if err != nil {
 		return customErr.BadRequest(ctx, err.Error())
-	} 
-	img := dbModels.Image{}
-	err = s.DB.Get(&img,"SELECT * FROM images WHERE id=? AND user_id=?", delImgId, userId)
-	if err != nil  {
-		return customErr.DB(ctx, err)
-	} 
-
-	if img.UserID != int(userId) {
-		return customErr.Forbidden(ctx, err.Error())
 	}
-	c:= 0
-	err = s.DB.Get(&c,"SELECT COUNT(*) FROM sales WHERE image_id=?", delImgId)
-	if err!= nil {
-		return customErr.DB(ctx, err)
-	}
-	if c != 0 {
-		img.Archived = true
-		s.DB.Exec("UPDATE images SET archived=True WHERE id=?", delImgId)
-		return nil
-	}
-	err = s.storageOperator.DeleteImage(ctx, img.URL)
+	img, err := s.repo.GetImageIfOwner(ctx, delImgId, int(userId))
 	if err != nil {
 		return err
 	}
-	_, err = s.DB.Exec("DELETE FROM images WHERE id=?", delImgId)
+	err = s.repo.Delete(ctx,delImgId,int(userId))
 	if err != nil {
-		return customErr.DB(ctx, err)
+		return err
 	}
-
+	url := img.URL
+	err = s.storageOperator.DeleteImage(ctx, url)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -196,17 +180,9 @@ func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Im
 	if err != nil {
 		return nil, customErr.BadRequest(ctx, err.Error())
 	}
-
-	img := dbModels.Image{}
-	err = s.DB.Get(&img,"SELECT * FROM users WHERE id=?", inputId)
-	if err != nil || (img.UserID != int(userId) && img.Private) {
-		return nil, customErr.Forbidden(ctx, err.Error())
-	}
-
-	labels:= []string{}
-	err = s.DB.Select(&labels, "SELECT tag FROM labels WHERE image_id=?", inputId)
+	img, labels, err := s.repo.GetById(ctx, inputId, int(userId))
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, err
 
 	}
 
@@ -218,18 +194,15 @@ func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Im
 }
 
 func (s *imagesService) GetImagesByFilter(ctx context.Context, userID intUserID, filter string) ([]*custom.Image, error) {
-	dbImgs := []dbModels.Image{}
-	err := s.DB.Select(&dbImgs, filter)
-	if err != nil {
-		return nil, customErr.DB(ctx, err)
-
+	dbImgs, err := s.repo.GetByFilter(ctx, filter)
+	if err !=nil{
+		return nil, err
 	}
 	imgList := []*custom.Image{}
 	for _, img := range dbImgs {
-		labels:= []string{}
-		err := s.DB.Select(&labels, "SELECT tag FROM labels WHERE image_id=?", img.ID)
+		labels, err := s.repo.GetImageLabels(ctx, img.ID)
 		if err != nil {
-			return nil, customErr.DB(ctx, err)
+			return nil, err
 
 		}
 		imgList = append(imgList, &custom.Image{
@@ -242,18 +215,15 @@ func (s *imagesService) GetImagesByFilter(ctx context.Context, userID intUserID,
 }
 
 func (s *imagesService) GetAllPublicImgs(ctx context.Context) ([]*custom.Image, error) {
-	dbImgs:= []dbModels.Image{}
-	err := s.DB.Select(&dbImgs,"SELECT * FROM images WHERE private=False AND archived=False")
-		if err != nil {
-		return nil, customErr.DB(ctx, err)
-
+	dbImgs, err := s.repo.GetAllPublic(ctx)
+	if err !=nil{
+		return nil, err
 	}
 	imgList := []*custom.Image{}
 	for _, img := range dbImgs {
-		labels:= []string{}
-		err := s.DB.Select(&labels, "SELECT tag FROM labels WHERE image_id=?", img.ID)
+		labels, err := s.repo.GetImageLabels(ctx, img.ID)
 		if err != nil {
-			return nil, customErr.DB(ctx, err)
+			return nil, err
 
 		}
 		imgList = append(imgList, &custom.Image{
@@ -270,11 +240,14 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 	if !ok {
 		return nil, customErr.Internal(ctx, "userId not found in ctx")
 	}
-	img := dbModels.Image{}
-	err := s.DB.Get(&img,"SELECT * FROM images WHERE id=? AND user_id=?", input.ID, userId)
-	if err != nil  {
-		return nil,	customErr.DB(ctx, err)
-	} 
+	imgId, err := strconv.Atoi(input.ID)
+	if err != nil {
+		return nil, customErr.BadRequest(ctx, err.Error())
+	}
+	img, err := s.repo.GetImageIfOwner(ctx, imgId, int(userId) )
+	if err != nil {
+		return nil, err
+	}
 
 	img.Title = input.Title
 	img.ForSale = input.ForSale
@@ -282,16 +255,15 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 	img.Description = input.Description
 	img.Price = input.Price
 
-	_, err = s.DB.NamedExec(fmt.Sprintf(`UPDATE images SET title= :title, forSale= :forSale, private= :private, 
-	description= :description, price= :price WHERE id=%d`, img.ID), img)
+	err = s.repo.Update(ctx, img.ID,img)
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, err
 	}
 
 	if input.Labels != nil {
-		_, err = s.DB.Exec("DELETE FROM labels WHERE image_id=?", img.ID)
+		err = s.repo.DeleteImageLabels(ctx, imgId)
 		if err != nil {
-			return nil, customErr.DB(ctx, err)
+			return nil, err
 		}
 		err = s.insertLabels(ctx, input.Labels, img.ID)
 		if err != nil {
@@ -314,14 +286,14 @@ func (s *imagesService) insertLabels(ctx context.Context, labels []string, imgId
 	if len(labels) == 0 {
 		return nil
 	}
-	insertedLabels:= []dbModels.Label{}
-	for _, l:= range labels{
-		insertedLabels= append(insertedLabels, dbModels.Label{ImageID: imgId, Tag: strings.ToLower(l)})
+	insertedLabels := []*dbModels.Label{}
+	for _, l := range labels {
+		insertedLabels = append(insertedLabels, &dbModels.Label{ImageID: imgId, Tag: strings.ToLower(l)})
 	}
 
-	_, err := s.DB.NamedExec("INSERT INTO labels(image_id, tag) VALUES(:ImagedID, :Tag)", &insertedLabels)
+	err := s.repo.InsertImageLabels(ctx, imgId, insertedLabels)
 	if err != nil {
-		return customErr.DB(ctx, err)
+		return err
 	}
 	return nil
 }
@@ -331,17 +303,19 @@ func (s *imagesService) AutoGenerateLabels(ctx context.Context, imageId string) 
 	if !ok {
 		return nil, customErr.Internal(ctx, "userId not found in ctx")
 	}
-	img := dbModels.Image{}
-	err := s.DB.Get(&img, "SELECT * FROM images where id=? AND user_id=?", imageId, userId)
+	imgId, err := strconv.Atoi(imageId)
+	if err != nil {
+		return nil, customErr.BadRequest(ctx, err.Error())
+	}
+	img, err := s.repo.GetImageIfOwner(ctx, imgId, int(userId))
 	if err != nil {
 		return nil, customErr.DB(ctx, err)
 	}
 	generatedLabels, err := s.visionOperator.DetectImgProps(ctx, img.URL)
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, err
 	}
-	oldLabels:= []string{}
-	err = s.DB.Select(&oldLabels,"SELECT tag FROM labels WHERE image_id=?", imageId)
+	oldLabels, err := s.repo.GetImageLabels(ctx, imgId)
 	if err != nil {
 		return nil, customErr.DB(ctx, err)
 	}

@@ -5,12 +5,11 @@ package resolvers
 
 import (
 	"context"
-	
+
 	"github.com/gasser707/go-gql-server/graphql/custom"
 	"github.com/gasser707/go-gql-server/graphql/generated"
 	"github.com/gasser707/go-gql-server/graphql/model"
 )
-
 
 func (r *mutationResolver) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error) {
 	return r.UsersService.RegisterUser(ctx, input)
@@ -27,7 +26,6 @@ func (r *queryResolver) Users(ctx context.Context, input *model.UserFilterInput)
 func (r *userResolver) Role(ctx context.Context, user *custom.User) (model.Role, error) {
 	return model.Role(user.Role), nil
 }
-
 
 func (r *userResolver) Images(ctx context.Context, user *custom.User) ([]*custom.Image, error) {
 	return r.ImagesService.GetImages(ctx, &model.ImageFilterInput{UserID: &user.ID})

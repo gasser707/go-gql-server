@@ -46,3 +46,8 @@ extend type Mutation {
 extend type Query {
     users(input: UserFilterInput): [User!]! @isLoggedIn
 }
+
+scalar Time
+scalar Upload
+
+directive @isLoggedIn on FIELD_DEFINITION

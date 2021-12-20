@@ -43,13 +43,9 @@ input UpdateImageInput {
   price: Float!
 }
 
-input DeleteImageInput{
-  id: ID!
-}
-
 extend type Mutation{
   uploadImages(input: [NewImageInput!]!): [Image!]! @isLoggedIn
-  deleteImages(input: [DeleteImageInput!]!): Boolean! @isLoggedIn
+  deleteImages(input: [ID!]!): Boolean! @isLoggedIn
   updateImage(input: UpdateImageInput!): Image! @isLoggedIn
   autoGenerateLabels(id: ID!): [String!]! @isLoggedIn
 }

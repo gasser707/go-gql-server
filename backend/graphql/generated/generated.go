@@ -66,7 +66,7 @@ type ComplexityRoot struct {
 	Mutation struct {
 		AutoGenerateLabels func(childComplexity int, id string) int
 		BuyImage           func(childComplexity int, id string) int
-		DeleteImages       func(childComplexity int, input []*model.DeleteImageInput) int
+		DeleteImages       func(childComplexity int, input []string) int
 		Login              func(childComplexity int, input model.LoginInput) int
 		Logout             func(childComplexity int, input *bool) int
 		RegisterUser       func(childComplexity int, input model.NewUserInput) int
@@ -109,7 +109,7 @@ type MutationResolver interface {
 	Login(ctx context.Context, input model.LoginInput) (bool, error)
 	Logout(ctx context.Context, input *bool) (bool, error)
 	UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error)
-	DeleteImages(ctx context.Context, input []*model.DeleteImageInput) (bool, error)
+	DeleteImages(ctx context.Context, input []string) (bool, error)
 	UpdateImage(ctx context.Context, input model.UpdateImageInput) (*custom.Image, error)
 	AutoGenerateLabels(ctx context.Context, id string) ([]string, error)
 	BuyImage(ctx context.Context, id string) (*custom.Sale, error)
@@ -251,7 +251,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteImages(childComplexity, args["input"].([]*model.DeleteImageInput)), true
+		return e.complexity.Mutation.DeleteImages(childComplexity, args["input"].([]string)), true
 
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
@@ -572,13 +572,9 @@ input UpdateImageInput {
   price: Float!
 }
 
-input DeleteImageInput{
-  id: ID!
-}
-
 extend type Mutation{
   uploadImages(input: [NewImageInput!]!): [Image!]! @isLoggedIn
-  deleteImages(input: [DeleteImageInput!]!): Boolean! @isLoggedIn
+  deleteImages(input: [ID!]!): Boolean! @isLoggedIn
   updateImage(input: UpdateImageInput!): Image! @isLoggedIn
   autoGenerateLabels(id: ID!): [String!]! @isLoggedIn
 }
@@ -603,12 +599,6 @@ extend type Mutation{
 extend type Query{
     sales:[Sale!]! @isLoggedIn
 }`, BuiltIn: false},
-	{Name: "graphql/schemas/schema.graphqls", Input: `
-scalar Time
-scalar Upload
-
-directive @isLoggedIn on FIELD_DEFINITION
-`, BuiltIn: false},
 	{Name: "graphql/schemas/user.graphqls", Input: `
 type User {
     id: ID!
@@ -657,6 +647,11 @@ extend type Mutation {
 extend type Query {
     users(input: UserFilterInput): [User!]! @isLoggedIn
 }
+
+scalar Time
+scalar Upload
+
+directive @isLoggedIn on FIELD_DEFINITION
 `, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -698,10 +693,10 @@ func (ec *executionContext) field_Mutation_buyImage_args(ctx context.Context, ra
 func (ec *executionContext) field_Mutation_deleteImages_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 []*model.DeleteImageInput
+	var arg0 []string
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNDeleteImageInput2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphqlᚋmodelᚐDeleteImageInputᚄ(ctx, tmp)
+		arg0, err = ec.unmarshalNID2ᚕstringᚄ(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1422,7 +1417,7 @@ func (ec *executionContext) _Mutation_deleteImages(ctx context.Context, field gr
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().DeleteImages(rctx, args["input"].([]*model.DeleteImageInput))
+			return ec.resolvers.Mutation().DeleteImages(rctx, args["input"].([]string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.IsLoggedIn == nil {
@@ -3604,29 +3599,6 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputDeleteImageInput(ctx context.Context, obj interface{}) (model.DeleteImageInput, error) {
-	var it model.DeleteImageInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			it.ID, err = ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputImageFilterInput(ctx context.Context, obj interface{}) (model.ImageFilterInput, error) {
 	var it model.ImageFilterInput
 	asMap := map[string]interface{}{}
@@ -4675,32 +4647,6 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNDeleteImageInput2ᚕᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphqlᚋmodelᚐDeleteImageInputᚄ(ctx context.Context, v interface{}) ([]*model.DeleteImageInput, error) {
-	var vSlice []interface{}
-	if v != nil {
-		if tmp1, ok := v.([]interface{}); ok {
-			vSlice = tmp1
-		} else {
-			vSlice = []interface{}{v}
-		}
-	}
-	var err error
-	res := make([]*model.DeleteImageInput, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNDeleteImageInput2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphqlᚋmodelᚐDeleteImageInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) unmarshalNDeleteImageInput2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphqlᚋmodelᚐDeleteImageInput(ctx context.Context, v interface{}) (*model.DeleteImageInput, error) {
-	res, err := ec.unmarshalInputDeleteImageInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
 	res, err := graphql.UnmarshalFloat(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4729,6 +4675,42 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNID2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNID2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNID2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNID2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNImage2githubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphqlᚋcustomᚐImage(ctx context.Context, sel ast.SelectionSet, v custom.Image) graphql.Marshaler {
