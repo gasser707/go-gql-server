@@ -52,7 +52,7 @@ func (r *salesRepo) GetImageById(ctx context.Context, imgId int, userId int) (*d
 	err := r.db.Get(&img, "SELECT * FROM images WHERE id=?", imgId)
 	if err != nil {
 		return nil, customErr.DB(ctx, err)
-	}else if img.UserID != int(userId) && img.Private {
+	}else if img.UserID != int(userId) && (img.Private|| img.Archived) {
 		return nil, customErr.Forbidden(ctx, err.Error())
 	}
 	return &img, nil

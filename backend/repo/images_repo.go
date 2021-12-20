@@ -40,7 +40,7 @@ func (r *imagesRepo) GetById(ctx context.Context, imgId int, userId int) (*dbMod
 	err := r.db.Get(&img, "SELECT * FROM images WHERE id=?", imgId)
 	if err != nil {
 		return nil, nil, customErr.DB(ctx, err)
-	}else if img.UserID != int(userId) && img.Private {
+	}else if ok:= r.checkUserBought(ctx, imgId, int(userId)); img.UserID != int(userId) && (img.Private || img.Archived)&& !ok {
 		return nil, nil, customErr.Forbidden(ctx, err.Error())
 	}
 	labels,err := r.GetImageLabels(ctx, imgId)
@@ -172,4 +172,10 @@ func (r *imagesRepo) DeleteImageLabels(ctx context.Context, imgId int) (error){
 	return nil
 }
 
+
+func (r *imagesRepo) checkUserBought(ctx context.Context, imgId int, userId int) (bool){
+	id:=-1
+	err := r.db.Get(&id,"SELECT id FROM sales WHERE image_id=? AND buyer_id=?", imgId, userId)
+	return err==nil
+}
 
