@@ -9,6 +9,7 @@ type Image {
     forSale: Boolean!
     created: Time
     price: Float!
+    archived: Boolean!
 }
 
 input ImageFilterInput {
@@ -41,6 +42,7 @@ input UpdateImageInput {
   private: Boolean!
   forSale: Boolean!
   price: Float!
+  archived: Boolean!
 }
 
 extend type Mutation{

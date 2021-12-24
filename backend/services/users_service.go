@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-
 	"github.com/gasser707/go-gql-server/cloud"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	customErr "github.com/gasser707/go-gql-server/errors"
@@ -68,7 +67,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 		return nil, err
 	}
 	insertedUser.Avatar = avatarUrl
-	err = s.repo.Update(ctx, insertedUser.ID, insertedUser)
+	err = s.repo.Update(ctx, int(userId), insertedUser)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +77,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 		Bio:      input.Bio,
 		Avatar:   avatarUrl,
 		Joined:   &insertedUser.CreatedAt,
-		ID:       fmt.Sprintf("%v", insertedUser.ID),
+		ID:       fmt.Sprintf("%v", userId),
 	}
 
 	return returnedUser, nil
@@ -121,8 +120,12 @@ func (s *usersService) GetUserById(ctx context.Context, ID string) (*custom.User
 		return nil, err
 	}
 	return &custom.User{
-		ID: fmt.Sprintf("%v", user.ID), Username: user.Username,
-		Email: user.Email, Avatar: user.Avatar, Joined: &user.CreatedAt,
+		ID: fmt.Sprintf("%v", user.ID),
+		Username: user.Username,
+		Email: user.Email, 
+		Avatar: user.Avatar, 
+		Joined: &user.CreatedAt, 
+		Bio: user.Bio,
 	}, nil
 }
 
@@ -134,7 +137,11 @@ func (s *usersService) GetUserByEmail(ctx context.Context, email string) ([]*cus
 	}
 	return []*custom.User{
 		{ID: fmt.Sprintf("%v", user.ID),
-			Username: user.Username, Email: user.Email, Avatar: user.Avatar, Joined: &user.CreatedAt,
+			Username: user.Username, 
+			Email: user.Email, 
+			Avatar: user.Avatar, 
+			Joined: &user.CreatedAt, 
+			Bio: user.Bio,
 		},
 	}, nil
 }
@@ -147,8 +154,13 @@ func (s *usersService) GetUsersByUserName(ctx context.Context, username string) 
 		return nil, err
 	}
 	for _, user := range users {
-		userList = append(userList, &custom.User{ID: fmt.Sprintf("%v", user.ID),
-			Username: user.Username, Email: user.Email, Avatar: user.Avatar, Joined: &user.CreatedAt})
+		userList = append(userList, &custom.User{
+			ID: fmt.Sprintf("%v", user.ID),
+			Username: user.Username, 
+			Email: user.Email, 
+			Avatar: user.Avatar, 
+			Joined: &user.CreatedAt, 
+			Bio: user.Bio,})
 	}
 	return userList, nil
 }
@@ -160,8 +172,13 @@ func (s *usersService) GetAllUsers(ctx context.Context) ([]*custom.User, error) 
 		return nil, err
 	}
 	for _, user := range users {
-		userList = append(userList, &custom.User{ID: fmt.Sprintf("%v", user.ID),
-			Username: user.Username, Email: user.Email, Avatar: user.Avatar, Joined: &user.CreatedAt})
+		userList = append(userList, &custom.User{
+			ID: fmt.Sprintf("%v", user.ID),
+			Username: user.Username, 
+			Email: user.Email, 
+			Avatar: user.Avatar, 
+			Joined: &user.CreatedAt, 
+			Bio: user.Bio,})
 	}
 	return userList, nil
 }
@@ -207,8 +224,12 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 		return nil, err
 	}
 
-	returnUser := &custom.User{Avatar: user.Avatar, Email: user.Email,
-		Username: user.Username, Bio: user.Bio, ID: fmt.Sprintf("%v", userId)}
+	returnUser := &custom.User{
+		Avatar: user.Avatar, 
+		Email: user.Email,
+		Username: user.Username, 
+		Bio: user.Bio, 
+		ID: fmt.Sprintf("%v", userId)}
 	return returnUser, nil
 }
 

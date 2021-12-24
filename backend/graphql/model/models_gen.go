@@ -53,6 +53,7 @@ type UpdateImageInput struct {
 	Private     bool     `json:"private"`
 	ForSale     bool     `json:"forSale"`
 	Price       float64  `json:"price"`
+	Archived    bool     `json:"archived"`
 }
 
 type UpdateUserInput struct {

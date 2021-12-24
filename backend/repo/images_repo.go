@@ -81,8 +81,8 @@ func (r *imagesRepo) GetByFilter(ctx context.Context, filter string)([]*dbModels
 
 func (r *imagesRepo) Create(ctx context.Context, dbImg *dbModels.Image) (imgId int64,err error) {
 
-	result, err := r.db.NamedExec(`INSERT INTO images(title, description, private, forSale, price, user_id, created_at)
-		VALUES(:title, :description, :private, :forSale, :price, :user_id, :created_at)`, dbImg)
+	result, err := r.db.NamedExec(`INSERT INTO images(title, description, private, forSale, price, user_id, created_at, url)
+		VALUES(:title, :description, :private, :forSale, :price, :user_id, :created_at, :url)`, dbImg)
 	if err != nil {
 		return -1,customErr.DB(ctx, err)
 	}
@@ -146,7 +146,7 @@ func (r *imagesRepo) GetImageLabels(ctx context.Context, imgId int) ([]string, e
 
 func (r *imagesRepo) InsertImageLabels(ctx context.Context, imgId int, labels []*dbModels.Label)(error) {
 
-	_, err := r.db.NamedExec("INSERT INTO labels(image_id, tag) VALUES(:ImagedID, :Tag)", &labels)
+	_, err := r.db.NamedExec("INSERT INTO labels(image_id, tag) VALUES(:image_id, :tag)", labels)
 	if err != nil {
 		return customErr.DB(ctx, err)
 	}

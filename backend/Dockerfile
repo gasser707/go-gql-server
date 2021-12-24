@@ -10,7 +10,7 @@ RUN go mod download
 COPY . .
 RUN go build -o /app/build .
 
-FROM scratch
+FROM alpine:latest
 COPY --from=builder /app/build /app/build
 
 ENTRYPOINT [ "/app/build" ]

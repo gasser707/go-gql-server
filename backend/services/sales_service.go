@@ -41,7 +41,7 @@ func (s *salesService) BuyImage(ctx context.Context, id string) (*custom.Sale, e
 	}
 	img, err := s.repo.GetImageById(ctx, imgId, int(userId))
 	if err != nil || !img.ForSale || img.UserID == int(userId) {
-		return nil, customErr.Forbidden(ctx, err.Error())
+		return nil, customErr.Forbidden(ctx, "you can't buy an image you own")
 	}
 	sale := dbModels.Sale{
 		Price:     img.Price,

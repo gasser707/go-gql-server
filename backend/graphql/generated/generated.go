@@ -51,6 +51,7 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Image struct {
+		Archived    func(childComplexity int) int
 		Created     func(childComplexity int) int
 		Description func(childComplexity int) int
 		ForSale     func(childComplexity int) int
@@ -146,6 +147,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Image.archived":
+		if e.complexity.Image.Archived == nil {
+			break
+		}
+
+		return e.complexity.Image.Archived(childComplexity), true
 
 	case "Image.created":
 		if e.complexity.Image.Created == nil {
@@ -538,6 +546,7 @@ extend type Mutation{
     forSale: Boolean!
     created: Time
     price: Float!
+    archived: Boolean!
 }
 
 input ImageFilterInput {
@@ -570,6 +579,7 @@ input UpdateImageInput {
   private: Boolean!
   forSale: Boolean!
   price: Float!
+  archived: Boolean!
 }
 
 extend type Mutation{
@@ -1223,6 +1233,41 @@ func (ec *executionContext) _Image_price(ctx context.Context, field graphql.Coll
 	res := resTmp.(float64)
 	fc.Result = res
 	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Image_archived(ctx context.Context, field graphql.CollectedField, obj *custom.Image) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Image",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Archived, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3908,6 +3953,14 @@ func (ec *executionContext) unmarshalInputUpdateImageInput(ctx context.Context, 
 			if err != nil {
 				return it, err
 			}
+		case "archived":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("archived"))
+			it.Archived, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -4072,6 +4125,11 @@ func (ec *executionContext) _Image(ctx context.Context, sel ast.SelectionSet, ob
 			out.Values[i] = ec._Image_created(ctx, field, obj)
 		case "price":
 			out.Values[i] = ec._Image_price(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "archived":
+			out.Values[i] = ec._Image_archived(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}

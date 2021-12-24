@@ -9,13 +9,14 @@ type Image struct {
 	ID          string     `json:"id"`
 	Title       string     `json:"title"`
 	Description string     `json:"description"`
-	UserID       string      `json:"userId"`
+	UserID       string    `json:"userId"`
 	Labels      []string   `json:"labels"`
 	URL         string     `json:"url"`
 	Private     bool       `json:"private"`
 	ForSale     bool       `json:"forSale"`
 	Created     *time.Time `json:"created"`
 	Price       float64    `json:"price"`
+	Archived    bool       `json:"archived"`
 }
 
 

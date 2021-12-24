@@ -71,7 +71,7 @@ func main() {
 	r.Use(middleware.Middleware())
 
 	r.POST("/query", graphqlHandler())
-	r.GET("/", playgroundHandler())
+	r.GET("/query/playground", playgroundHandler())
 	r.Run()
 
 }

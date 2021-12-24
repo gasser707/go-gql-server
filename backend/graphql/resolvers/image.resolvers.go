@@ -5,7 +5,6 @@ package resolvers
 
 import (
 	"context"
-
 	"github.com/gasser707/go-gql-server/graphql/custom"
 	"github.com/gasser707/go-gql-server/graphql/generated"
 	"github.com/gasser707/go-gql-server/graphql/model"
@@ -43,3 +42,4 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type imageResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+

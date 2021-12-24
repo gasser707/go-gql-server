@@ -30,9 +30,13 @@ func NewMysqlClient() *sqlx.DB {
 	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&multiStatements=true",
 		username, password, host, schema,
 	)
+	fmt.Println(dataSourceName)
 
-	mysqlClient, err := sqlx.Connect("mysql", dataSourceName)
+	mysqlClient, err := sqlx.Open("mysql", dataSourceName)
 	if err != nil {
+		panic(err)
+	}
+	if err = mysqlClient.Ping(); err != nil {
 		panic(err)
 	}
 

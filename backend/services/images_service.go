@@ -100,11 +100,15 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 	if err != nil {
 		return err
 	}
+	fmt.Println(url)
 	dbImg := dbModels.Image{
-		Title: inputImg.Title, Description: inputImg.Description,
+		Title: inputImg.Title,
+		Description: inputImg.Description,
 		Private: inputImg.Private,
-		ForSale: inputImg.ForSale, Price: inputImg.Price,
-		UserID: int(userId), URL: url,
+		ForSale: inputImg.ForSale, 
+		Price: inputImg.Price,
+		UserID: int(userId), 
+		URL: url,
 		CreatedAt: time.Now(),
 	}
 	imgId, err := s.repo.Create(ctx, &dbImg)
@@ -117,10 +121,16 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 	}
 
 	image := &custom.Image{
-		ID: fmt.Sprintf("%v", dbImg.ID), Title: dbImg.Title, Description: dbImg.Description,
-		URL: dbImg.URL, Private: dbImg.Private,
-		ForSale: dbImg.ForSale, Price: dbImg.Price, UserID: fmt.Sprintf("%v", userId),
-		Created: &dbImg.CreatedAt, Labels: inputImg.Labels,
+		ID: fmt.Sprintf("%v", imgId),
+		Title: dbImg.Title,
+		Description: dbImg.Description,
+		URL: dbImg.URL, 
+		Private: dbImg.Private,
+		ForSale: dbImg.ForSale, 
+		Price: dbImg.Price,
+		UserID: fmt.Sprintf("%v", userId),
+		Created: &dbImg.CreatedAt, 
+		Labels: inputImg.Labels,
 	}
 
 	ch <- image
@@ -187,9 +197,17 @@ func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Im
 	}
 
 	return &custom.Image{
-		ID: ID, UserID: fmt.Sprintf("%v", img.UserID), Created: &img.CreatedAt,
-		Title: img.Title, URL: img.URL, Description: img.Description, Private: img.Private,
-		ForSale: img.ForSale, Price: img.Price, Labels: labels,
+		ID: ID,
+		UserID: fmt.Sprintf("%v", img.UserID),
+		Created: &img.CreatedAt,
+		Title: img.Title,
+		URL: img.URL, 
+		Description: img.Description, 
+		Private: img.Private,
+		ForSale: img.ForSale, 
+		Price: img.Price, 
+		Labels: labels,
+		Archived: img.Archived,
 	}, nil
 }
 
@@ -206,9 +224,17 @@ func (s *imagesService) GetImagesByFilter(ctx context.Context, userID intUserID,
 
 		}
 		imgList = append(imgList, &custom.Image{
-			ID: fmt.Sprintf("%v", img.ID), UserID: fmt.Sprintf("%v", img.UserID), Created: &img.CreatedAt,
-			Title: img.Title, URL: img.URL, Description: img.Description, Private: img.Private,
-			ForSale: img.ForSale, Price: img.Price, Labels: labels,
+			ID: fmt.Sprintf("%v", img.ID),
+			UserID: fmt.Sprintf("%v", img.UserID),
+			Created: &img.CreatedAt,
+			Title: img.Title,
+			URL: img.URL,
+			Description: img.Description,
+			Private: img.Private,
+			ForSale: img.ForSale,
+			Price: img.Price,
+			Labels: labels,
+			Archived: img.Archived,
 		})
 	}
 	return imgList, nil
@@ -227,9 +253,17 @@ func (s *imagesService) GetAllPublicImgs(ctx context.Context) ([]*custom.Image, 
 
 		}
 		imgList = append(imgList, &custom.Image{
-			ID: fmt.Sprintf("%v", img.ID), UserID: fmt.Sprintf("%v", img.UserID), Created: &img.CreatedAt,
-			Title: img.Title, URL: img.URL, Description: img.Description, Private: img.Private,
-			ForSale: img.ForSale, Price: img.Price, Labels: labels,
+			ID: fmt.Sprintf("%v", img.ID),
+			UserID: fmt.Sprintf("%v", img.UserID),
+			Created: &img.CreatedAt,
+			Title: img.Title,
+			URL: img.URL,
+			Description: img.Description, 
+			Private: img.Private,
+			ForSale: img.ForSale,
+			Price: img.Price,
+			Labels: labels,
+			Archived: img.Archived,
 		})
 	}
 	return imgList, nil
@@ -254,6 +288,7 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 	img.Private = input.Private
 	img.Description = input.Description
 	img.Price = input.Price
+	img.Archived = input.Archived
 
 	err = s.repo.Update(ctx, img.ID,img)
 	if err != nil {
@@ -279,6 +314,7 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 		UserID:      fmt.Sprintf("%v", img.UserID),
 		Price:       img.Price,
 		ID:          input.ID,
+		Archived:    input.Archived,
 	}, nil
 }
 
