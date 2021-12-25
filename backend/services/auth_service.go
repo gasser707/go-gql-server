@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gasser707/go-gql-server/auth"
+	"github.com/gasser707/go-gql-server/utils/auth"
 	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/gasser707/go-gql-server/graphql/model"
 	"github.com/gasser707/go-gql-server/helpers"

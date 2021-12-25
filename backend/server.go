@@ -7,7 +7,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/gasser707/go-gql-server/cloud"
+	"github.com/gasser707/go-gql-server/utils/cloud"
 	"github.com/gasser707/go-gql-server/databases"
 	"github.com/gasser707/go-gql-server/graphql/generated"
 	"github.com/gasser707/go-gql-server/graphql/resolvers"

@@ -41,12 +41,19 @@ spec:
     spec:
       containers:
         - name: redis-db
-          image: redis
+          image: redis:6.2
           ports:
            - containerPort: 6379
           volumeMounts:
            - mountPath: /data
              name: redis-pv
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 20m
+            limits:
+              memory: 100Mi
+              cpu: 100m
       volumes:
       - name: redis-pv
         persistentVolumeClaim:

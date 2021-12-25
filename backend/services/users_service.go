@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-	"github.com/gasser707/go-gql-server/cloud"
+
+	"github.com/gasser707/go-gql-server/utils/cloud"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/gasser707/go-gql-server/graphql/custom"
@@ -26,12 +27,12 @@ type UsersServiceInterface interface {
 var _ UsersServiceInterface = &usersService{}
 
 type usersService struct {
-	repo        repo.UsersRepoInterface
+	repo            repo.UsersRepoInterface
 	storageOperator cloud.StorageOperatorInterface
 }
 
 func NewUsersService(db *sqlx.DB, storageOperator cloud.StorageOperatorInterface) *usersService {
-	
+
 	return &usersService{repo: repo.NewUsersRepo(db), storageOperator: storageOperator}
 }
 
@@ -120,12 +121,12 @@ func (s *usersService) GetUserById(ctx context.Context, ID string) (*custom.User
 		return nil, err
 	}
 	return &custom.User{
-		ID: fmt.Sprintf("%v", user.ID),
+		ID:       fmt.Sprintf("%v", user.ID),
 		Username: user.Username,
-		Email: user.Email, 
-		Avatar: user.Avatar, 
-		Joined: &user.CreatedAt, 
-		Bio: user.Bio,
+		Email:    user.Email,
+		Avatar:   user.Avatar,
+		Joined:   &user.CreatedAt,
+		Bio:      user.Bio,
 	}, nil
 }
 
@@ -137,11 +138,11 @@ func (s *usersService) GetUserByEmail(ctx context.Context, email string) ([]*cus
 	}
 	return []*custom.User{
 		{ID: fmt.Sprintf("%v", user.ID),
-			Username: user.Username, 
-			Email: user.Email, 
-			Avatar: user.Avatar, 
-			Joined: &user.CreatedAt, 
-			Bio: user.Bio,
+			Username: user.Username,
+			Email:    user.Email,
+			Avatar:   user.Avatar,
+			Joined:   &user.CreatedAt,
+			Bio:      user.Bio,
 		},
 	}, nil
 }
@@ -155,12 +156,12 @@ func (s *usersService) GetUsersByUserName(ctx context.Context, username string) 
 	}
 	for _, user := range users {
 		userList = append(userList, &custom.User{
-			ID: fmt.Sprintf("%v", user.ID),
-			Username: user.Username, 
-			Email: user.Email, 
-			Avatar: user.Avatar, 
-			Joined: &user.CreatedAt, 
-			Bio: user.Bio,})
+			ID:       fmt.Sprintf("%v", user.ID),
+			Username: user.Username,
+			Email:    user.Email,
+			Avatar:   user.Avatar,
+			Joined:   &user.CreatedAt,
+			Bio:      user.Bio})
 	}
 	return userList, nil
 }
@@ -173,12 +174,12 @@ func (s *usersService) GetAllUsers(ctx context.Context) ([]*custom.User, error) 
 	}
 	for _, user := range users {
 		userList = append(userList, &custom.User{
-			ID: fmt.Sprintf("%v", user.ID),
-			Username: user.Username, 
-			Email: user.Email, 
-			Avatar: user.Avatar, 
-			Joined: &user.CreatedAt, 
-			Bio: user.Bio,})
+			ID:       fmt.Sprintf("%v", user.ID),
+			Username: user.Username,
+			Email:    user.Email,
+			Avatar:   user.Avatar,
+			Joined:   &user.CreatedAt,
+			Bio:      user.Bio})
 	}
 	return userList, nil
 }
@@ -225,11 +226,10 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 	}
 
 	returnUser := &custom.User{
-		Avatar: user.Avatar, 
-		Email: user.Email,
-		Username: user.Username, 
-		Bio: user.Bio, 
-		ID: fmt.Sprintf("%v", userId)}
+		Avatar:   user.Avatar,
+		Email:    user.Email,
+		Username: user.Username,
+		Bio:      user.Bio,
+		ID:       fmt.Sprintf("%v", userId)}
 	return returnUser, nil
 }
-

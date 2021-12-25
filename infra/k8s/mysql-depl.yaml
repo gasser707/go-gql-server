@@ -42,7 +42,7 @@ spec:
         app: mysql-db
     spec:
       containers:
-        - image: mysql:latest
+        - image: mysql:8.0.27
           name: mysql-db
           env:
             - name: MYSQL_ROOT_PASSWORD
@@ -51,6 +51,15 @@ spec:
               #   secretKeyRef:
               #     name: mysql
               #     key: password
+          readinessProbe:
+            exec:
+              command:
+              - bash
+              - "-c"
+              - mysqladmin ping -h localhost -u root -p$MYSQL_ROOT_PASSWORD
+            initialDelaySeconds: 35
+            periodSeconds: 10
+            failureThreshold: 10
           ports:
             - containerPort: 3306
           volumeMounts:
@@ -58,6 +67,13 @@ spec:
               mountPath: /var/lib/minesql
             - name: mysql-initdb
               mountPath: /docker-entrypoint-initdb.d
+          resources:
+            requests:
+              memory: "500Mi"
+              cpu: 500m
+            limits:
+              memory: "900Mi"
+              cpu: 1000m
       volumes:
         - name: mysql-persistent-storage
           persistentVolumeClaim:
@@ -98,21 +114,23 @@ data:
     username VARCHAR(30) NOT NULL,
     role enum('ADMIN', 'MODERATOR', 'USER') NOT NULL,
     bio VARCHAR(400) NOT NULL,
-    avatar VARCHAR(300) NOT NULL,
+    avatar VARCHAR(300) NOT NULL DEFAULT '',
     email VARCHAR(80) NOT NULL,
+    UNIQUE(email),
     password VARCHAR(500) NOT NULL
     );
 
     CREATE TABLE images (
     id int NOT NULL PRIMARY KEY AUTO_INCREMENT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    url VARCHAR(500) NOT NULL,
+    url VARCHAR(500) NOT NULL DEFAULT '',
     description VARCHAR(400) NOT NULL,
     user_id int NOT NULL,
     title VARCHAR(100) NOT NULL,
     price double NOT NULL,
     forSale Boolean NOT NULL,
-    private Boolean NOT NULL
+    private Boolean NOT NULL,
+    archived Boolean NOT NULL DEFAULT 0
     );
 
     CREATE TABLE sales (
