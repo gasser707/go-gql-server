@@ -100,13 +100,13 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 	if err != nil {
 		return err
 	}
-	fmt.Println(url)
 	dbImg := dbModels.Image{
 		Title: inputImg.Title,
 		Description: inputImg.Description,
 		Private: inputImg.Private,
 		ForSale: inputImg.ForSale, 
 		Price: inputImg.Price,
+		DiscountPercent: inputImg.DiscountPercent,
 		UserID: int(userId), 
 		URL: url,
 		CreatedAt: time.Now(),
@@ -128,6 +128,7 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 		Private: dbImg.Private,
 		ForSale: dbImg.ForSale, 
 		Price: dbImg.Price,
+		DiscountPercent: dbImg.DiscountPercent,
 		UserID: fmt.Sprintf("%v", userId),
 		Created: &dbImg.CreatedAt, 
 		Labels: inputImg.Labels,
@@ -206,6 +207,7 @@ func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Im
 		Private: img.Private,
 		ForSale: img.ForSale, 
 		Price: img.Price, 
+		DiscountPercent: img.DiscountPercent,
 		Labels: labels,
 		Archived: img.Archived,
 	}, nil
@@ -233,6 +235,7 @@ func (s *imagesService) GetImagesByFilter(ctx context.Context, userID intUserID,
 			Private: img.Private,
 			ForSale: img.ForSale,
 			Price: img.Price,
+			DiscountPercent: img.DiscountPercent,
 			Labels: labels,
 			Archived: img.Archived,
 		})
@@ -262,6 +265,7 @@ func (s *imagesService) GetAllPublicImgs(ctx context.Context) ([]*custom.Image, 
 			Private: img.Private,
 			ForSale: img.ForSale,
 			Price: img.Price,
+			DiscountPercent: img.DiscountPercent,
 			Labels: labels,
 			Archived: img.Archived,
 		})
@@ -288,6 +292,7 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 	img.Private = input.Private
 	img.Description = input.Description
 	img.Price = input.Price
+	img.DiscountPercent = input.DiscountPercent
 	img.Archived = input.Archived
 
 	err = s.repo.Update(ctx, img.ID,img)
@@ -313,6 +318,7 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 		Private:     img.Private,
 		UserID:      fmt.Sprintf("%v", img.UserID),
 		Price:       img.Price,
+		DiscountPercent:    img.DiscountPercent,
 		ID:          input.ID,
 		Archived:    input.Archived,
 	}, nil

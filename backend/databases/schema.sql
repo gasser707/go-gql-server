@@ -23,7 +23,8 @@ CREATE TABLE images (
 	price double NOT NULL,
 	forSale Boolean NOT NULL,
 	private Boolean NOT NULL,
-	archived Boolean NOT NULL DEFAULT 0
+	archived Boolean NOT NULL DEFAULT 0,
+	discountPercent int NOT NULL DEFAULT 0
 );
 
 CREATE TABLE sales (
