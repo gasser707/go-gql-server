@@ -7,13 +7,14 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/gasser707/go-gql-server/utils/cloud"
 	"github.com/gasser707/go-gql-server/databases"
 	"github.com/gasser707/go-gql-server/graphql/generated"
 	"github.com/gasser707/go-gql-server/graphql/resolvers"
 	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gasser707/go-gql-server/middleware"
 	"github.com/gasser707/go-gql-server/services"
+	email_svc"github.com/gasser707/go-gql-server/services/email"
+	"github.com/gasser707/go-gql-server/utils/cloud"
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -29,13 +30,17 @@ func graphqlHandler() gin.HandlerFunc {
 		log.Panic(err)
 	}
 	mysqlDB := databases.NewMysqlClient()
-	authSrv := services.NewAuthService(mysqlDB)
-	userSrv := services.NewUsersService(mysqlDB, so)
-	imgSrv := services.NewImagesService(ctx, mysqlDB, so)
+
+	emailSrv := email_svc.NewEmailService(mysqlDB)
+	emailAdaptor := email_svc.NewEmailAdaptor(emailSrv)
+
+	authSrv := services.NewAuthService(mysqlDB, emailAdaptor)
+	userSrv := services.NewUsersService(mysqlDB, so, emailAdaptor)
+	imgSrv := services.NewImagesService(ctx, mysqlDB, so, emailAdaptor)
 	saleSrv := services.NewSalesService(mysqlDB)
 
 	c := generated.Config{Resolvers: &resolvers.Resolver{AuthService: authSrv,
-		ImagesService: imgSrv, UsersService: userSrv, SaleService: saleSrv}}
+		ImagesService: imgSrv, UsersService: userSrv, SaleService: saleSrv, EmailService: emailSrv}}
 
 	c.Directives.IsLoggedIn = func(ctx context.Context, obj interface{}, next graphql.Resolver) (interface{}, error) {
 		userId, _, err := authSrv.ValidateCredentials(ctx)

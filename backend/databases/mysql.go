@@ -32,18 +32,18 @@ func NewMysqlClient() *sqlx.DB {
 	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&multiStatements=true",
 		username, password, host, schema,
 	)
-
 	var mysqlClient *sqlx.DB
 	var err error
 	connected := false
 
 	log.Println("trying to connect to db")
-	for i:=0; i<1; i++{
+	for i:=0; i<7; i++{
 		mysqlClient, err = sqlx.Connect("mysql", dataSourceName)
 		if err == nil {
 			connected = true
 			break
 		} else {
+			log.Println(err)
 			log.Println("failed will try again in 30 secs!")
 			time.Sleep(30*time.Second)
 		}
@@ -58,5 +58,4 @@ func NewMysqlClient() *sqlx.DB {
 	log.Println("database successfully configured")
 
 	return mysqlClient
-
 }

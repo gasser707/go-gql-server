@@ -8,12 +8,13 @@ import (
 	"strconv"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gasser707/go-gql-server/utils/auth"
 	customErr "github.com/gasser707/go-gql-server/errors"
+	email_svc"github.com/gasser707/go-gql-server/services/email"
 	"github.com/gasser707/go-gql-server/graphql/model"
 	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gasser707/go-gql-server/middleware"
 	"github.com/gasser707/go-gql-server/repo"
+	"github.com/gasser707/go-gql-server/utils/auth"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/securecookie"
 	"github.com/jmoiron/sqlx"
@@ -30,18 +31,19 @@ type AuthServiceInterface interface {
 var _ AuthServiceInterface = &authService{}
 
 type authService struct {
-	rd auth.RedisOperatorInterface
-	tk auth.TokenOperatorInterface
-	sc *securecookie.SecureCookie
-	repo repo.AuthRepoInterface
+	rd           auth.RedisOperatorInterface
+	tk           auth.TokenOperatorInterface
+	sc           *securecookie.SecureCookie
+	repo         repo.AuthRepoInterface
+	emailAdaptor email_svc.EmailAdaptorInterface
 }
 
-func NewAuthService(db *sqlx.DB) *authService {
+func NewAuthService(db *sqlx.DB, emailAdaptor email_svc.EmailAdaptorInterface) *authService {
 	sc := helpers.NewSecureCookie()
 	tk := auth.NewTokenOperator(sc)
 	rd := auth.NewRedisStore()
-	authRepo:= repo.NewAuthRepo(db)
-	return &authService{rd, tk, sc, authRepo}
+	authRepo := repo.NewAuthRepo(db)
+	return &authService{rd, tk, sc, authRepo, emailAdaptor}
 }
 
 type UserID string

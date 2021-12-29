@@ -12,12 +12,6 @@ spec:
       labels:
         app: go-gql
     spec:
-      # initContainers:
-      # - name: wait-for-services
-      #   image: opsfleet/depends-on
-      #   args:
-      #   - "-service=mysql-srv"
-      #   - "-service=redis-srv"
       volumes:
       - name: google-cloud-key
         secret:
@@ -65,18 +59,17 @@ spec:
                 secretKeyRef:
                   name: mysql-dbname
                   key: MYSQL_DBNAME
-            - name: MYSQL_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-pass
-                  key: MYSQL_PASS
             - name: MYSQL_HOST
-              value: 'mysql-srv'
+              value: 'mysql'
             - name: MYSQL_USER
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-user
-                  key: MYSQL_USER
+              value: root
+            - name: MYSQL_PASS
+              value: pwd
+
+              # valueFrom:
+              #   secretKeyRef:
+              #     name: mysql-user-pass
+              #     key: MYSQL_PASSWORD
           resources:
             requests:
               memory: "64Mi"

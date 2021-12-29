@@ -6,13 +6,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gasser707/go-gql-server/utils/cloud"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	customErr "github.com/gasser707/go-gql-server/errors"
+	email_svc"github.com/gasser707/go-gql-server/services/email"
 	"github.com/gasser707/go-gql-server/graphql/custom"
 	"github.com/gasser707/go-gql-server/graphql/model"
 	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gasser707/go-gql-server/repo"
+	"github.com/gasser707/go-gql-server/utils/cloud"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -29,11 +30,13 @@ var _ UsersServiceInterface = &usersService{}
 type usersService struct {
 	repo            repo.UsersRepoInterface
 	storageOperator cloud.StorageOperatorInterface
+	emailAdaptor    email_svc.EmailAdaptorInterface
 }
 
-func NewUsersService(db *sqlx.DB, storageOperator cloud.StorageOperatorInterface) *usersService {
+func NewUsersService(db *sqlx.DB, storageOperator cloud.StorageOperatorInterface,
+	emailAdaptor email_svc.EmailAdaptorInterface) *usersService {
 
-	return &usersService{repo: repo.NewUsersRepo(db), storageOperator: storageOperator}
+	return &usersService{repo: repo.NewUsersRepo(db), storageOperator: storageOperator, emailAdaptor: emailAdaptor}
 }
 
 func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error) {
@@ -80,7 +83,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 		Joined:   &insertedUser.CreatedAt,
 		ID:       fmt.Sprintf("%v", userId),
 	}
-
+	go s.emailAdaptor.SendWelcomeEmail(ctx, "auth@shotify.com", []string{input.Email}, input.Username)
 	return returnedUser, nil
 }
 
