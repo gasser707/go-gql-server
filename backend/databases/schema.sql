@@ -1,3 +1,4 @@
+CREATE DATABASE IF NOT EXISTS shotify_db;
 USE shotify_db;
 
 CREATE TABLE users (
@@ -6,7 +7,7 @@ CREATE TABLE users (
 	username VARCHAR(30) NOT NULL,
 	role enum('ADMIN', 'MODERATOR', 'USER') NOT NULL,
 	bio VARCHAR(400) NOT NULL,
-	avatar VARCHAR(300) NOT NULL,
+	avatar VARCHAR(300) NOT NULL DEFAULT '',
 	email VARCHAR(80) NOT NULL,
 	UNIQUE(email),
 	password VARCHAR(500) NOT NULL
@@ -15,13 +16,15 @@ CREATE TABLE users (
 CREATE TABLE images (
 	id int NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	url VARCHAR(500) NOT NULL,
+	url VARCHAR(500) NOT NULL DEFAULT '',
 	description VARCHAR(400) NOT NULL,
 	user_id int NOT NULL,
 	title VARCHAR(100) NOT NULL,
 	price double NOT NULL,
 	forSale Boolean NOT NULL,
-	private Boolean NOT NULL
+	private Boolean NOT NULL,
+	archived Boolean NOT NULL DEFAULT 0,
+	discountPercent int NOT NULL DEFAULT 0
 );
 
 CREATE TABLE sales (

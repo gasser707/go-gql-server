@@ -11,15 +11,16 @@ import (
 )
 
 type ImageFilterInput struct {
-	ID         *string  `json:"id"`
-	UserID     *string  `json:"userId"`
-	Title      *string  `json:"title"`
-	Labels     []string `json:"labels"`
-	MatchAll   *bool    `json:"matchAll"`
-	Private    *bool    `json:"private"`
-	ForSale    *bool    `json:"forSale"`
-	PriceLimit *float64 `json:"priceLimit"`
-	Archived   *bool    `json:"archived"`
+	ID                   *string  `json:"id"`
+	UserID               *string  `json:"userId"`
+	Title                *string  `json:"title"`
+	Labels               []string `json:"labels"`
+	MatchAll             *bool    `json:"matchAll"`
+	Private              *bool    `json:"private"`
+	ForSale              *bool    `json:"forSale"`
+	PriceLimit           *float64 `json:"priceLimit"`
+	Archived             *bool    `json:"archived"`
+	DiscountPercentLimit *int     `json:"discountPercentLimit"`
 }
 
 type LoginInput struct {
@@ -28,13 +29,14 @@ type LoginInput struct {
 }
 
 type NewImageInput struct {
-	Title       string         `json:"title"`
-	Description string         `json:"description"`
-	Labels      []string       `json:"labels"`
-	File        graphql.Upload `json:"file"`
-	Private     bool           `json:"private"`
-	ForSale     bool           `json:"forSale"`
-	Price       float64        `json:"price"`
+	Title           string         `json:"title"`
+	Description     string         `json:"description"`
+	Labels          []string       `json:"labels"`
+	File            graphql.Upload `json:"file"`
+	Private         bool           `json:"private"`
+	ForSale         bool           `json:"forSale"`
+	Price           float64        `json:"price"`
+	DiscountPercent int            `json:"discountPercent"`
 }
 
 type NewUserInput struct {
@@ -46,13 +48,15 @@ type NewUserInput struct {
 }
 
 type UpdateImageInput struct {
-	ID          string   `json:"id"`
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Labels      []string `json:"labels"`
-	Private     bool     `json:"private"`
-	ForSale     bool     `json:"forSale"`
-	Price       float64  `json:"price"`
+	ID              string   `json:"id"`
+	Title           string   `json:"title"`
+	Description     string   `json:"description"`
+	Labels          []string `json:"labels"`
+	Private         bool     `json:"private"`
+	ForSale         bool     `json:"forSale"`
+	Price           float64  `json:"price"`
+	Archived        bool     `json:"archived"`
+	DiscountPercent int      `json:"discountPercent"`
 }
 
 type UpdateUserInput struct {

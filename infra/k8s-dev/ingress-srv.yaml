@@ -7,14 +7,14 @@ metadata:
     nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   rules:
-    - host: ticketing.com
+    - host: shotify.com
       http:
         paths:
           - path: /query
             pathType: Prefix
             backend:
               service:
-                name: go-gql-srv
+                name: shotify-srv
                 port:
                   number: 8080
           - path: /?(.*)

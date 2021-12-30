@@ -25,6 +25,8 @@ spec:
           env:
             - name: REDIS_URI
               value: 'redis-srv:6379'
+            - name: ENV
+              value: dev
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /var/secrets/google/bucket-keys.json
             - name: ACCESS_SECRET
@@ -57,21 +59,24 @@ spec:
                 secretKeyRef:
                   name: mysql-dbname
                   key: MYSQL_DBNAME
-            - name: MYSQL_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-pass
-                  key: MYSQL_PASS
             - name: MYSQL_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-host
-                  key: MYSQL_HOST
+              value: 'mysql'
             - name: MYSQL_USER
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-user
-                  key: MYSQL_USER
+              value: root
+            - name: MYSQL_PASS
+              value: pwd
+
+              # valueFrom:
+              #   secretKeyRef:
+              #     name: mysql-user-pass
+              #     key: MYSQL_PASSWORD
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: 500m
+            limits:
+              memory: "128Mi"
+              cpu: 1000m
 
 ---
 apiVersion: v1

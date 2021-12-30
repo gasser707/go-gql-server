@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"fmt"
-
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/jmoiron/sqlx"
@@ -84,14 +83,14 @@ func (r *usersRepo) Create(ctx context.Context, insertedUser *dbModels.User) (id
 		return -1, customErr.DB(ctx, err)
 	}
 	userId, _ := result.LastInsertId()
+	fmt.Println(userId)
 	return userId, nil
 }
 
 
 func (r *usersRepo) Update(ctx context.Context, id int, updatedUser *dbModels.User) error {
-
 	_, err := r.db.NamedExec(fmt.Sprintf(`UPDATE users SET username=:username, bio=:bio, email=:email, 
-	avatar=:avatar WHERE id = %d`, id), updatedUser)
+	avatar=:avatar WHERE id = %d`, id), &updatedUser)
 	if err != nil {
 		return customErr.DB(ctx, err)
 	}

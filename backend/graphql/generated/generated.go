@@ -51,16 +51,18 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Image struct {
-		Created     func(childComplexity int) int
-		Description func(childComplexity int) int
-		ForSale     func(childComplexity int) int
-		ID          func(childComplexity int) int
-		Labels      func(childComplexity int) int
-		Price       func(childComplexity int) int
-		Private     func(childComplexity int) int
-		Title       func(childComplexity int) int
-		URL         func(childComplexity int) int
-		User        func(childComplexity int) int
+		Archived        func(childComplexity int) int
+		Created         func(childComplexity int) int
+		Description     func(childComplexity int) int
+		DiscountPercent func(childComplexity int) int
+		ForSale         func(childComplexity int) int
+		ID              func(childComplexity int) int
+		Labels          func(childComplexity int) int
+		Price           func(childComplexity int) int
+		Private         func(childComplexity int) int
+		Title           func(childComplexity int) int
+		URL             func(childComplexity int) int
+		User            func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -147,6 +149,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
+	case "Image.archived":
+		if e.complexity.Image.Archived == nil {
+			break
+		}
+
+		return e.complexity.Image.Archived(childComplexity), true
+
 	case "Image.created":
 		if e.complexity.Image.Created == nil {
 			break
@@ -160,6 +169,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Image.Description(childComplexity), true
+
+	case "Image.discountPercent":
+		if e.complexity.Image.DiscountPercent == nil {
+			break
+		}
+
+		return e.complexity.Image.DiscountPercent(childComplexity), true
 
 	case "Image.forSale":
 		if e.complexity.Image.ForSale == nil {
@@ -538,6 +554,8 @@ extend type Mutation{
     forSale: Boolean!
     created: Time
     price: Float!
+    archived: Boolean!
+    discountPercent: Int!
 }
 
 input ImageFilterInput {
@@ -550,6 +568,7 @@ input ImageFilterInput {
   forSale: Boolean
   priceLimit: Float
   archived:Boolean
+  discountPercentLimit: Int
 }
 
 input NewImageInput {
@@ -560,6 +579,7 @@ input NewImageInput {
   private: Boolean!
   forSale: Boolean!
   price: Float!
+  discountPercent: Int!
 }
 
 input UpdateImageInput {
@@ -570,6 +590,8 @@ input UpdateImageInput {
   private: Boolean!
   forSale: Boolean!
   price: Float!
+  archived: Boolean!
+  discountPercent: Int!
 }
 
 extend type Mutation{
@@ -1223,6 +1245,76 @@ func (ec *executionContext) _Image_price(ctx context.Context, field graphql.Coll
 	res := resTmp.(float64)
 	fc.Result = res
 	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Image_archived(ctx context.Context, field graphql.CollectedField, obj *custom.Image) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Image",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Archived, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Image_discountPercent(ctx context.Context, field graphql.CollectedField, obj *custom.Image) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Image",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DiscountPercent, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3680,6 +3772,14 @@ func (ec *executionContext) unmarshalInputImageFilterInput(ctx context.Context, 
 			if err != nil {
 				return it, err
 			}
+		case "discountPercentLimit":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("discountPercentLimit"))
+			it.DiscountPercentLimit, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -3779,6 +3879,14 @@ func (ec *executionContext) unmarshalInputNewImageInput(ctx context.Context, obj
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("price"))
 			it.Price, err = ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "discountPercent":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("discountPercent"))
+			it.DiscountPercent, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3905,6 +4013,22 @@ func (ec *executionContext) unmarshalInputUpdateImageInput(ctx context.Context, 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("price"))
 			it.Price, err = ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "archived":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("archived"))
+			it.Archived, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "discountPercent":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("discountPercent"))
+			it.DiscountPercent, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4072,6 +4196,16 @@ func (ec *executionContext) _Image(ctx context.Context, sel ast.SelectionSet, ob
 			out.Values[i] = ec._Image_created(ctx, field, obj)
 		case "price":
 			out.Values[i] = ec._Image_price(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "archived":
+			out.Values[i] = ec._Image_archived(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "discountPercent":
+			out.Values[i] = ec._Image_discountPercent(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -4771,6 +4905,21 @@ func (ec *executionContext) marshalNImage2ᚖgithubᚗcomᚋgasser707ᚋgoᚑgql
 	return ec._Image(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNLoginInput2githubᚗcomᚋgasser707ᚋgoᚑgqlᚑserverᚋgraphqlᚋmodelᚐLoginInput(ctx context.Context, v interface{}) (model.LoginInput, error) {
 	res, err := ec.unmarshalInputLoginInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -5326,6 +5475,21 @@ func (ec *executionContext) unmarshalOImageFilterInput2ᚖgithubᚗcomᚋgasser7
 	}
 	res, err := ec.unmarshalInputImageFilterInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalInt(*v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

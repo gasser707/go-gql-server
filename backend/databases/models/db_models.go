@@ -3,16 +3,17 @@ package databases
 import "time"
 
 type Image struct {
-	ID          int       `db:"id"`
-	CreatedAt   time.Time `db:"created_at"`
-	URL         string    `db:"url"`
-	Description string    `db:"description"`
-	UserID      int       `db:"user_id"`
-	Title       string    `db:"title"`
-	Price       float64   `db:"price"`
-	ForSale     bool      `db:"forSale"`
-	Private     bool      `db:"private"`
-	Archived    bool      `db:"archived"`
+	ID              int       `db:"id"`
+	CreatedAt       time.Time `db:"created_at"`
+	URL             string    `db:"url"`
+	Description     string    `db:"description"`
+	UserID          int       `db:"user_id"`
+	Title           string    `db:"title"`
+	Price           float64   `db:"price"`
+	ForSale         bool      `db:"forSale"`
+	Private         bool      `db:"private"`
+	Archived        bool      `db:"archived"`
+	DiscountPercent int       `db:"discountPercent"`
 }
 
 type Label struct {

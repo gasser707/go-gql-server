@@ -23,7 +23,7 @@ func ParseFilter(input *model.ImageFilterInput, userID int) string{
 	filterStart := ""
 	filterStr:=""
 	filterAdded:=false
-	if(input.Labels!=nil && len(input.Labels)>0 && input.MatchAll!= nil &&*input.MatchAll == true){
+	if(input.Labels!=nil && len(input.Labels)>0 && input.MatchAll!= nil &&*input.MatchAll){
 		filterStr = "select distinct images.id, created_at, url, description, user_id, title, price, forSale, private From labels join images on images.id=labels.image_id where "
 		matcher := []string{}
 		for _,label:= range input.Labels{
@@ -63,6 +63,11 @@ func ParseFilter(input *model.ImageFilterInput, userID int) string{
 	}
 	if(input.PriceLimit!=nil){
 		filterStr= "images.price<=" +fmt.Sprintf("%v", input.PriceLimit)
+		queryStr = append(queryStr, filterStr)
+		filterAdded=true
+	}
+	if(input.DiscountPercentLimit!=nil){
+		filterStr= "images.discountPercent<=" +fmt.Sprintf("%v", input.DiscountPercentLimit)
 		queryStr = append(queryStr, filterStr)
 		filterAdded=true
 	}
