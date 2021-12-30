@@ -1,26 +1,28 @@
 global:
   slack_api_url: '<insert slack url>'
 receivers:
-- name: 'slack'
+- name: SlackandZenduty
   slack_configs:
   - channel: '#alerts'
     icon_emoji: ':bell:'
     send_resolved: true
     text: "<!channel> \nsummary: {{ .CommonAnnotations.summary }}\ndescription: {{ .CommonAnnotations.description }}\nmessage: {{ .CommonAnnotations.message }}"
+  webhook_configs:
+  - url: '<insert zenduty url>'
 - name: HealthCheck
   webhook_configs:
   - send_resolved: false
     url: '<insert health check service url>'
+
 route:
   group_by:
   - alertname
   group_interval: 1m
   group_wait: 5s
-  receiver: 'slack'
+  receiver: SlackandZenduty
   repeat_interval: 10m
   routes:
   - match:
       alertname: Watchdog
     receiver: HealthCheck
 
-    
