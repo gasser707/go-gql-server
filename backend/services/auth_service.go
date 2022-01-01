@@ -3,11 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
 	"strconv"
-
-	"github.com/dgrijalva/jwt-go"
 	customErr "github.com/gasser707/go-gql-server/errors"
 	email_svc"github.com/gasser707/go-gql-server/services/email"
 	"github.com/gasser707/go-gql-server/graphql/model"
@@ -15,7 +11,6 @@ import (
 	"github.com/gasser707/go-gql-server/middleware"
 	"github.com/gasser707/go-gql-server/repo"
 	"github.com/gasser707/go-gql-server/utils/auth"
-	"github.com/gin-gonic/gin"
 	"github.com/gorilla/securecookie"
 	"github.com/jmoiron/sqlx"
 )
@@ -23,8 +18,8 @@ import (
 type AuthServiceInterface interface {
 	Login(ctx context.Context, input model.LoginInput) (bool, error)
 	ValidateCredentials(c context.Context) (intUserID, model.Role, error)
-	Logout(c context.Context) (bool, error)
-	Refresh(c *gin.Context)
+	Logout(ctx context.Context) (bool, error)
+	Refresh(ctx context.Context) (bool, error)
 }
 
 //UsersService implements the usersServiceInterface
@@ -118,69 +113,30 @@ func (s *authService) Logout(ctx context.Context) (bool, error) {
 
 }
 
-func (s *authService) Refresh(c *gin.Context) {
-	mapToken := map[string]string{}
-	if err := c.ShouldBindJSON(&mapToken); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, err.Error())
-		return
-	}
-	refreshToken := mapToken["refresh_token"]
-
-	//verify the token
-	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(os.Getenv("REFRESH_SECRET")), nil
-	})
-	//if there is an error, the token must have expired
+func (s *authService) Refresh(ctx context.Context) (bool, error)  {
+	metadata, err := s.tk.ExtractRefreshMetadata(ctx)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, "Refresh token expired")
-		return
+		return false, err
 	}
-	//is token valid?
-	if _, ok := token.Claims.(jwt.Claims); !ok && !token.Valid {
-		c.JSON(http.StatusUnauthorized, err)
-		return
+	userId, err := s.rd.FetchRefresh(metadata.RefreshUuid)
+	if err != nil {
+		return false, err
 	}
-	//Since token is valid, get the uuid:
-	claims, ok := token.Claims.(jwt.MapClaims) //the token claims should conform to MapClaims
-	if ok && token.Valid {
-		refreshUuid, ok := claims["refresh_uuid"].(string) //convert the interface to string
-		if !ok {
-			c.JSON(http.StatusUnprocessableEntity, err)
-			return
-		}
-		userId, userOk := claims["user_id"].(string)
-		userRole, roleOk := claims["user_role"].(string)
-		if !roleOk || !userOk {
-			c.JSON(http.StatusUnprocessableEntity, "unauthorized")
-			return
-		}
+
 		//Delete the previous Refresh Token
-		delErr := s.rd.DeleteRefresh(refreshUuid)
-		if delErr != nil { //if any goes wrong
-			c.JSON(http.StatusUnauthorized, "unauthorized")
-			return
-		}
-		//Create new pairs of refresh and access tokens
-		ts, createErr := s.tk.CreateToken(userId, model.Role(userRole))
-		if createErr != nil {
-			c.JSON(http.StatusForbidden, createErr.Error())
-			return
-		}
-		//save the tokens metadata to redis
-		saveErr := s.rd.CreateAuth(userId, ts)
-		if saveErr != nil {
-			c.JSON(http.StatusForbidden, saveErr.Error())
-			return
-		}
-		tokens := map[string]string{
-			"access_token":  ts.AccessToken,
-			"refresh_token": ts.RefreshToken,
-		}
-		c.JSON(http.StatusCreated, tokens)
-	} else {
-		c.JSON(http.StatusUnauthorized, "refresh expired")
+	delErr := s.rd.DeleteRefresh(metadata.RefreshUuid)
+	if delErr != nil { //if any goes wrong
+		return false,err 
 	}
+	//Create new pairs of refresh and access csrf tokens
+	ts, createErr := s.tk.CreateToken(userId, model.Role(metadata.Role))
+	if createErr != nil {
+		return false,err 
+	}
+	//save the tokens metadata to redis
+	saveErr := s.rd.CreateAuth(userId, ts)
+	if saveErr != nil {
+		return false,err 
+	}
+	return true, nil
 }

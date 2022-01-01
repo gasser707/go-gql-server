@@ -71,6 +71,7 @@ type ComplexityRoot struct {
 		DeleteImages       func(childComplexity int, input []string) int
 		Login              func(childComplexity int, input model.LoginInput) int
 		Logout             func(childComplexity int, input *bool) int
+		Refresh            func(childComplexity int, input *bool) int
 		RegisterUser       func(childComplexity int, input model.NewUserInput) int
 		UpdateImage        func(childComplexity int, input model.UpdateImageInput) int
 		UpdateUser         func(childComplexity int, input model.UpdateUserInput) int
@@ -110,6 +111,7 @@ type ImageResolver interface {
 type MutationResolver interface {
 	Login(ctx context.Context, input model.LoginInput) (bool, error)
 	Logout(ctx context.Context, input *bool) (bool, error)
+	Refresh(ctx context.Context, input *bool) (bool, error)
 	UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error)
 	DeleteImages(ctx context.Context, input []string) (bool, error)
 	UpdateImage(ctx context.Context, input model.UpdateImageInput) (*custom.Image, error)
@@ -292,6 +294,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.Logout(childComplexity, args["input"].(*bool)), true
+
+	case "Mutation.refresh":
+		if e.complexity.Mutation.Refresh == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_refresh_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.Refresh(childComplexity, args["input"].(*bool)), true
 
 	case "Mutation.registerUser":
 		if e.complexity.Mutation.RegisterUser == nil {
@@ -541,7 +555,8 @@ var sources = []*ast.Source{
 
 extend type Mutation{
   login(input: LoginInput!): Boolean!
-  logout(input: Boolean ):Boolean! @isLoggedIn
+  logout(input: Boolean):Boolean! @isLoggedIn
+  refresh(input: Boolean):Boolean!
 }`, BuiltIn: false},
 	{Name: "graphql/schemas/image.graphqls", Input: `type Image {
     id: ID!
@@ -743,6 +758,21 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 }
 
 func (ec *executionContext) field_Mutation_logout_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *bool
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_refresh_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *bool
@@ -1405,6 +1435,48 @@ func (ec *executionContext) _Mutation_logout(ctx context.Context, field graphql.
 			return data, nil
 		}
 		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_refresh(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_refresh_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Refresh(rctx, args["input"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4242,6 +4314,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "logout":
 			out.Values[i] = ec._Mutation_logout(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "refresh":
+			out.Values[i] = ec._Mutation_refresh(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

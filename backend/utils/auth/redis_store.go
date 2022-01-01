@@ -12,7 +12,8 @@ import (
 
 type RedisOperatorInterface interface {
 	CreateAuth(string, *TokenDetails) error
-	FetchAuth(string, string) (string, error)
+	FetchAuth(tokenUuid string, csrfUuid string)  (string, error)
+	FetchRefresh(refreshUuid string)  (string, error)
 	DeleteRefresh(string) error
 	DeleteTokens(*AccessDetails) error
 }
@@ -69,6 +70,15 @@ func (tk *redisOperatorStore) FetchAuth(tokenUuid string, csrfUuid string) (stri
 	return userId, nil
 }
 
+func (tk *redisOperatorStore) FetchRefresh(refreshUuid string)  (string, error){
+	userId, err := tk.client.Get(refreshUuid).Result()
+	if err != nil {
+		return "", customErr.NoAuth(context.Background(), err.Error())
+	}
+	return userId, nil
+}
+
+
 //Once a user row in the token table
 func (tk *redisOperatorStore) DeleteTokens(authD *AccessDetails) error {
 	//get the refresh uuid
@@ -78,13 +88,17 @@ func (tk *redisOperatorStore) DeleteTokens(authD *AccessDetails) error {
 	if err != nil {
 		return customErr.Internal(context.Background(), err.Error())
 	}
+	deletedCsrf, err := tk.client.Del(authD.CsrfUuid).Result()
+	if err != nil {
+		return customErr.Internal(context.Background(), err.Error())
+	}
 	//delete refresh token
 	deletedRt, err := tk.client.Del(refreshUuid).Result()
 	if err != nil {
 		return customErr.Internal(context.Background(), err.Error())
 	}
 	//When the record is deleted, the return value is 1
-	if deletedAt != 1 || deletedRt != 1 {
+	if deletedAt != 1 || deletedRt != 1 || deletedCsrf != 1 {
 		return customErr.Internal(context.Background(), "something went wrong")
 
 	}

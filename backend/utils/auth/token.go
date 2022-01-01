@@ -27,6 +27,12 @@ type AccessDetails struct {
 	UserRole  model.Role
 }
 
+type RefreshDetails struct {
+	RefreshUuid string
+	UserId      string
+	Role        model.Role
+}
+
 type TokenDetails struct {
 	AccessToken  string
 	RefreshToken string
@@ -42,6 +48,7 @@ type TokenDetails struct {
 type TokenOperatorInterface interface {
 	CreateToken(userId string, userRole model.Role) (*TokenDetails, error)
 	ExtractTokenMetadata(c context.Context) (*AccessDetails, error)
+	ExtractRefreshMetadata(ctx context.Context) (*RefreshDetails, error)
 }
 
 //Token implements the TokenInterface
@@ -159,7 +166,18 @@ func (t *tokenOperator) verifyAccessToken(ctx context.Context, secret string) (*
 	}
 	return token, nil
 }
-
+func (t *tokenOperator) verifyRefreshToken(ctx context.Context, secret string) (*jwt.Token, error) {
+	tokenMap, err := t.getTokensFromCookie(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tokenString := tokenMap["refresh_token"]
+	token, err := t.parse(ctx, tokenString, secret)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
+}
 func extractAccessToken(token *jwt.Token, ad *AccessDetails) (*AccessDetails, error) {
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
@@ -179,19 +197,40 @@ func extractAccessToken(token *jwt.Token, ad *AccessDetails) (*AccessDetails, er
 	return nil, customErr.NoAuth(context.Background(), "something went wrong")
 }
 
+func extractRefreshToken(token *jwt.Token) (*RefreshDetails, error) {
+	rd := &RefreshDetails{}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if ok && token.Valid {
+		refreshUuid, ok := claims["refresh_uuid"].(string)
+		userId, userOk := claims["user_id"].(string)
+		role, roleOk := claims["user_role"].(string)
+
+		if !ok || !userOk || !roleOk {
+			return nil, customErr.NoAuth(context.Background(), "unauthorized")
+
+		}
+		rd.RefreshUuid = refreshUuid
+		rd.UserId = userId
+		rd.Role = model.Role(role)
+		return rd, nil
+	}
+
+	return nil, customErr.NoAuth(context.Background(), "something went wrong")
+}
+
 func extractCsrfToken(token *jwt.Token, ad *AccessDetails) (*AccessDetails, error) {
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
 		csrfUuid, ok := claims["csrf_uuid"].(string)
 		userId, userOk := claims["user_id"].(string)
-		if !ok || !userOk || userId!= ad.UserId{
+		if !ok || !userOk || userId != ad.UserId {
 			return nil, customErr.NoAuth(context.Background(), "unauthorized")
 
 		}
 		ad.CsrfUuid = csrfUuid
 		return ad, nil
 	}
-	
+
 	return nil, customErr.NoAuth(context.Background(), "something went wrong")
 }
 
@@ -226,6 +265,18 @@ func (t *tokenOperator) ExtractTokenMetadata(ctx context.Context) (*AccessDetail
 		return nil, customErr.NoAuth(ctx, err.Error())
 	}
 	return acc, nil
+}
+
+func (t *tokenOperator) ExtractRefreshMetadata(ctx context.Context) (*RefreshDetails, error) {
+	token, err := t.verifyRefreshToken(ctx, refreshSecret)
+	if err != nil {
+		return nil, customErr.NoAuth(ctx, err.Error())
+	}
+	rd, err := extractRefreshToken(token)
+	if err != nil {
+		return nil, customErr.NoAuth(ctx, err.Error())
+	}
+	return rd, nil
 }
 
 func (t *tokenOperator) getTokensFromCookie(ctx context.Context) (map[string]string, error) {
