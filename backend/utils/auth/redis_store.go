@@ -12,7 +12,7 @@ import (
 
 type RedisOperatorInterface interface {
 	CreateAuth(string, *TokenDetails) error
-	FetchAuth(string) (string, error)
+	FetchAuth(string, string) (string, error)
 	DeleteRefresh(string) error
 	DeleteTokens(*AccessDetails) error
 }
@@ -31,6 +31,7 @@ func NewRedisStore() *redisOperatorStore {
 func (tk *redisOperatorStore) CreateAuth(userId string, td *TokenDetails) error {
 	at := time.Unix(td.AtExpires, 0) //converting Unix to UTC(to Time object)
 	rt := time.Unix(td.RtExpires, 0)
+	ct:= time.Unix(td.CsrfExpires, 0)
 	now := time.Now()
 
 	atCreated, err := tk.client.Set(td.TokenUuid, userId, at.Sub(now)).Result()
@@ -41,20 +42,31 @@ func (tk *redisOperatorStore) CreateAuth(userId string, td *TokenDetails) error 
 	if err != nil {
 		return customErr.Internal(context.Background(), err.Error())
 	}
-	if atCreated == "0" || rtCreated == "0" {
+	csrfCreated, err := tk.client.Set(td.CsrfUuid, userId, ct.Sub(now)).Result()
+	if err != nil {
+		return customErr.Internal(context.Background(), err.Error())
+	}
+	if atCreated == "0" || rtCreated == "0" || csrfCreated == "0" {
 		return customErr.Internal(context.Background(), "no record inserted")
 	}
 	return nil
 }
 
 //Check the metadata saved
-func (tk *redisOperatorStore) FetchAuth(tokenUuid string) (string, error) {
-	userid, err := tk.client.Get(tokenUuid).Result()
+func (tk *redisOperatorStore) FetchAuth(tokenUuid string, csrfUuid string) (string, error) {
+	userId, err := tk.client.Get(tokenUuid).Result()
 	if err != nil {
 		return "", customErr.NoAuth(context.Background(), err.Error())
 
 	}
-	return userid, nil
+	csrfUserId, err := tk.client.Get(csrfUuid).Result()
+	if err != nil {
+		return "", customErr.NoAuth(context.Background(), err.Error())
+	}
+	if(userId!= csrfUserId){
+		return "", customErr.NoAuth(context.Background(), err.Error())
+	}
+	return userId, nil
 }
 
 //Once a user row in the token table

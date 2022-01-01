@@ -73,7 +73,8 @@ func main() {
 	// Setting up Gin
 	r := gin.Default()
 
-	r.Use(middleware.Middleware())
+	r.Use(middleware.CookieMiddleware())
+	r.Use(middleware.HeaderMiddleware())
 
 	r.POST("/query", graphqlHandler())
 	r.GET("/query/playground", playgroundHandler())

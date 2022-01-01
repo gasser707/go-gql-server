@@ -77,7 +77,12 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 	if err != nil {
 		return false, err
 	}
-	ca.SetToken(ts.AccessToken, ts.RefreshToken, s.sc)
+	ca.SetCookie(ts.AccessToken, ts.RefreshToken, s.sc)
+	ha, err := middleware.GetHeaderAccess(ctx)
+	if err != nil {
+		return false, err
+	}
+	ha.SetCsrfToken(ts.CsrfToken)
 	return true, nil
 }
 
@@ -86,7 +91,7 @@ func (s *authService) ValidateCredentials(ctx context.Context) (intUserID, model
 	if err != nil {
 		return -1, "", err
 	}
-	userId, err := s.rd.FetchAuth(metadata.TokenUuid)
+	userId, err := s.rd.FetchAuth(metadata.TokenUuid, metadata.CsrfUuid)
 	if err != nil {
 		return -1, "", err
 	}

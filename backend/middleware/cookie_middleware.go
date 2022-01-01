@@ -4,19 +4,20 @@ import (
 	"context"
 	"net/http"
 	"time"
+
 	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/securecookie"
 )
 
-const cookieKey = "cookie-name" 
+var cookieKey = "cookie-name" 
 
 type CookieAccess struct {
     Writer     http.ResponseWriter
     EncodedCookie   string
 }
 // method to write cookie
-func (ca *CookieAccess) SetToken(at string, rt string, sm *securecookie.SecureCookie) {
+func (ca *CookieAccess) SetCookie(at string, rt string, sm *securecookie.SecureCookie) {
 
     value := map[string]string{
 		"access_token": at,
@@ -29,6 +30,7 @@ func (ca *CookieAccess) SetToken(at string, rt string, sm *securecookie.SecureCo
 			Value: encoded,
 			Path:  "/*",
 			// Secure: true,
+            SameSite: http.SameSiteLaxMode,
 			HttpOnly: true,
             Expires: time.Now().Add(time.Hour*24*7),
 		}
@@ -41,9 +43,8 @@ func (ca *CookieAccess) SetToken(at string, rt string, sm *securecookie.SecureCo
 }
 
 
-func setValInCtx(ctx *gin.Context, val interface{}) {
-    cookieKey := cookieKey
-    newCtx := context.WithValue(ctx.Request.Context(), cookieKey, val)
+func setValInCtx(ctx *gin.Context, key string,val interface{}) {
+    newCtx := context.WithValue(ctx.Request.Context(), key, val)
     ctx.Request = ctx.Request.WithContext(newCtx)
 }
 
@@ -56,10 +57,9 @@ func GetCookieAccess(ctx context.Context) (*CookieAccess, error) {
     return ca, nil
 }
 
-func Middleware() gin.HandlerFunc {
+func CookieMiddleware() gin.HandlerFunc {
     return func(ctx *gin.Context) {
         encodedCookie := ""
-        cookieKey := cookieKey
         ca,err := ctx.Request.Cookie(string(cookieKey))
         if(err==nil){
             encodedCookie = ca.Value
@@ -70,7 +70,7 @@ func Middleware() gin.HandlerFunc {
         }
 
         // &cookieA is a pointer so any changes in future is changing cookieA is context
-        setValInCtx(ctx, &cookieA)
+        setValInCtx(ctx, cookieKey ,&cookieA)
 
        // calling the actual resolver
         ctx.Next()
