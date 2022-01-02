@@ -30,5 +30,8 @@ func (r *authRepo) GetUserByEmail(ctx context.Context, email string) (*dbModels.
 	if err != nil {
 		return nil, customErr.BadRequest(ctx, err.Error())
 	}
+	if !user.Verfied{
+		return nil, customErr.UnProcessable(ctx, "your account in unverified!")
+	}
 	return &user, nil
 }

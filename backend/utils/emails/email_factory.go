@@ -134,7 +134,7 @@ func (f *emailFactory) GenerateEmailContent(email EmailInterface) string {
 func (f *emailFactory) generateWelcomeEmail(email EmailInterface) string {
 	emailContent := hermes.Email{
 		Body: hermes.Body{
-			Name: email.GetTo()[0],
+			Name: email.GetName(),
 			Intros: []string{
 				"Welcome to Shotify! We're very excited to have you on board.",
 			},

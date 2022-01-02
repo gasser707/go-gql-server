@@ -31,7 +31,7 @@ func graphqlHandler() gin.HandlerFunc {
 	}
 	mysqlDB := databases.NewMysqlClient()
 
-	emailSrv := email_svc.NewEmailService(mysqlDB)
+	emailSrv := email_svc.NewEmailService()
 	emailAdaptor := email_svc.NewEmailAdaptor(emailSrv)
 
 	authSrv := services.NewAuthService(mysqlDB, emailAdaptor)

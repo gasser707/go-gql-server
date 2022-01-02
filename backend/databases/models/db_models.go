@@ -41,4 +41,5 @@ type User struct {
 	Avatar    string    `db:"avatar"`
 	Email     string    `db:"email"`
 	Password  string    `db:"password"`
+	Verfied   bool      `db:"verified"`
 }

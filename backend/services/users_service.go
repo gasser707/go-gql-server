@@ -65,7 +65,9 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 	if err != nil {
 		return nil, err
 	}
+	// if(input.Avatar!=nil){
 
+	// }
 	avatarUrl, err := s.storageOperator.UploadImage(ctx, &input.Avatar, "avatar", fmt.Sprintf("%v", userId))
 	if err != nil {
 		return nil, err
