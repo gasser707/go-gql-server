@@ -17,7 +17,7 @@ import (
 
 type AuthServiceInterface interface {
 	Login(ctx context.Context, input model.LoginInput) (bool, error)
-	ValidateCredentials(c context.Context) (intUserID, model.Role, error)
+	ValidateCredentials(c context.Context) (IntUserID, model.Role, error)
 	Logout(ctx context.Context) (bool, error)
 	Refresh(ctx context.Context) (bool, error)
 }
@@ -42,7 +42,7 @@ func NewAuthService(db *sqlx.DB, emailAdaptor email_svc.EmailAdaptorInterface) *
 }
 
 type UserID string
-type intUserID int64
+type IntUserID int64
 
 func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, error) {
 
@@ -81,7 +81,7 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 	return true, nil
 }
 
-func (s *authService) ValidateCredentials(ctx context.Context) (intUserID, model.Role, error) {
+func (s *authService) ValidateCredentials(ctx context.Context) (IntUserID, model.Role, error) {
 	metadata, err := s.tk.ExtractTokenMetadata(ctx)
 	if err != nil {
 		return -1, "", err
@@ -96,7 +96,7 @@ func (s *authService) ValidateCredentials(ctx context.Context) (intUserID, model
 		return -1, "", customErr.Internal(ctx, err.Error())
 	}
 
-	return intUserID(id), metadata.UserRole, nil
+	return IntUserID(id), metadata.UserRole, nil
 }
 
 func (s *authService) Logout(ctx context.Context) (bool, error) {

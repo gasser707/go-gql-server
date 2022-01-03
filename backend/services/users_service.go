@@ -90,7 +90,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 }
 
 func (s *usersService) GetUsers(ctx context.Context, input *model.UserFilterInput) ([]*custom.User, error) {
-	_, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	_, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
 		return nil, customErr.Internal(ctx, "userId not found in ctx")
 	}
@@ -191,7 +191,7 @@ func (s *usersService) GetAllUsers(ctx context.Context) ([]*custom.User, error) 
 
 func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error) {
 
-	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
 		return nil, customErr.Internal(ctx, "userId not found in ctx")
 	}

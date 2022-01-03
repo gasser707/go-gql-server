@@ -30,9 +30,9 @@ func (ca *CookieAccess) SetCookie(at string, rt string, sm *securecookie.SecureC
 
 	if encoded, err := sm.Encode("cookie-name", value); err == nil {
 		cookie := &http.Cookie{
-			Name:     "cookie-name",
-			Value:    encoded,
-			Path:     "/*",
+			Name:  "cookie-name",
+			Value: encoded,
+			Path:  "/*",
 			// Secure:   true,
 			SameSite: http.SameSiteLaxMode,
 			HttpOnly: true,

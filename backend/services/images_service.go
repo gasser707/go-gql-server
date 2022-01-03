@@ -50,7 +50,7 @@ func NewImagesService(ctx context.Context, db *sqlx.DB, storageOperator cloud.St
 }
 
 func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
-	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
 		return nil, customErr.Internal(ctx, "userId not found in ctx")
 	}
@@ -78,7 +78,7 @@ func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImag
 }
 
 func (s *imagesService) DeleteImages(ctx context.Context, input []string) (bool, error) {
-	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
 		return false, customErr.Internal(ctx, "userId not found in ctx")
 	}
@@ -98,7 +98,7 @@ func (s *imagesService) DeleteImages(ctx context.Context, input []string) (bool,
 }
 
 func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.Image, inputImg *model.NewImageInput,
-	userId intUserID) (err error) {
+	userId IntUserID) (err error) {
 
 	url, err := s.storageOperator.UploadImage(ctx, &inputImg.File, uuid.NewV4().String(), fmt.Sprintf("%v", userId))
 	if err != nil {
@@ -142,7 +142,7 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 	return nil
 }
 
-func (s *imagesService) processDeleteImage(ctx context.Context, ID string, userId intUserID) (err error) {
+func (s *imagesService) processDeleteImage(ctx context.Context, ID string, userId IntUserID) (err error) {
 
 	delImgId, err := strconv.Atoi(ID)
 	if err != nil {
@@ -165,7 +165,7 @@ func (s *imagesService) processDeleteImage(ctx context.Context, ID string, userI
 }
 
 func (s *imagesService) GetImages(ctx context.Context, input *model.ImageFilterInput) ([]*custom.Image, error) {
-	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
 		return nil, customErr.Internal(ctx, "userId not found in ctx")
 	}
@@ -187,7 +187,7 @@ func (s *imagesService) GetImages(ctx context.Context, input *model.ImageFilterI
 }
 
 func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Image, error) {
-	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
 		return nil, customErr.Internal(ctx, "userId not found in ctx")
 	}
@@ -217,7 +217,7 @@ func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Im
 	}, nil
 }
 
-func (s *imagesService) GetImagesByFilter(ctx context.Context, userID intUserID, filter string) ([]*custom.Image, error) {
+func (s *imagesService) GetImagesByFilter(ctx context.Context, userID IntUserID, filter string) ([]*custom.Image, error) {
 	dbImgs, err := s.repo.GetByFilter(ctx, filter)
 	if err != nil {
 		return nil, err
@@ -278,7 +278,7 @@ func (s *imagesService) GetAllPublicImgs(ctx context.Context) ([]*custom.Image, 
 }
 
 func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImageInput) (*custom.Image, error) {
-	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
 		return nil, customErr.Internal(ctx, "userId not found in ctx")
 	}
@@ -345,7 +345,7 @@ func (s *imagesService) insertLabels(ctx context.Context, labels []string, imgId
 }
 
 func (s *imagesService) AutoGenerateLabels(ctx context.Context, imageId string) ([]string, error) {
-	userId, ok := ctx.Value(helpers.UserIdKey).(intUserID)
+	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
 		return nil, customErr.Internal(ctx, "userId not found in ctx")
 	}

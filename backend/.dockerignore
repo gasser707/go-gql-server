@@ -1,4 +1,9 @@
 .env
-sqlboiler.toml
 gqlgen.yaml
 bucket-keys.json
+.git/
+docker-compose.yml
+*.md
+!README.md
+*_test.go
+mocks/
