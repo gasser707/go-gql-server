@@ -28,7 +28,7 @@ const (
 var (
 	addr           = os.Getenv(emailAddress)
 	host           = os.Getenv(emailHost)
-	emailAuth      = smtp.PlainAuth("", "", "", host)
+	emailAuth      = smtp.CRAMMD5Auth("","")
 	sendGridApiKey = os.Getenv(sendGridKey)
 	sendGridEmail  = os.Getenv(sendGridFrom)
 )
@@ -59,6 +59,7 @@ func (d *devEmailClient) SendEmail(ctx context.Context, email emails.EmailInterf
 
 	err := smtp.SendMail(addr, emailAuth, email.GetSender(), email.GetTo(), []byte(emailContent))
 	if err != nil {
+		fmt.Println(err.Error())
 		return customErr.Internal(ctx, err.Error())
 	}
 
@@ -68,19 +69,17 @@ func (d *devEmailClient) SendEmail(ctx context.Context, email emails.EmailInterf
 func (p *prodEmailClient) SendEmail(ctx context.Context, email emails.EmailInterface, emailContent string) error {
 
 	from := mail.NewEmail(email.GetSender(), os.Getenv(sendGridEmail))
-	subject := "Sending with Twilio SendGrid is Fun"
+	subject := string(email.GetType())
 	// mail.
 	fmt.Println(email.GetTo()[0])
 	to := mail.NewEmail(email.GetName(), email.GetTo()[0])
-	
+
 	message := mail.NewSingleEmail(from, subject, to, emailContent, emailContent)
 	client := sendgrid.NewSendClient(os.Getenv(sendGridApiKey))
-	response, err := client.Send(message)
+	_, err := client.Send(message)
 	if err != nil {
 		log.Println(err)
 		return err
-	} else {
-		fmt.Println(response.StatusCode)
 	}
 	return nil
 }

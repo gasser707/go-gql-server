@@ -49,6 +49,11 @@ spec:
                 secretKeyRef:
                   name: cookie-block-key
                   key: COOKIE_BLOCK_KEY
+            - name: CSRF_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: csrf-secret
+                  key: CSRF_SECRET
             - name: BUCKET_NAME
               valueFrom:
                 secretKeyRef:
@@ -60,12 +65,15 @@ spec:
                   name: mysql-dbname
                   key: MYSQL_DBNAME
             - name: MYSQL_HOST
-              value: 'mysql'
+              value: 'mysql-0.mysql'
             - name: MYSQL_USER
               value: root
             - name: MYSQL_PASS
               value: pwd
-
+            - name: EMAIL_HOST
+              value: mailhog-srv 
+            - name: EMAIL_ADDRESS
+              value: mailhog-srv:1025
               # valueFrom:
               #   secretKeyRef:
               #     name: mysql-user-pass
