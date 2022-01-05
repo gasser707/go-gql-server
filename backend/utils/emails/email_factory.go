@@ -102,6 +102,7 @@ type Email struct {
 	Name   string
 }
 
+
 type ResetPassEmail struct {
 	Email
 	ResetLink string
@@ -134,7 +135,7 @@ func (f *emailFactory) GenerateEmailContent(email EmailInterface) string {
 func (f *emailFactory) generateWelcomeEmail(email EmailInterface) string {
 	emailContent := hermes.Email{
 		Body: hermes.Body{
-			Name: email.GetTo()[0],
+			Name: email.GetName(),
 			Intros: []string{
 				"Welcome to Shotify! We're very excited to have you on board.",
 			},
@@ -171,7 +172,7 @@ func (f *emailFactory) generateResetPasswordEmail(email ResetPassEmailInterface)
 					Button: hermes.Button{
 						Color: "#22BC66", // Optional action button color
 						Text:  "Confirm your account",
-						Link:  "https://hermes-example.com/confirm?token=d9729feb74992cc3482b350163a1a010",
+						Link:  email.GetResetLink(),
 					},
 				},
 			},

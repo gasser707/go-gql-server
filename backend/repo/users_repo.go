@@ -83,7 +83,6 @@ func (r *usersRepo) Create(ctx context.Context, insertedUser *dbModels.User) (id
 		return -1, customErr.DB(ctx, err)
 	}
 	userId, _ := result.LastInsertId()
-	fmt.Println(userId)
 	return userId, nil
 }
 

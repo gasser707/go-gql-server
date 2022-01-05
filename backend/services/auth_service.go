@@ -3,28 +3,34 @@ package services
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"strconv"
 
-	"github.com/dgrijalva/jwt-go"
 	customErr "github.com/gasser707/go-gql-server/errors"
-	email_svc"github.com/gasser707/go-gql-server/services/email"
 	"github.com/gasser707/go-gql-server/graphql/model"
 	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gasser707/go-gql-server/middleware"
 	"github.com/gasser707/go-gql-server/repo"
+	email_svc "github.com/gasser707/go-gql-server/services/email"
 	"github.com/gasser707/go-gql-server/utils/auth"
-	"github.com/gin-gonic/gin"
 	"github.com/gorilla/securecookie"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/joho/godotenv/autoload"
+)
+
+var (
+	domain = os.Getenv("DOMAIN_NAME")
 )
 
 type AuthServiceInterface interface {
 	Login(ctx context.Context, input model.LoginInput) (bool, error)
-	ValidateCredentials(c context.Context) (intUserID, model.Role, error)
-	Logout(c context.Context) (bool, error)
-	Refresh(c *gin.Context)
+	ValidateCredentials(c context.Context) (IntUserID, model.Role, error)
+	Logout(ctx context.Context) (bool, error)
+	Refresh(ctx context.Context) (bool, error)
+	RequestPasswordReset(ctx context.Context, email string) (bool, error)
+	ProcessPasswordReset(ctx context.Context, resetToken string, newPass string) (bool, error)
+	ValidateUser(ctx context.Context, validationToken string) (bool, error)
+	LogoutAll(ctx context.Context) (bool, error)
 }
 
 //UsersService implements the usersServiceInterface
@@ -47,7 +53,7 @@ func NewAuthService(db *sqlx.DB, emailAdaptor email_svc.EmailAdaptorInterface) *
 }
 
 type UserID string
-type intUserID int64
+type IntUserID int64
 
 func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, error) {
 
@@ -57,14 +63,14 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 	}
 
 	ok := helpers.CheckPasswordHash(input.Password, user.Password)
-	if !ok || err != nil {
-		return false, customErr.BadRequest(ctx, err.Error())
+	if !ok  {
+		return false, customErr.NoAuth(ctx, "this combination of email password is wrong")
 	}
 
 	id := fmt.Sprintf("%v", user.ID)
 	role := fmt.Sprintf("%v", user.Role)
 
-	ts, err := s.tk.CreateToken(id, model.Role(role))
+	ts, err := s.tk.CreateTokens(id, model.Role(role))
 	if err != nil {
 		return false, err
 	}
@@ -77,16 +83,21 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 	if err != nil {
 		return false, err
 	}
-	ca.SetToken(ts.AccessToken, ts.RefreshToken, s.sc)
+	ca.SetCookie(ts.AccessToken, ts.RefreshToken, s.sc)
+	ha, err := middleware.GetHeaderAccess(ctx)
+	if err != nil {
+		return false, err
+	}
+	ha.SetCsrfToken(ts.CsrfToken)
 	return true, nil
 }
 
-func (s *authService) ValidateCredentials(ctx context.Context) (intUserID, model.Role, error) {
+func (s *authService) ValidateCredentials(ctx context.Context) (IntUserID, model.Role, error) {
 	metadata, err := s.tk.ExtractTokenMetadata(ctx)
 	if err != nil {
 		return -1, "", err
 	}
-	userId, err := s.rd.FetchAuth(metadata.TokenUuid)
+	userId, err := s.rd.FetchAuth(metadata.TokenUuid, metadata.CsrfUuid)
 	if err != nil {
 		return -1, "", err
 	}
@@ -96,7 +107,7 @@ func (s *authService) ValidateCredentials(ctx context.Context) (intUserID, model
 		return -1, "", customErr.Internal(ctx, err.Error())
 	}
 
-	return intUserID(id), metadata.UserRole, nil
+	return IntUserID(id), metadata.UserRole, nil
 }
 
 func (s *authService) Logout(ctx context.Context) (bool, error) {
@@ -113,69 +124,95 @@ func (s *authService) Logout(ctx context.Context) (bool, error) {
 
 }
 
-func (s *authService) Refresh(c *gin.Context) {
-	mapToken := map[string]string{}
-	if err := c.ShouldBindJSON(&mapToken); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, err.Error())
-		return
-	}
-	refreshToken := mapToken["refresh_token"]
+func (s *authService) RequestPasswordReset(ctx context.Context, email string) (bool, error) {
 
-	//verify the token
-	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(os.Getenv("REFRESH_SECRET")), nil
-	})
-	//if there is an error, the token must have expired
+	user, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, "Refresh token expired")
-		return
+		return true, nil
 	}
-	//is token valid?
-	if _, ok := token.Claims.(jwt.Claims); !ok && !token.Valid {
-		c.JSON(http.StatusUnauthorized, err)
-		return
+
+	token, err := s.tk.CreateStatelessToken(fmt.Sprintf("%d", user.ID), auth.ResetToken)
+	if err != nil {
+		return false, err
 	}
-	//Since token is valid, get the uuid:
-	claims, ok := token.Claims.(jwt.MapClaims) //the token claims should conform to MapClaims
-	if ok && token.Valid {
-		refreshUuid, ok := claims["refresh_uuid"].(string) //convert the interface to string
-		if !ok {
-			c.JSON(http.StatusUnprocessableEntity, err)
-			return
-		}
-		userId, userOk := claims["user_id"].(string)
-		userRole, roleOk := claims["user_role"].(string)
-		if !roleOk || !userOk {
-			c.JSON(http.StatusUnprocessableEntity, "unauthorized")
-			return
-		}
-		//Delete the previous Refresh Token
-		delErr := s.rd.DeleteRefresh(refreshUuid)
-		if delErr != nil { //if any goes wrong
-			c.JSON(http.StatusUnauthorized, "unauthorized")
-			return
-		}
-		//Create new pairs of refresh and access tokens
-		ts, createErr := s.tk.CreateToken(userId, model.Role(userRole))
-		if createErr != nil {
-			c.JSON(http.StatusForbidden, createErr.Error())
-			return
-		}
-		//save the tokens metadata to redis
-		saveErr := s.rd.CreateAuth(userId, ts)
-		if saveErr != nil {
-			c.JSON(http.StatusForbidden, saveErr.Error())
-			return
-		}
-		tokens := map[string]string{
-			"access_token":  ts.AccessToken,
-			"refresh_token": ts.RefreshToken,
-		}
-		c.JSON(http.StatusCreated, tokens)
-	} else {
-		c.JSON(http.StatusUnauthorized, "refresh expired")
+
+	go s.emailAdaptor.SendResetPassEmail(ctx, "auth@shotify.com", []string{email},
+		user.Username, fmt.Sprintf("http://%s/reset?token=%s", domain, token))
+
+	return true, nil
+
+}
+
+func (s *authService) ProcessPasswordReset(ctx context.Context, resetToken string, newPass string) (bool, error) {
+	//If metadata is passed and the tokens valid, delete them from the redis store
+	userId, err := s.tk.ExtractStatelessTokenMetadata(ctx, resetToken, auth.ResetToken)
+	if err != nil {
+		return false, err
 	}
+	hashedPwd, err := helpers.HashPassword(newPass)
+	if err != nil {
+		return false, err
+	}
+	err = s.repo.UpdatePassword(ctx, userId, hashedPwd)
+	if err != nil {
+		return true, nil
+	}
+	return true, nil
+
+}
+
+func (s *authService) ValidateUser(ctx context.Context, validationToken string) (bool, error) {
+	//If metadata is passed and the tokens valid, delete them from the redis store
+	userId, err := s.tk.ExtractStatelessTokenMetadata(ctx, validationToken, auth.ValidateUserToken)
+	if err != nil {
+		return false, err
+	}
+	 err = s.repo.UpdateVerified(ctx, userId)
+	if err != nil {
+		return true, nil
+	}
+
+	return true, nil
+
+}
+
+func (s *authService) LogoutAll(ctx context.Context) (bool, error) {
+	metadata, err := s.tk.ExtractTokenMetadata(ctx)
+	if err != nil {
+		return false, err
+	}
+	err = s.rd.DeleteAllUserTokens(metadata.UserId)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+
+}
+
+func (s *authService) Refresh(ctx context.Context) (bool, error) {
+	metadata, err := s.tk.ExtractRefreshMetadata(ctx)
+	if err != nil {
+		return false, err
+	}
+	userId, err := s.rd.FetchRefresh(metadata.RefreshUuid)
+	if err != nil {
+		return false, err
+	}
+
+	//Delete the previous Refresh Token
+	delErr := s.rd.DeleteRefresh(metadata.RefreshUuid)
+	if delErr != nil { //if any goes wrong
+		return false, err
+	}
+	//Create new pairs of refresh and access csrf tokens
+	ts, createErr := s.tk.CreateTokens(userId, model.Role(metadata.Role))
+	if createErr != nil {
+		return false, err
+	}
+	//save the tokens metadata to redis
+	saveErr := s.rd.CreateAuth(userId, ts)
+	if saveErr != nil {
+		return false, err
+	}
+	return true, nil
 }

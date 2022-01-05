@@ -8,6 +8,7 @@ CREATE TABLE users (
 	role enum('ADMIN', 'MODERATOR', 'USER') NOT NULL,
 	bio VARCHAR(400) NOT NULL,
 	avatar VARCHAR(300) NOT NULL DEFAULT '',
+	verified Boolean NOT NULL DEFAULT false,
 	email VARCHAR(80) NOT NULL,
 	UNIQUE(email),
 	password VARCHAR(500) NOT NULL

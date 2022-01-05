@@ -5,5 +5,10 @@ input LoginInput {
 
 extend type Mutation{
   login(input: LoginInput!): Boolean!
-  logout(input: Boolean ):Boolean! @isLoggedIn
+  logout(input: Boolean):Boolean! @isLoggedIn
+  logoutAll(input: Boolean):Boolean! @isLoggedIn
+  refresh(input: Boolean):Boolean!
+  validateUser(validationToken: String!): Boolean!
+  requestPasswordReset(email: String!):Boolean!
+  processPasswordReset(resetToken: String!, newPassword: String!):Boolean!
 }

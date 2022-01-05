@@ -129,7 +129,7 @@ spec:
   clusterIP: None
   selector:
     app: mysql
-    statefulset.kubernetes.io/pod-name: mysql-0
+  
 
 
 
@@ -365,6 +365,7 @@ data:
           bio VARCHAR(400) NOT NULL,
           avatar VARCHAR(300) NOT NULL DEFAULT '',
           email VARCHAR(80) NOT NULL,
+          verified Boolean NOT NULL DEFAULT true,
           UNIQUE(email),
           password VARCHAR(500) NOT NULL
         );

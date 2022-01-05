@@ -24,7 +24,7 @@ func NewEmailAdaptor(emailService EmailServiceInterface) *emailAdaptor {
 	return &emailAdaptor{emailService: emailService}
 }
 
-func (o *emailAdaptor) SendWelcomeEmail(ctx context.Context, sender string, to []string, name string) {
+func (ea *emailAdaptor) SendWelcomeEmail(ctx context.Context, sender string, to []string, name string) {
 	email := &emails.Email{
 		Type:   emails.Welcome,
 		Sender: sender,
@@ -32,13 +32,13 @@ func (o *emailAdaptor) SendWelcomeEmail(ctx context.Context, sender string, to [
 		Name:   name,
 	}
 
-	err := o.emailService.SendEmail(ctx, email)
+	err := ea.emailService.SendEmail(ctx, email)
 	if err != nil {
 		log.Println("couldn't send email\n", err.Error())
 	}
 }
 
-func (o *emailAdaptor) SendResetPassEmail(ctx context.Context, sender string, to []string, name string, resetLink string) {
+func (ea *emailAdaptor) SendResetPassEmail(ctx context.Context, sender string, to []string, name string, resetLink string) {
 
 	email := &emails.ResetPassEmail{
 		ResetLink: resetLink,
@@ -50,14 +50,14 @@ func (o *emailAdaptor) SendResetPassEmail(ctx context.Context, sender string, to
 		},
 	}
 
-	err := o.emailService.SendEmail(ctx, email)
+	err := ea.emailService.SendEmail(ctx, email)
 	if err != nil {
 		log.Println("couldn't send email\n", err.Error())
 	}
 
 }
 
-func (o *emailAdaptor) SendReceiptEmail(ctx context.Context, sender string, to []string, sellerName string,
+func (ea *emailAdaptor) SendReceiptEmail(ctx context.Context, sender string, to []string, sellerName string,
 	buyerName string, imageID string, imageTitle string, paymentMethod string) {
 
 	email := &emails.ReceiptEmail{
@@ -73,7 +73,7 @@ func (o *emailAdaptor) SendReceiptEmail(ctx context.Context, sender string, to [
 		},
 	}
 
-	err := o.emailService.SendEmail(ctx, email)
+	err := ea.emailService.SendEmail(ctx, email)
 	if err != nil {
 		log.Println("couldn't send email\n", err.Error())
 	}

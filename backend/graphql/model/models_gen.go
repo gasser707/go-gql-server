@@ -40,11 +40,11 @@ type NewImageInput struct {
 }
 
 type NewUserInput struct {
-	Username string         `json:"username"`
-	Email    string         `json:"email"`
-	Password string         `json:"password"`
-	Bio      string         `json:"bio"`
-	Avatar   graphql.Upload `json:"avatar"`
+	Username string          `json:"username"`
+	Email    string          `json:"email"`
+	Password string          `json:"password"`
+	Bio      string          `json:"bio"`
+	Avatar   *graphql.Upload `json:"avatar"`
 }
 
 type UpdateImageInput struct {
