@@ -15,9 +15,11 @@ import (
 )
 
 var (
-	accessSecret  = os.Getenv("ACCESS_SECRET")
-	refreshSecret = os.Getenv("REFRESH_SECRET")
-	csrfSecret    = os.Getenv("CSRF_SECRET")
+	accessSecret        = os.Getenv("ACCESS_SECRET")
+	refreshSecret       = os.Getenv("REFRESH_SECRET")
+	csrfSecret          = os.Getenv("CSRF_SECRET")
+	validationSecret    = os.Getenv("VALIDATION_SECRET")
+	passwordResetSecret = os.Getenv("PASSWORD_RESET_SECRET")
 )
 
 type AccessDetails struct {
@@ -37,6 +39,7 @@ type TokenDetails struct {
 	AccessToken  string
 	RefreshToken string
 	CsrfToken    string
+	BaseUuid     string
 	TokenUuid    string
 	RefreshUuid  string
 	CsrfUuid     string
@@ -45,10 +48,19 @@ type TokenDetails struct {
 	CsrfExpires  int64
 }
 
+type StatelessToken string
+
+const (
+	ResetToken        StatelessToken = "RESET_PASSWORD"
+	ValidateUserToken StatelessToken = "VALIDATE_USER"
+)
+
 type TokenOperatorInterface interface {
-	CreateToken(userId string, userRole model.Role) (*TokenDetails, error)
+	CreateTokens(userId string, userRole model.Role) (*TokenDetails, error)
 	ExtractTokenMetadata(c context.Context) (*AccessDetails, error)
 	ExtractRefreshMetadata(ctx context.Context) (*RefreshDetails, error)
+	ExtractStatelessTokenMetadata(ctx context.Context, tokenString string, kind StatelessToken) (string, error)
+	CreateStatelessToken(userId string, kind StatelessToken) (string, error)
 }
 
 //Token implements the TokenInterface
@@ -66,7 +78,7 @@ func NewTokenOperator(sc *securecookie.SecureCookie) *tokenOperator {
 
 func (t *tokenOperator) createCsrfToken(userId string, td *TokenDetails) (*TokenDetails, error) {
 	td.CsrfExpires = time.Now().Add(time.Minute * 30).Unix() //expires after 30 min
-	td.CsrfUuid = uuid.NewV4().String()
+	td.CsrfUuid = td.BaseUuid + "$$" + userId
 
 	csrfClaims := jwt.MapClaims{}
 	csrfClaims["user_id"] = userId
@@ -86,7 +98,7 @@ func (t *tokenOperator) createRefreshToken(userId string, userRole model.Role, t
 
 	//Creating Refresh Token
 	td.RtExpires = time.Now().Add(time.Hour * 24 * 7).Unix()
-	td.RefreshUuid = td.TokenUuid + "++" + userId
+	td.RefreshUuid = td.BaseUuid + "++" + userId
 
 	rtClaims := jwt.MapClaims{}
 	rtClaims["refresh_uuid"] = td.RefreshUuid
@@ -105,9 +117,8 @@ func (t *tokenOperator) createRefreshToken(userId string, userRole model.Role, t
 }
 func (t *tokenOperator) createAccessToken(userId string, userRole model.Role, td *TokenDetails) (*TokenDetails, error) {
 	td.AtExpires = time.Now().Add(time.Minute * 30).Unix() //expires after 30 min
-	td.TokenUuid = uuid.NewV4().String()
-	td.RtExpires = time.Now().Add(time.Hour * 24 * 7).Unix()
-	td.RefreshUuid = td.TokenUuid + "++" + userId
+	td.BaseUuid = uuid.NewV4().String()
+	td.TokenUuid = td.BaseUuid + "@@" + userId
 
 	var err error
 	//Creating Access Token
@@ -122,9 +133,81 @@ func (t *tokenOperator) createAccessToken(userId string, userRole model.Role, td
 		return nil, customErr.Internal(context.Background(), err.Error())
 	}
 	return td, nil
-
 }
-func (t *tokenOperator) CreateToken(userId string, userRole model.Role) (*TokenDetails, error) {
+
+func (t *tokenOperator) CreateStatelessToken(userId string, kind StatelessToken) (string, error) {
+	var exp int64
+
+	tokenSecret := ""
+	switch kind {
+	case ResetToken:
+		tokenSecret = passwordResetSecret
+		exp = time.Now().Add(time.Minute * 15).Unix() //expires after 15 minutes
+	case ValidateUserToken:
+		tokenSecret = validationSecret
+		exp = time.Now().Add(time.Hour * 24 * 7).Unix() //expires after 7 days
+	}
+
+	tkExpires := exp
+	tkClaims := jwt.MapClaims{}
+	tkClaims["user_id"] = userId
+	tkClaims["exp"] = tkExpires
+
+	unsignedTK := jwt.NewWithClaims(jwt.SigningMethodHS256, tkClaims)
+
+	var err error
+	token, err := unsignedTK.SignedString([]byte(tokenSecret))
+	if err != nil {
+		return "", customErr.Internal(context.Background(), err.Error())
+	}
+	return token, nil
+}
+func (t *tokenOperator) ExtractStatelessTokenMetadata(ctx context.Context, tokenString string,
+	kind StatelessToken) (string, error) {
+	tokenSecret := ""
+	switch kind {
+	case ResetToken:
+		tokenSecret = passwordResetSecret
+	case ValidateUserToken:
+		tokenSecret = validationSecret
+	}
+	token, err := t.verifyStatelessToken(ctx, tokenString, tokenSecret)
+	if err != nil {
+		return "", customErr.NoAuth(ctx, err.Error())
+	}
+
+	userId, err := extractStatelessToken(token)
+	if err != nil {
+		return "", customErr.NoAuth(ctx, err.Error())
+	}
+
+	return userId, nil
+}
+
+func (t *tokenOperator) verifyStatelessToken(ctx context.Context, resetToken string,
+	secret string) (*jwt.Token, error) {
+	token, err := t.parse(ctx, resetToken, secret)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
+func extractStatelessToken(token *jwt.Token) (string, error) {
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if ok && token.Valid {
+		userId, userOk := claims["user_id"].(string)
+		if !ok || !userOk {
+			return "", customErr.NoAuth(context.Background(), "unauthorized")
+
+		}
+		return userId, nil
+	}
+
+	return "", customErr.NoAuth(context.Background(), "something went wrong")
+}
+
+func (t *tokenOperator) CreateTokens(userId string, userRole model.Role) (*TokenDetails, error) {
 	td := &TokenDetails{}
 
 	td, err := t.createAccessToken(userId, userRole, td)

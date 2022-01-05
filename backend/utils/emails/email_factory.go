@@ -102,6 +102,7 @@ type Email struct {
 	Name   string
 }
 
+
 type ResetPassEmail struct {
 	Email
 	ResetLink string
@@ -171,7 +172,7 @@ func (f *emailFactory) generateResetPasswordEmail(email ResetPassEmailInterface)
 					Button: hermes.Button{
 						Color: "#22BC66", // Optional action button color
 						Text:  "Confirm your account",
-						Link:  "https://hermes-example.com/confirm?token=d9729feb74992cc3482b350163a1a010",
+						Link:  email.GetResetLink(),
 					},
 				},
 			},

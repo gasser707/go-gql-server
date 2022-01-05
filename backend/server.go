@@ -14,6 +14,7 @@ import (
 	"github.com/gasser707/go-gql-server/middleware"
 	"github.com/gasser707/go-gql-server/services"
 	email_svc"github.com/gasser707/go-gql-server/services/email"
+	sales_svc"github.com/gasser707/go-gql-server/services/sale"
 	"github.com/gasser707/go-gql-server/utils/cloud"
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
@@ -37,7 +38,7 @@ func graphqlHandler() gin.HandlerFunc {
 	authSrv := services.NewAuthService(mysqlDB, emailAdaptor)
 	userSrv := services.NewUsersService(mysqlDB, so, emailAdaptor)
 	imgSrv := services.NewImagesService(ctx, mysqlDB, so, emailAdaptor)
-	saleSrv := services.NewSalesService(mysqlDB)
+	saleSrv := sales_svc.NewSalesService(mysqlDB)
 
 	c := generated.Config{Resolvers: &resolvers.Resolver{AuthService: authSrv,
 		ImagesService: imgSrv, UsersService: userSrv, SaleService: saleSrv, EmailService: emailSrv}}

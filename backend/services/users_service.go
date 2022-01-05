@@ -8,11 +8,12 @@ import (
 
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	customErr "github.com/gasser707/go-gql-server/errors"
-	email_svc"github.com/gasser707/go-gql-server/services/email"
 	"github.com/gasser707/go-gql-server/graphql/custom"
 	"github.com/gasser707/go-gql-server/graphql/model"
 	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gasser707/go-gql-server/repo"
+	email_svc "github.com/gasser707/go-gql-server/services/email"
+	authUtils "github.com/gasser707/go-gql-server/utils/auth"
 	"github.com/gasser707/go-gql-server/utils/cloud"
 	"github.com/jmoiron/sqlx"
 )
@@ -31,12 +32,14 @@ type usersService struct {
 	repo            repo.UsersRepoInterface
 	storageOperator cloud.StorageOperatorInterface
 	emailAdaptor    email_svc.EmailAdaptorInterface
+	ValTokenMaker   authUtils.TokenOperatorInterface
 }
 
 func NewUsersService(db *sqlx.DB, storageOperator cloud.StorageOperatorInterface,
 	emailAdaptor email_svc.EmailAdaptorInterface) *usersService {
 
-	return &usersService{repo: repo.NewUsersRepo(db), storageOperator: storageOperator, emailAdaptor: emailAdaptor}
+	return &usersService{repo: repo.NewUsersRepo(db), storageOperator: storageOperator, emailAdaptor: emailAdaptor,
+		ValTokenMaker: authUtils.NewTokenOperator(nil)}
 }
 
 func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error) {
@@ -65,14 +68,15 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 	if err != nil {
 		return nil, err
 	}
-	// if(input.Avatar!=nil){
-
-	// }
-	avatarUrl, err := s.storageOperator.UploadImage(ctx, &input.Avatar, "avatar", fmt.Sprintf("%v", userId))
-	if err != nil {
-		return nil, err
+	avatarUrl := ""
+	if input.Avatar != nil {
+		avatarUrl, err = s.storageOperator.UploadImage(ctx, input.Avatar, "avatar", fmt.Sprintf("%v", userId))
+		if err != nil {
+			return nil, err
+		}
 	}
 	insertedUser.Avatar = avatarUrl
+
 	err = s.repo.Update(ctx, int(userId), insertedUser)
 	if err != nil {
 		return nil, err
@@ -85,7 +89,13 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 		Joined:   &insertedUser.CreatedAt,
 		ID:       fmt.Sprintf("%v", userId),
 	}
-	go s.emailAdaptor.SendWelcomeEmail(ctx, "auth@shotify.com", []string{input.Email}, input.Username)
+	token, err := s.ValTokenMaker.CreateStatelessToken(fmt.Sprintf("%v", userId), authUtils.ValidateUserToken)
+	if err != nil {
+		return nil, err
+	}
+	go s.emailAdaptor.SendResetPassEmail(ctx, "auth@shotify.com", []string{input.Email},
+		input.Username, fmt.Sprintf("http://%s/validate?token=%s", domain, token))
+
 	return returnedUser, nil
 }
 

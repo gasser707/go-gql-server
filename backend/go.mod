@@ -38,7 +38,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sendgrid/rest v2.6.6+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.10.4+incompatible
-	github.com/stretchr/testify v1.7.0 // indirect
+	github.com/stretchr/testify v1.7.0
 	github.com/twinj/uuid v1.0.0
 	github.com/vanng822/go-premailer v1.20.1 // indirect
 	github.com/vektah/gqlparser/v2 v2.2.0

@@ -66,16 +66,20 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AutoGenerateLabels func(childComplexity int, id string) int
-		BuyImage           func(childComplexity int, id string) int
-		DeleteImages       func(childComplexity int, input []string) int
-		Login              func(childComplexity int, input model.LoginInput) int
-		Logout             func(childComplexity int, input *bool) int
-		Refresh            func(childComplexity int, input *bool) int
-		RegisterUser       func(childComplexity int, input model.NewUserInput) int
-		UpdateImage        func(childComplexity int, input model.UpdateImageInput) int
-		UpdateUser         func(childComplexity int, input model.UpdateUserInput) int
-		UploadImages       func(childComplexity int, input []*model.NewImageInput) int
+		AutoGenerateLabels   func(childComplexity int, id string) int
+		BuyImage             func(childComplexity int, id string) int
+		DeleteImages         func(childComplexity int, input []string) int
+		Login                func(childComplexity int, input model.LoginInput) int
+		Logout               func(childComplexity int, input *bool) int
+		LogoutAll            func(childComplexity int, input *bool) int
+		ProcessPasswordReset func(childComplexity int, resetToken string, newPassword string) int
+		Refresh              func(childComplexity int, input *bool) int
+		RegisterUser         func(childComplexity int, input model.NewUserInput) int
+		RequestPasswordReset func(childComplexity int, email string) int
+		UpdateImage          func(childComplexity int, input model.UpdateImageInput) int
+		UpdateUser           func(childComplexity int, input model.UpdateUserInput) int
+		UploadImages         func(childComplexity int, input []*model.NewImageInput) int
+		ValidateUser         func(childComplexity int, validationToken string) int
 	}
 
 	Query struct {
@@ -111,7 +115,11 @@ type ImageResolver interface {
 type MutationResolver interface {
 	Login(ctx context.Context, input model.LoginInput) (bool, error)
 	Logout(ctx context.Context, input *bool) (bool, error)
+	LogoutAll(ctx context.Context, input *bool) (bool, error)
 	Refresh(ctx context.Context, input *bool) (bool, error)
+	ValidateUser(ctx context.Context, validationToken string) (bool, error)
+	RequestPasswordReset(ctx context.Context, email string) (bool, error)
+	ProcessPasswordReset(ctx context.Context, resetToken string, newPassword string) (bool, error)
 	UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error)
 	DeleteImages(ctx context.Context, input []string) (bool, error)
 	UpdateImage(ctx context.Context, input model.UpdateImageInput) (*custom.Image, error)
@@ -295,6 +303,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.Logout(childComplexity, args["input"].(*bool)), true
 
+	case "Mutation.logoutAll":
+		if e.complexity.Mutation.LogoutAll == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_logoutAll_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.LogoutAll(childComplexity, args["input"].(*bool)), true
+
+	case "Mutation.processPasswordReset":
+		if e.complexity.Mutation.ProcessPasswordReset == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_processPasswordReset_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ProcessPasswordReset(childComplexity, args["resetToken"].(string), args["newPassword"].(string)), true
+
 	case "Mutation.refresh":
 		if e.complexity.Mutation.Refresh == nil {
 			break
@@ -318,6 +350,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.RegisterUser(childComplexity, args["input"].(model.NewUserInput)), true
+
+	case "Mutation.requestPasswordReset":
+		if e.complexity.Mutation.RequestPasswordReset == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_requestPasswordReset_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RequestPasswordReset(childComplexity, args["email"].(string)), true
 
 	case "Mutation.updateImage":
 		if e.complexity.Mutation.UpdateImage == nil {
@@ -354,6 +398,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UploadImages(childComplexity, args["input"].([]*model.NewImageInput)), true
+
+	case "Mutation.validateUser":
+		if e.complexity.Mutation.ValidateUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_validateUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ValidateUser(childComplexity, args["validationToken"].(string)), true
 
 	case "Query.images":
 		if e.complexity.Query.Images == nil {
@@ -556,7 +612,11 @@ var sources = []*ast.Source{
 extend type Mutation{
   login(input: LoginInput!): Boolean!
   logout(input: Boolean):Boolean! @isLoggedIn
+  logoutAll(input: Boolean):Boolean! @isLoggedIn
   refresh(input: Boolean):Boolean!
+  validateUser(validationToken: String!): Boolean!
+  requestPasswordReset(email: String!):Boolean!
+  processPasswordReset(resetToken: String!, newPassword: String!):Boolean!
 }`, BuiltIn: false},
 	{Name: "graphql/schemas/image.graphqls", Input: `type Image {
     id: ID!
@@ -666,7 +726,7 @@ input NewUserInput {
   email: String!
   password: String!
   bio: String!
-  avatar: Upload!
+  avatar: Upload
 }
 
 input UpdateUserInput {
@@ -757,6 +817,21 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_logoutAll_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *bool
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_logout_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -769,6 +844,30 @@ func (ec *executionContext) field_Mutation_logout_args(ctx context.Context, rawA
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_processPasswordReset_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["resetToken"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resetToken"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["resetToken"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["newPassword"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("newPassword"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["newPassword"] = arg1
 	return args, nil
 }
 
@@ -799,6 +898,21 @@ func (ec *executionContext) field_Mutation_registerUser_args(ctx context.Context
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_requestPasswordReset_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["email"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["email"] = arg0
 	return args, nil
 }
 
@@ -844,6 +958,21 @@ func (ec *executionContext) field_Mutation_uploadImages_args(ctx context.Context
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_validateUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["validationToken"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("validationToken"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["validationToken"] = arg0
 	return args, nil
 }
 
@@ -1451,6 +1580,68 @@ func (ec *executionContext) _Mutation_logout(ctx context.Context, field graphql.
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_logoutAll(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_logoutAll_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().LogoutAll(rctx, args["input"].(*bool))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.IsLoggedIn == nil {
+				return nil, errors.New("directive isLoggedIn is not implemented")
+			}
+			return ec.directives.IsLoggedIn(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_refresh(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1477,6 +1668,132 @@ func (ec *executionContext) _Mutation_refresh(ctx context.Context, field graphql
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().Refresh(rctx, args["input"].(*bool))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_validateUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_validateUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ValidateUser(rctx, args["validationToken"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_requestPasswordReset(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_requestPasswordReset_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RequestPasswordReset(rctx, args["email"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_processPasswordReset(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_processPasswordReset_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ProcessPasswordReset(rctx, args["resetToken"].(string), args["newPassword"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4013,7 +4330,7 @@ func (ec *executionContext) unmarshalInputNewUserInput(ctx context.Context, obj 
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatar"))
-			it.Avatar, err = ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			it.Avatar, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4317,8 +4634,28 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "logoutAll":
+			out.Values[i] = ec._Mutation_logoutAll(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "refresh":
 			out.Values[i] = ec._Mutation_refresh(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "validateUser":
+			out.Values[i] = ec._Mutation_validateUser(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "requestPasswordReset":
+			out.Values[i] = ec._Mutation_requestPasswordReset(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "processPasswordReset":
+			out.Values[i] = ec._Mutation_processPasswordReset(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

@@ -23,7 +23,7 @@ input ImageFilterInput {
   forSale: Boolean
   priceLimit: Float
   archived:Boolean
-  discountPercentLimit: Int
+  discountPercentLimit : Int
 }
 
 input NewImageInput {
