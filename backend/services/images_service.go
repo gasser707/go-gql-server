@@ -7,13 +7,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql"
 	dbModels "github.com/gasser707/go-gql-server/databases/models"
 	customErr "github.com/gasser707/go-gql-server/errors"
-	email_svc"github.com/gasser707/go-gql-server/services/email"
 	"github.com/gasser707/go-gql-server/graphql/custom"
 	"github.com/gasser707/go-gql-server/graphql/model"
 	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gasser707/go-gql-server/repo"
+	email_svc "github.com/gasser707/go-gql-server/services/email"
 	"github.com/gasser707/go-gql-server/utils/cloud"
 	"github.com/jmoiron/sqlx"
 	"github.com/twinj/uuid"
@@ -181,6 +182,10 @@ func (s *imagesService) GetImages(ctx context.Context, input *model.ImageFilterI
 		return []*custom.Image{img}, nil
 	}
 
+	if input.Image != nil {
+		s.searchbyImage(ctx, userId, input.Image)
+	}
+
 	filter := helpers.ParseFilter(input, int(userId))
 	return s.GetImagesByFilter(ctx, userId, filter)
 
@@ -326,6 +331,19 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 		ID:              input.ID,
 		Archived:        input.Archived,
 	}, nil
+}
+
+func (s *imagesService) searchbyImage(ctx context.Context, userId IntUserID, img *graphql.Upload) ([]*custom.Image, error) {
+	generatedLabels, err := s.visionOperator.DetectLocalImgProps(ctx, img.File)
+	if err != nil {
+		return nil, err
+	}
+	inputFilter := &model.ImageFilterInput{
+		Labels: generatedLabels,
+	}
+	filter := helpers.ParseFilter(inputFilter, int(userId))
+
+	return s.GetImagesByFilter(ctx, userId, filter)
 }
 
 func (s *imagesService) insertLabels(ctx context.Context, labels []string, imgId int) error {

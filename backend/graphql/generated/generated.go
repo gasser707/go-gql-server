@@ -644,6 +644,7 @@ input ImageFilterInput {
   priceLimit: Float
   archived:Boolean
   discountPercentLimit: Int
+  image: Upload
 }
 
 input NewImageInput {
@@ -4166,6 +4167,14 @@ func (ec *executionContext) unmarshalInputImageFilterInput(ctx context.Context, 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("discountPercentLimit"))
 			it.DiscountPercentLimit, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "image":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image"))
+			it.Image, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
 			if err != nil {
 				return it, err
 			}
