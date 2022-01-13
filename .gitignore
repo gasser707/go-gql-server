@@ -1,6 +1,6 @@
 .env
 sqlboiler.toml
-bucket-keys.json
+gcp-keys.json
 
 .vscode/
 

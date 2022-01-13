@@ -11,16 +11,17 @@ import (
 )
 
 type ImageFilterInput struct {
-	ID                   *string  `json:"id"`
-	UserID               *string  `json:"userId"`
-	Title                *string  `json:"title"`
-	Labels               []string `json:"labels"`
-	MatchAll             *bool    `json:"matchAll"`
-	Private              *bool    `json:"private"`
-	ForSale              *bool    `json:"forSale"`
-	PriceLimit           *float64 `json:"priceLimit"`
-	Archived             *bool    `json:"archived"`
-	DiscountPercentLimit *int     `json:"discountPercentLimit"`
+	ID                   *string         `json:"id"`
+	UserID               *string         `json:"userId"`
+	Title                *string         `json:"title"`
+	Labels               []string        `json:"labels"`
+	MatchAll             *bool           `json:"matchAll"`
+	Private              *bool           `json:"private"`
+	ForSale              *bool           `json:"forSale"`
+	PriceLimit           *float64        `json:"priceLimit"`
+	Archived             *bool           `json:"archived"`
+	DiscountPercentLimit *int            `json:"discountPercentLimit"`
+	Image                *graphql.Upload `json:"image"`
 }
 
 type LoginInput struct {

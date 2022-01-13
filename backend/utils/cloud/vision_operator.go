@@ -3,6 +3,7 @@ package cloud
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -14,6 +15,7 @@ import (
 
 type VisionOperatorInterface interface {
 	DetectImgProps(ctx context.Context, source string) (labels []string, err error)
+	DetectLocalImgProps(ctx context.Context, imgReader io.Reader) (labels []string, err error) 
 }
 
 //UsersService implements the usersServiceInterface
@@ -46,7 +48,48 @@ func (v *visionOperator) DetectImgProps(ctx context.Context, source string) (lab
 
 	errs.Go(
 		func() error {
-			return v.getLandMarks(ctx, ch, image, 2)
+			return v.getLandMarks(ctx, ch, image, 5)
+		})
+	errs.Go(
+		func() error {
+			return v.getLogos(ctx, ch, image, 3)
+		})
+	errs.Go(
+		func() error {
+			return v.getObjects(ctx, ch, image)
+		})
+
+	go func() {
+		errs.Wait()
+		close(ch)
+	}()
+
+	// read from channel as they come in until its closed
+	labels = []string{}
+	for label := range ch {
+		labels = append(labels, label)
+	}
+
+	return labels, errs.Wait()
+
+}
+
+func (v *visionOperator) DetectLocalImgProps(ctx context.Context, imgReader io.Reader) (labels []string, err error) {
+
+	image, err := vision.NewImageFromReader(imgReader)
+	if err != nil {
+		return nil, err
+	}
+	errs, ctx := errgroup.WithContext(ctx)
+	ch := make(chan string)
+	errs.Go(
+		func() error {
+			return v.getLabels(ctx, ch, image, 6)
+		})
+
+	errs.Go(
+		func() error {
+			return v.getLandMarks(ctx, ch, image, 5)
 		})
 	errs.Go(
 		func() error {

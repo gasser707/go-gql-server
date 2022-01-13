@@ -5,6 +5,7 @@ package resolvers
 
 import (
 	"context"
+
 	"github.com/gasser707/go-gql-server/graphql/generated"
 	"github.com/gasser707/go-gql-server/graphql/model"
 )
