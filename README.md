@@ -1,6 +1,7 @@
 # Shotify
 
 #### Shotify is an image sharing and selling application. It is a self-learning project to familiarize my-self with the Go programing language through an advanced project. It is built with the following technologies: 
+
 - Golang 
 - GraphQL
 - MySQL
