@@ -1,6 +1,7 @@
 # Shotify
 
-#### Shotify is my submission for the Shopify Backend Developer & Production Engineering Intern Challenge. It is built with the following technologies: 
+#### Shotify is an image sharing and selling application. It is a self-learning project to familiarize my-self with the Go programing language through an advanced project. It is built with the following technologies: 
+
 - Golang 
 - GraphQL
 - MySQL
@@ -9,166 +10,64 @@
 - Github Actions
 - testify
 
-#### I chose these technologies after analyzing Shopify's development stack. Even though Shopify's backend is built with Ruby, I chose Go as it is a simple and fast language.
->“Go will be the server language of the future.” — Tobias Lütke, Shopify CEO
+### What are the available features? 
+
+#### Authentication
+- Secure authentication with JWT tokens, refresh tokens, cookies encrypted with [gorilla/securecookie](https://github.com/gorilla/securecookie) and CSRF tokens.
+- Session storage using Redis.
+- Secure password reset by emailing eset link.
+- Email verification on signup by sending an account confirmation email.
+#### Images
+- CRUD operations on items 
+- Creating several images at the same time by concurrency using **Go Channels and Routines**
+- Deleting several images at the same time
+- Buying images 
+- Selling images
+- Discounting images
+- Archiving images
+- Setting images as private
+- Saving images to Google Cloud Storage
+- Autogenerating labels or tags for images by using Google Cloud Vision
+- Searching for an image by an image.
+- Powerful image search that lets users search for images by several filters such as:
+    * id
+    * userId
+    * title
+    * labels (with option to match images that have **all** labels sent )
+    * private (in images a user owns)
+    * forSale 
+    * priceLimit 
+    * archived(in images a user owns)
+    * discountPercentLimit
+    * Search by uploading another image.
+
+#### Resource protection
+
+ User can only use update and delete operations on images they own, and they can search or filter images that aren't archived or private unless they previously bought them when they were public.
+
+#### Emails
+
+Users are sent confirmation emails to confirm their emails are valid, they can't access resources validating their emails. 
+In dev environment. Emails are sent to a mailhog server that I set up as port of the docker-compose and the kubernetes cluster. In prod environment, they are sent using SendGrid.
 
 ### How to test it?
-#### I didn't want the tester to go through a lot of environment configurations and set up just to run the app, so I deployed it to Google Kubernetes Engine, you can test the live version at https://www.go-shotify.xyz
+
+This project was built with a kubernetes development workflow using [Skaffold](https://skaffold.dev/).
+To test it locally you can do so using either Kubernetes or Docker-Compose. You will also need a GCS bucket and 
+your own GCP service account credentials as json. provide the path to your keys json and bucket name as environment variables. See the [.env.sample](./backend/.env.sample)
+
+- Testing using skaffold:
+    * Fill in the values of the [.env.sample file](./backend/.env.sample) and rename it to `.env`
+    * Run `skaffold dev` and eveything should work. Provided you have kubernetes installed.
+    * Run `kubectl get ingress` to see where what is the ip-address of your ingress. in your `etc/hosts` file on your system,
+    add the the lines `<ingress ip>  shotify.com` at the bottom.
+
+- Testing using docker-compose:
+    * Run `docker-compose up`. The database with its correct schema are already mounted in a virtual volume so don't worry about migrations.
 
 
-### what are the available features? 
-- CRUD operations on items 
-- **Uploading an image for an item, generating its thumbnail, and uploading both images to GCS** <- _My chosen extra feature_
-- Creating several items at the same time
-- Deleting several items at the same time
-- CRUD operations on manufacturers of items
+Look at the [schema](./backend/graphql/schemas) to see how to test the api.
 
-#### Here are examples of the GraphQL api usage:
-###### Get A list of items:
-```
-query{
-  products{
-    id
-    name
-    imageUrl
-    thumbnailUrl
-    createdAt
-    updatedAt
-    labels
-    price
-    discountPercent
-  }
-}
-```
-You can also view the information of the manufacturer of the item
-```
-query{
-  products{
-    id
-    name
-    imageUrl
-    thumbnailUrl
-    price
-    discountPercent
-    manufacturer{
-      id
-      name
-      joinedAt
-      bio
-    }
-  }
-}
-```
-###### Create one or several item in one shot:
-make sure that a manufacturer with the manufacturerId you are inserting exists before associating the item to the manufacturer
-
-```
-mutation($file1: Upload, $file2: Upload){
-  createProducts(input:
-  	[
-      {
-        name:"test",
-        description: "test",
-        price:25.5,
-        discountPercent:0,
-        manufacturerId:1, 
-        labels: ["hi", "hi2"],
-        image: $file1,
-      },
-        {
-        name:"test",
-        description: "test",
-        price:25.5,
-        discountPercent:0,
-        manufacturerId:1,
-        labels: ["hi", "hi2"],
-        image: $file2,
-      }
-  ])
-    {
-      id
-      name
-      imageUrl
-      thumbnailUrl
-      manufacturer{
-        id
-        name
-        joinedAt
-      }
-    }
-}
-```
-###### I deployed a little Node.js express app that has a GraphQL IDE that makes uploading images a lot easier than using the normal playground or using multipart requests using something like Postman. Here I am showing how you would send the two images from the previous mutation with your request:
-
-![Altair image upload](https://media.giphy.com/media/w7swOLCNBmasJNWpLQ/giphy.gif)
-
-###### Update an item:
-
-```
-mutation {
-  updateProduct(input: {
-    id: 32,
-    name: "updated",
-    description:"description update",
-    labels:  ["laptops","electronics"],
-    price: 2220,
-    discountPercent:0,
-    manufacturerId:1    
-  }){
-    id,
-    name, description, labels, price
-  }
-}
-```
-###### Delete one or several items by their ids in one shot:
-```
-mutation{
-  deleteProducts(input:[1, 2])
-}
-```
-
-###### Get A list of manufacturers:
-```
-query{
-  manufacturers{
-    id
-    name
-    bio
-    joinedAt
-  }
-}
-```
-###### Create a manufacturer:
-
-```
-mutation {
-  createManufacturer(input: { name: "2 Man", bio: "bio2" }) {
-    id
-  }
-}
-
-```
-###### Update a manufacturer:
-
-```
-mutation{
-  updateManufacturer(input: {
-    Id:2,
-    name:"updated manufacturer",
-    bio: "updated bio"
-  }){
-    name
-    bio
-    id
-  }
-}
-```
-###### Delete a manufacturer (if they don't have any associated products):
-```
-mutation{
-  deleteManufacturer(input: 1)
-}
-```
 # Design Discussion
 
 ###### This project was built with the following important design principles in mind:
@@ -233,8 +132,3 @@ Any production-ready application must have a CI/CD pipeline that ensures all tes
   
 ### A few Kubernetes notes
 I deployed MySQL as a Replicated Statefulset application with a primary node and two secondary nodes. The two secondary nodes have Xtrabackup sidecars on them that clone the data from the primary node. Generally, I gave all the deployments **Burstable** Quality of Service (QoS) as this is just a demo.
-
-### TLS Encryprition
-Any production App needs to have HTTPS and I obtained a TLS certificate for my cluster using **cert-manager** and **Let's Encrypt** for the **Nginx Ingress** reverse proxy.
-  
-  
