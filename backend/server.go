@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -13,12 +14,15 @@ import (
 	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gasser707/go-gql-server/middleware"
 	"github.com/gasser707/go-gql-server/services"
-	email_svc"github.com/gasser707/go-gql-server/services/email"
-	sales_svc"github.com/gasser707/go-gql-server/services/sale"
+	email_svc "github.com/gasser707/go-gql-server/services/email"
+	sales_svc "github.com/gasser707/go-gql-server/services/sale"
 	"github.com/gasser707/go-gql-server/utils/cloud"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
 )
+
+var playgroundUrl = os.Getenv("DOMAIN_NAME")
 
 // Defining the Graphql handler
 func graphqlHandler() gin.HandlerFunc {
@@ -76,6 +80,13 @@ func main() {
 
 	r.Use(middleware.CookieMiddleware())
 	r.Use(middleware.HeaderMiddleware())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:   []string{"*"},
+		AllowCredentials: true,
+		AllowMethods:     []string{"PUT", "PATCH", "POST"},
+		AllowHeaders:     []string{"Origin", "Content-Type"},
+		ExposeHeaders:    []string{"Content-Length", "Content-Type"},	
+	}))
 
 	r.POST("/query", graphqlHandler())
 	r.GET("/query/playground", playgroundHandler())
