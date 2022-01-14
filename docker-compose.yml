@@ -1,0 +1,97 @@
+version: '3'
+services:
+  mysql:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    container_name: mysql_shotify
+    restart: always
+    image: mysql:5.7
+    ports:
+      - 8083:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: pwd
+      MYSQL_DATABASE: shotify_db
+    volumes:
+      - my-datavolume:/var/lib/minesql
+      - ./init:/docker-entrypoint-initdb.d
+      
+  redis:
+    extra_hosts:
+     - "host.docker.internal:host-gateway"
+    container_name: redis_shotify
+    image: redis:6.2
+    ports:
+    - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  gql-ide:
+    extra_hosts:
+     - "host.docker.internal:host-gateway"
+    container_name: altair_shotify
+    image: gasser707/altair-gql-ide
+    ports:
+    - "4000:4000"
+    environment:
+      ALTAIR_PORT: 4000
+      GQL_SERVER_ADDRESS: shotify:8080/query
+
+  mailhog:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    container_name: mailhog_container
+    restart: always
+    image: mailhog/mailhog:v1.0.1
+    ports:
+      - 1025:1025
+      - 8025:8025
+  
+  shotify:
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
+    container_name: shotify
+    image: gasser707/go-gql-server
+    ports:
+    - "8080:8080"
+    volumes:
+      - ./init/keys:/keys
+    environment:
+      REDIS_URI: redis:6379
+      REDIS_PASSWORD:
+
+      MYSQL_DBNAME: shotify_db
+      MYSQL_PASS: pwd
+      MYSQL_HOST: mysql:3306
+      MYSQL_USER: root
+
+      COOKIE_HASH_KEY: d515a70a1dcc978f2dccb83eed54201d
+      COOKIE_BLOCK_KEY: cbe59ab5f9b4aebc87a02b03c3928f0a
+
+      ACCESS_SECRET: 98hbun98hsdfsdwesdfs
+      REFRESH_SECRET: 786dfdbjhsbsdfsdfsdf
+      CSRF_SECRET: 4e3eaf65e25e860848d762
+      ENV: dev
+      BUCKET_NAME: shotify-bucket
+
+      # path to gcp service account key json
+      GOOGLE_APPLICATION_CREDENTIALS: "./keys/gcp-keys.json"
+
+      # mailhog credentials
+      EMAIL_HOST: mailhog
+      EMAIL_ADDRESS: mailhog:1025
+
+      # sendgrid credentials
+      SENDGRID_FROM:
+      SENDGRID_API_KEY:
+
+      DOMAIN_NAME: gql-ide:4000
+
+    depends_on:
+      - mysql
+      - redis
+      - mailhog
+
+volumes:
+  my-datavolume:
+  redis_data:
+    external: false

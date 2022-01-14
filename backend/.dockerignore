@@ -1,6 +1,6 @@
 .env
 gqlgen.yaml
-bucket-keys.json
+gcp-keys.json
 .git/
 docker-compose.yml
 *.md
