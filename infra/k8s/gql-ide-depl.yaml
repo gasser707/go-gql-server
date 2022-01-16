@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gql-ide-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gql-ide
+  template:
+    metadata:
+      labels:
+        app: gql-ide
+    spec:
+      containers:
+        - name: gql-ide
+          image: gasser707/altair-gql-ide
+          env:
+            - name: ALTAIR_PORT
+              value: '4000'
+            - name: GQL_SERVER_ADDRESS
+              value: http://shotify.com/query
+          resources:
+            requests:
+              memory: "300Mi"
+              cpu: 50m
+            limits:
+              memory: "600Mi"
+              cpu: 100m
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gql-ide-srv
+spec:
+  selector:
+    app: gql-ide
+  ports:
+    - name: gql-ide
+      protocol: TCP
+      port: 4000
+      targetPort: 4000

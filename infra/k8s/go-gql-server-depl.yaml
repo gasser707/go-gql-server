@@ -69,15 +69,15 @@ spec:
             - name: MYSQL_USER
               value: root
             - name: MYSQL_PASS
-              value: pwd
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-pass
+                  key: MYSQL_ROOT_PASSWORD
             - name: EMAIL_HOST
               value: mailhog-srv 
             - name: EMAIL_ADDRESS
               value: mailhog-srv:1025
-              # valueFrom:
-              #   secretKeyRef:
-              #     name: mysql-user-pass
-              #     key: MYSQL_PASSWORD
+
           resources:
             requests:
               memory: "64Mi"

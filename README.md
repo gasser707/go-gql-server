@@ -5,7 +5,7 @@
 - Golang 
 - GraphQL
 - MySQL
-- Google Kubernetes Engine
+- Kubernetes
 - Google Cloud Storage
 - Github Actions
 - testify
@@ -54,16 +54,17 @@ In dev environment. Emails are sent to a mailhog server that I set up as port of
 
 This project was built with a kubernetes development workflow using [Skaffold](https://skaffold.dev/).
 To test it locally you can do so using either Kubernetes or Docker-Compose. You will also need a GCS bucket and 
-your own GCP service account credentials as json. provide the path to your keys json and bucket name as environment variables. See the [.env.sample](./backend/.env.sample)
+your own GCP service account credentials as json, place the json file inside [init](./init) in a folder and name the folder `keys`.
 
 - Testing using skaffold:
-    * Fill in the values of the [.env.sample file](./backend/.env.sample) and rename it to `.env`
+    * Copy the `kubectl` commands and create the secrets in the [kubectl-secrets.txt](./infra/kubectl-secrets.txt) file
     * Run `skaffold dev` and eveything should work. Provided you have kubernetes installed.
     * Run `kubectl get ingress` to see where what is the ip-address of your ingress. in your `etc/hosts` file on your system,
     add the the lines `<ingress ip>  shotify.com` at the bottom.
+    * Go to `shotify.com` in your browser
 
 - Testing using docker-compose:
-    * Run `docker-compose up`. The database with its correct schema are already mounted in a virtual volume so don't worry about migrations.
+    * Run `docker-compose up`. The database with its correct schema are already mounted in a virtual volume so don't worry about migrations. Go to [http://localhost:4000/]
 
 
 Look at the [schema](./backend/graphql/schemas) to see how to test the api.
