@@ -84,8 +84,8 @@ func main() {
 		AllowOrigins:   []string{"*"},
 		AllowCredentials: true,
 		AllowMethods:     []string{"PUT", "PATCH", "POST"},
-		AllowHeaders:     []string{"Origin", "Content-Type"},
-		ExposeHeaders:    []string{"Content-Length", "Content-Type"},	
+		AllowHeaders:     []string{"Origin", "Content-Type", "Cookie", "Set-Cookie", "X-CSRF-TOKEN"},
+		ExposeHeaders:    []string{"Content-Length", "Content-Type", "Cookie", "Set-Cookie", "X-CSRF-TOKEN"},	
 	}))
 
 	r.POST("/query", graphqlHandler())
