@@ -60,7 +60,7 @@ To test it locally you can do so using either Kubernetes or Docker-Compose. You 
     * Run `skaffold dev` and eveything should work. Provided you have kubernetes installed.
     * Run `kubectl get ingress` to see where what is the ip-address of your ingress. in your `etc/hosts` file on your system,
     add the the lines `<ingress ip>  shotify.com` at the bottom.
-    * if you are on dev environment which is the default unless you change it [here](./infra/k8s/go-gql-server-depl) Run `kubectl port-forward services/mailhog-srv 8025:8025` this is to see the local mailbox to verify your account after you signup.
+    * if you are on dev environment which is the default unless you change it [here](./infra/k8s/go-gql-server-depl.yaml) Run `kubectl port-forward services/mailhog-srv 8025:8025` this is to see the local mailbox to verify your account after you signup.
     * Go to `shotify.com` in your browser
 
 - Testing using docker-compose:
