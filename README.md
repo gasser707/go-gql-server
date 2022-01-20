@@ -53,21 +53,22 @@ In dev environment. Emails are sent to a mailhog server that I set up as port of
 ### How to test it?
 
 This project was built with a kubernetes development workflow using [Skaffold](https://skaffold.dev/).
-To test it locally you can do so using either Kubernetes or Docker-Compose. You will also need a GCS bucket and 
-your own GCP service account credentials as json, place the json file inside [init](./init) in a folder and name the folder `keys`.
+To test it locally you can do so using either Kubernetes or Docker-Compose. You will also need a GCS bucket (name it `shotify-bucket`) and your own GCP service account credentials as json, place the json file inside [init](./init) in a folder and name the folder `keys`.
 
 - Testing using skaffold:
-    * Copy the `kubectl` commands and create the secrets in the [kubectl-secrets.txt](./infra/kubectl-secrets.txt) file
+    * Copy the `kubectl` commands and create the secrets in the [kubectl-secrets.txt](./infra/kubectl-secrets.txt) file, don't forget to change the path of the first key to the path where your gcp keys are located.
     * Run `skaffold dev` and eveything should work. Provided you have kubernetes installed.
     * Run `kubectl get ingress` to see where what is the ip-address of your ingress. in your `etc/hosts` file on your system,
     add the the lines `<ingress ip>  shotify.com` at the bottom.
+    * if you are on dev environment which is the default unless you change it [here](./infra/k8s/go-gql-server-depl) Run `kubectl port-forward services/mailhog-srv 8025:8025` this is to see the local mailbox to verify your account after you signup.
     * Go to `shotify.com` in your browser
 
 - Testing using docker-compose:
-    * Run `docker-compose up`. The database with its correct schema are already mounted in a virtual volume so don't worry about migrations. Go to [http://localhost:4000/]
+    * Run `docker-compose up`. The database with its correct schema are already mounted in a virtual volume so don't worry about migrations. Using [Postman](https://www.postman.com/) or [Insomnia](https://insomnia.rest/products/insomnia)
 
 
 Look at the [schema](./backend/graphql/schemas) to see how to test the api.
+I made prebuilt requests to test [here](./api-requests-sample.har) in .har format, you can import the file in postman or insomnia and you will get the sample of requests.
 
 # Design Discussion
 
@@ -105,8 +106,6 @@ Look at the [schema](./backend/graphql/schemas) to see how to test the api.
 - Scalability:
   * Achieved through separation of concerns that make it easy to remove a service from the application and use it as a microservice of its own with as little as possible refactoring and configuration.
 
-### DataLoader and the N+1 problem
-You might be wondering why I created the manufacturers entity, this is done to have another service to demonstrate how the application structure would scale when adding new services or features to the app. Also, I wanted to have GraphQL types referencing each other to demonstrate implementation of **DataLoader** to solve the ***GraphQL N+1 problem***
 
 ### Testing
 Testing is a very important part of any production-ready application. I created unit tests using [Testify](https://github.com/stretchr/testify) and [mockery](https://github.com/vektra/mockery)

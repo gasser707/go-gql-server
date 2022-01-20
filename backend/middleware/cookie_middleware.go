@@ -34,7 +34,7 @@ func (ca *CookieAccess) SetCookie(at string, rt string, sm *securecookie.SecureC
 			Value: encoded,
 			Path:  "/*",
 			// Secure:   true,
-			SameSite: http.SameSiteLaxMode,
+			// SameSite: http.SameSiteLaxMode,
 			HttpOnly: true,
 			Expires:  time.Now().Add(time.Hour * 24 * 7),
 		}
