@@ -53,8 +53,7 @@ In dev environment. Emails are sent to a mailhog server that I set up as port of
 ### How to test it?
 
 This project was built with a kubernetes development workflow using [Skaffold](https://skaffold.dev/).
-To test it locally you can do so using either Kubernetes or Docker-Compose. You will also need a GCS bucket and 
-your own GCP service account credentials as json, place the json file inside [init](./init) in a folder and name the folder `keys`.
+To test it locally you can do so using either Kubernetes or Docker-Compose. You will also need a GCS bucket (name it `shotify-bucket`) and your own GCP service account credentials as json, place the json file inside [init](./init) in a folder and name the folder `keys`.
 
 - Testing using skaffold:
     * Copy the `kubectl` commands and create the secrets in the [kubectl-secrets.txt](./infra/kubectl-secrets.txt) file
@@ -64,7 +63,7 @@ your own GCP service account credentials as json, place the json file inside [in
     * Go to `shotify.com` in your browser
 
 - Testing using docker-compose:
-    * Run `docker-compose up`. The database with its correct schema are already mounted in a virtual volume so don't worry about migrations. Go to [http://localhost:4000/]
+    * Run `docker-compose up`. The database with its correct schema are already mounted in a virtual volume so don't worry about migrations. Go to http://localhost:4000/
 
 
 Look at the [schema](./backend/graphql/schemas) to see how to test the api.

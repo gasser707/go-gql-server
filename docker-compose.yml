@@ -34,7 +34,7 @@ services:
     - "4000:4000"
     environment:
       ALTAIR_PORT: 4000
-      GQL_SERVER_ADDRESS: shotify:8080/query
+      GQL_SERVER_ADDRESS: http://localhost:8080/query
 
   mailhog:
     extra_hosts:
