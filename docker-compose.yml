@@ -25,16 +25,16 @@ services:
     volumes:
       - redis_data:/data
 
-  gql-ide:
-    extra_hosts:
-     - "host.docker.internal:host-gateway"
-    container_name: altair_shotify
-    image: gasser707/altair-gql-ide
-    ports:
-    - "4000:4000"
-    environment:
-      ALTAIR_PORT: 4000
-      GQL_SERVER_ADDRESS: http://localhost:8080/query
+  # gql-ide:
+  #   extra_hosts:
+  #    - "host.docker.internal:host-gateway"
+  #   container_name: altair_shotify
+  #   image: gasser707/altair-gql-ide
+  #   ports:
+  #   - "4000:4000"
+  #   environment:
+  #     ALTAIR_PORT: 4000
+  #     GQL_SERVER_ADDRESS: http://localhost:8080/query
 
   mailhog:
     extra_hosts:
@@ -84,7 +84,7 @@ services:
       SENDGRID_FROM:
       SENDGRID_API_KEY:
 
-      DOMAIN_NAME: gql-ide:4000
+      DOMAIN_NAME: localhost
 
     depends_on:
       - mysql

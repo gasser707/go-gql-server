@@ -17,10 +17,3 @@ spec:
                 name: shotify-srv
                 port:
                   number: 8080
-          - path: /?(.*)
-            pathType: Prefix
-            backend:
-              service:
-                name: gql-ide-srv
-                port:
-                  number: 4000
