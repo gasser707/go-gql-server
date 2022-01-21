@@ -2,68 +2,88 @@ package cloud
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"time"
 
-	"cloud.google.com/go/storage"
-	"github.com/99designs/gqlgen/graphql"
-	customErr "github.com/gasser707/go-gql-server/errors"
+	gcs "cloud.google.com/go/storage"
+    customErr "github.com/gasser707/go-gql-server/errors"
 )
 
 type StorageOperatorInterface interface {
-	UploadImage(ctx context.Context, img *graphql.Upload, imgName string, path string) (url string, err error)
-	DeleteImage(ctx context.Context, path string) error
+	UploadImage(img io.Reader, imgName string, productId string) (url string, err error)
+	DeleteImage(path string) error
+}
+
+type GcsClient struct {
+	client *gcs.Client
+}
+
+type storageOperator struct {
+	storageClient StorageOperatorInterface
 }
 
 //UsersService implements the usersServiceInterface
 var _ StorageOperatorInterface = &storageOperator{}
 
-var bucketName = "BUCKET_NAME"
+var bucketName = os.Getenv("BUCKET_NAME")
 
-type storageOperator struct {
-	storageClient *storage.Client
-}
+const baseGcsUrl = "https://storage.googleapis.com"
 
-func NewStorageOperator(ctx context.Context) (*storageOperator, error) {
+func NewGcsClient() (*GcsClient, error) {
 
-	storageClient, err := storage.NewClient(ctx)
+	storageClient, err := gcs.NewClient(context.Background())
 	if err != nil {
-		return nil, customErr.Internal(ctx, err.Error())
+		return nil, customErr.Internal(context.Background(),err.Error())
 	}
-	return &storageOperator{
-		storageClient: storageClient,
-	}, nil
+
+	return &GcsClient{client: storageClient}, nil
 }
 
-func (s *storageOperator) UploadImage(ctx context.Context, img *graphql.Upload, imgName string, userId string) (url string, err error) {
-	bucket := os.Getenv(bucketName)
+func NewStorageOperator(client StorageOperatorInterface) *storageOperator {
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second*20)
+	return &storageOperator{
+		storageClient: client,
+	}
+}
+
+func (c *GcsClient) UploadImage(img io.Reader, imgName string,
+	productId string) (url string, err error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
-	sw := s.storageClient.Bucket(bucket).Object(userId + "/" + imgName).NewWriter(ctx)
-	if _, err = io.Copy(sw, img.File); err != nil {
-		return "", customErr.Internal(ctx, err.Error())
+	sw := c.client.Bucket(bucketName).Object(productId + "/" + imgName).NewWriter(ctx)
+	if _, err = io.Copy(sw, img); err != nil {
+		return "", customErr.Internal(ctx,err.Error())
 	}
 	if err := sw.Close(); err != nil {
 		return "", customErr.Internal(ctx, err.Error())
 	}
 
-	url = sw.Attrs().Name
+	url = fmt.Sprintf("%s/%s/%s", baseGcsUrl, bucketName, sw.Attrs().Name)
 	return url, nil
 }
 
-// deleteFile removes specified object.
-func (s *storageOperator) DeleteImage(ctx context.Context, path string) error {
-	bucket := os.Getenv(bucketName)
+func (c *GcsClient) DeleteImage(path string) error {
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	o := s.storageClient.Bucket(bucket).Object(path)
+	o := c.client.Bucket(bucketName).Object(path)
 	if err := o.Delete(ctx); err != nil {
 		return customErr.Internal(ctx, err.Error())
 	}
 
 	return nil
+
+}
+
+func (s *storageOperator) UploadImage(img io.Reader, imgName string, productId string) (url string, err error) {
+	return s.storageClient.UploadImage(img, imgName, productId)
+}
+
+// deleteFile removes specified object.
+func (s *storageOperator) DeleteImage(path string) error {
+	return s.storageClient.DeleteImage(path)
 }

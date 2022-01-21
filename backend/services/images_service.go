@@ -101,7 +101,7 @@ func (s *imagesService) DeleteImages(ctx context.Context, input []string) (bool,
 func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.Image, inputImg *model.NewImageInput,
 	userId IntUserID) (err error) {
 
-	url, err := s.storageOperator.UploadImage(ctx, &inputImg.File, uuid.NewV4().String(), fmt.Sprintf("%v", userId))
+	url, err := s.storageOperator.UploadImage(inputImg.File.File, uuid.NewV4().String(), fmt.Sprintf("%v", userId))
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (s *imagesService) processDeleteImage(ctx context.Context, ID string, userI
 		return err
 	}
 	url := img.URL
-	err = s.storageOperator.DeleteImage(ctx, url)
+	err = s.storageOperator.DeleteImage( url)
 	if err != nil {
 		return err
 	}
