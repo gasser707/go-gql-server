@@ -29,8 +29,13 @@ func graphqlHandler() gin.HandlerFunc {
 	// NewExecutableSchema and Config are in the generated.go file
 	// Resolver is in the resolver.go file
 
-	ctx := context.Background()
-	so, err := cloud.NewStorageOperator(ctx)
+	ctx:= context.Background()
+	gcsClient, err := cloud.NewGcsClient()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	so := cloud.NewStorageOperator(gcsClient)
 	if err != nil {
 		log.Panic(err)
 	}
