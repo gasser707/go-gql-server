@@ -132,3 +132,6 @@ Any production-ready application must have a CI/CD pipeline that ensures all tes
   
 ### A few Kubernetes notes
 I deployed MySQL as a Replicated Statefulset application with a primary node and two secondary nodes. The two secondary nodes have Xtrabackup sidecars on them that clone the data from the primary node. Generally, I gave all the deployments **Burstable** Quality of Service (QoS) as this is just a demo.
+
+### TLS Encryption
+Any production App needs to have HTTPS and I obtained a TLS certificate for my cluster using cert-manager and Let's Encrypt for the Nginx Ingress reverse proxy. You can find it in [cert-issuer.yaml](./infra/tls-cert)
