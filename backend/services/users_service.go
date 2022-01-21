@@ -70,7 +70,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 	}
 	avatarUrl := ""
 	if input.Avatar != nil {
-		avatarUrl, err = s.storageOperator.UploadImage(ctx, input.Avatar, "avatar", fmt.Sprintf("%v", userId))
+		avatarUrl, err = s.storageOperator.UploadImage(input.Avatar.File, "avatar", fmt.Sprintf("%v", userId))
 		if err != nil {
 			return nil, err
 		}
@@ -226,7 +226,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 
 	var newAvatarUrl string
 	if input.Avatar != nil {
-		newAvatarUrl, err = s.storageOperator.UploadImage(ctx, input.Avatar, "avatar", fmt.Sprintf("%v", userId))
+		newAvatarUrl, err = s.storageOperator.UploadImage( input.Avatar.File, "avatar", fmt.Sprintf("%v", userId))
 		if err != nil {
 			return nil, err
 		}
