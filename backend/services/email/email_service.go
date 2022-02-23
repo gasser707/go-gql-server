@@ -60,7 +60,7 @@ func (d *devEmailClient) SendEmail(ctx context.Context, email emails.EmailInterf
 	err := smtp.SendMail(addr, emailAuth, email.GetSender(), email.GetTo(), []byte(emailContent))
 	if err != nil {
 		fmt.Println(err.Error())
-		return customErr.Internal(ctx, err.Error())
+		return customErr.Internal(err.Error())
 	}
 
 	return nil
@@ -106,7 +106,7 @@ func (s *emailService) SendEmail(ctx context.Context, email emails.EmailInterfac
 	emailContent := s.factory.GenerateEmailContent(email)
 	err := s.emailClient.SendEmail(ctx, email, emailContent)
 	if err != nil {
-		return customErr.Internal(ctx, err.Error())
+		return customErr.Internal(err.Error())
 	}
 	return nil
 }

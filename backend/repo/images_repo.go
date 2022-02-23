@@ -39,9 +39,9 @@ func (r *imagesRepo) GetById(ctx context.Context, imgId int, userId int) (*dbMod
 	img := dbModels.Image{}
 	err := r.db.Get(&img, "SELECT * FROM images WHERE id=?", imgId)
 	if err != nil {
-		return nil, nil, customErr.DB(ctx, err)
+		return nil, nil, customErr.DB(err)
 	} else if ok := r.checkUserBought(ctx, imgId, int(userId)); img.UserID != int(userId) && (img.Private || img.Archived) && !ok {
-		return nil, nil, customErr.Forbidden(ctx, err.Error())
+		return nil, nil, customErr.Forbidden(err.Error())
 	}
 	labels, err := r.GetImageLabels(ctx, imgId)
 	if err != nil {
@@ -54,7 +54,7 @@ func (r *imagesRepo) GetImageIfOwner(ctx context.Context, imgId int, userId int)
 	img := dbModels.Image{}
 	err := r.db.Get(&img, "SELECT * FROM images WHERE id=? AND user_id=?", imgId, userId)
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, customErr.DB(err)
 	}
 	return &img, nil
 }
@@ -63,7 +63,7 @@ func (r *imagesRepo) GetAllPublic(ctx context.Context) ([]*dbModels.Image, error
 	dbImgs := []*dbModels.Image{}
 	err := r.db.Select(&dbImgs, "SELECT * FROM images WHERE private=False AND archived=False")
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, customErr.DB(err)
 	}
 	return dbImgs, nil
 }
@@ -72,7 +72,7 @@ func (r *imagesRepo) GetByFilter(ctx context.Context, filter string) ([]*dbModel
 	dbImgs := []*dbModels.Image{}
 	err := r.db.Select(&dbImgs, filter)
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, customErr.DB(err)
 	}
 	return dbImgs, nil
 }
@@ -82,7 +82,7 @@ func (r *imagesRepo) Create(ctx context.Context, dbImg *dbModels.Image) (imgId i
 	result, err := r.db.NamedExec(`INSERT INTO images(title, description, private, forSale, price, discountPercent, user_id, 
 	created_at, url) VALUES(:title, :description, :private, :forSale, :price, :discountPercent ,:user_id, :created_at, :url)`, dbImg)
 	if err != nil {
-		return -1, customErr.DB(ctx, err)
+		return -1, customErr.DB(err)
 	}
 	imgId, _ = result.LastInsertId()
 
@@ -94,7 +94,7 @@ func (r *imagesRepo) Update(ctx context.Context, id int, img *dbModels.Image) er
 	_, err := r.db.NamedExec(fmt.Sprintf(`UPDATE images SET title= :title, forSale= :forSale, private= :private, 
 	description= :description, price= :price, discountPercent= :discountPercent, archived= :archived WHERE id=%d`, id), img)
 	if err != nil {
-		return customErr.DB(ctx, err)
+		return customErr.DB(err)
 	}
 
 	return nil
@@ -120,7 +120,7 @@ func (r *imagesRepo) Delete(ctx context.Context, imgId int, userId int) error {
 	}
 	_, err = r.db.Exec("DELETE FROM images WHERE id=?", imgId)
 	if err != nil {
-		return customErr.DB(ctx, err)
+		return customErr.DB(err)
 	}
 	err = r.DeleteImageLabels(ctx, imgId)
 	if err != nil {
@@ -134,7 +134,7 @@ func (r *imagesRepo) GetImageLabels(ctx context.Context, imgId int) ([]string, e
 	labels := []string{}
 	err := r.db.Select(&labels, "SELECT tag FROM labels WHERE image_id=?", imgId)
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, customErr.DB(err)
 	}
 	return labels, nil
 }
@@ -143,7 +143,7 @@ func (r *imagesRepo) InsertImageLabels(ctx context.Context, imgId int, labels []
 
 	_, err := r.db.NamedExec("INSERT INTO labels(image_id, tag) VALUES(:image_id, :tag)", labels)
 	if err != nil {
-		return customErr.DB(ctx, err)
+		return customErr.DB(err)
 	}
 	return nil
 }
@@ -153,7 +153,7 @@ func (r *imagesRepo) CountImageSales(ctx context.Context, imgId int) (int, error
 	c := 0
 	err := r.db.Get(&c, "SELECT COUNT(*) FROM sales WHERE image_id=?", imgId)
 	if err != nil {
-		return -1, customErr.DB(ctx, err)
+		return -1, customErr.DB(err)
 	}
 	return c, nil
 }
@@ -162,7 +162,7 @@ func (r *imagesRepo) DeleteImageLabels(ctx context.Context, imgId int) error {
 
 	_, err := r.db.Exec("DELETE FROM labels WHERE image_id=?", imgId)
 	if err != nil {
-		return customErr.DB(ctx, err)
+		return customErr.DB(err)
 	}
 	return nil
 }

@@ -89,7 +89,7 @@ func (t *tokenOperator) createCsrfToken(userId string, td *TokenDetails) (*Token
 	var err error
 	td.CsrfToken, err = unsignedTK.SignedString([]byte(csrfSecret))
 	if err != nil {
-		return nil, customErr.Internal(context.Background(), err.Error())
+		return nil, customErr.Internal(err.Error())
 	}
 	return td, nil
 }
@@ -111,7 +111,7 @@ func (t *tokenOperator) createRefreshToken(userId string, userRole model.Role, t
 	var err error
 	td.RefreshToken, err = rt.SignedString([]byte(refreshSecret))
 	if err != nil {
-		return nil, customErr.Internal(context.Background(), err.Error())
+		return nil, customErr.Internal(err.Error())
 	}
 	return td, nil
 }
@@ -130,7 +130,7 @@ func (t *tokenOperator) createAccessToken(userId string, userRole model.Role, td
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 	td.AccessToken, err = at.SignedString([]byte(accessSecret))
 	if err != nil {
-		return nil, customErr.Internal(context.Background(), err.Error())
+		return nil, customErr.Internal(err.Error())
 	}
 	return td, nil
 }
@@ -158,7 +158,7 @@ func (t *tokenOperator) CreateStatelessToken(userId string, kind StatelessToken)
 	var err error
 	token, err := unsignedTK.SignedString([]byte(tokenSecret))
 	if err != nil {
-		return "", customErr.Internal(context.Background(), err.Error())
+		return "", customErr.Internal(err.Error())
 	}
 	return token, nil
 }
@@ -173,12 +173,12 @@ func (t *tokenOperator) ExtractStatelessTokenMetadata(ctx context.Context, token
 	}
 	token, err := t.verifyStatelessToken(ctx, tokenString, tokenSecret)
 	if err != nil {
-		return "", customErr.NoAuth(ctx, err.Error())
+		return "", customErr.NoAuth(err.Error())
 	}
 
 	userId, err := extractStatelessToken(token)
 	if err != nil {
-		return "", customErr.NoAuth(ctx, err.Error())
+		return "", customErr.NoAuth(err.Error())
 	}
 
 	return userId, nil
@@ -198,13 +198,13 @@ func extractStatelessToken(token *jwt.Token) (string, error) {
 	if ok && token.Valid {
 		userId, userOk := claims["user_id"].(string)
 		if !ok || !userOk {
-			return "", customErr.NoAuth(context.Background(), "unauthorized")
+			return "", customErr.NoAuth("unauthorized")
 
 		}
 		return userId, nil
 	}
 
-	return "", customErr.NoAuth(context.Background(), "something went wrong")
+	return "", customErr.NoAuth("something went wrong")
 }
 
 func (t *tokenOperator) CreateTokens(userId string, userRole model.Role) (*TokenDetails, error) {
@@ -212,15 +212,15 @@ func (t *tokenOperator) CreateTokens(userId string, userRole model.Role) (*Token
 
 	td, err := t.createAccessToken(userId, userRole, td)
 	if err != nil {
-		return nil, customErr.Internal(context.Background(), err.Error())
+		return nil, customErr.Internal(err.Error())
 	}
 	td, err = t.createRefreshToken(userId, userRole, td)
 	if err != nil {
-		return nil, customErr.Internal(context.Background(), err.Error())
+		return nil, customErr.Internal(err.Error())
 	}
 	td, err = t.createCsrfToken(userId, td)
 	if err != nil {
-		return nil, customErr.Internal(context.Background(), err.Error())
+		return nil, customErr.Internal(err.Error())
 	}
 	return td, nil
 }
@@ -268,7 +268,7 @@ func extractAccessToken(token *jwt.Token, ad *AccessDetails) (*AccessDetails, er
 		userId, userOk := claims["user_id"].(string)
 		role, roleOk := claims["user_role"].(string)
 		if !ok || !userOk || !roleOk {
-			return nil, customErr.NoAuth(context.Background(), "unauthorized")
+			return nil, customErr.NoAuth("unauthorized")
 
 		}
 		ad.TokenUuid = accessUuid
@@ -277,7 +277,7 @@ func extractAccessToken(token *jwt.Token, ad *AccessDetails) (*AccessDetails, er
 		return ad, nil
 	}
 
-	return nil, customErr.NoAuth(context.Background(), "something went wrong")
+	return nil, customErr.NoAuth("something went wrong")
 }
 
 func extractRefreshToken(token *jwt.Token) (*RefreshDetails, error) {
@@ -289,7 +289,7 @@ func extractRefreshToken(token *jwt.Token) (*RefreshDetails, error) {
 		role, roleOk := claims["user_role"].(string)
 
 		if !ok || !userOk || !roleOk {
-			return nil, customErr.NoAuth(context.Background(), "unauthorized")
+			return nil, customErr.NoAuth("unauthorized")
 
 		}
 		rd.RefreshUuid = refreshUuid
@@ -298,7 +298,7 @@ func extractRefreshToken(token *jwt.Token) (*RefreshDetails, error) {
 		return rd, nil
 	}
 
-	return nil, customErr.NoAuth(context.Background(), "something went wrong")
+	return nil, customErr.NoAuth("something went wrong")
 }
 
 func extractCsrfToken(token *jwt.Token, ad *AccessDetails) (*AccessDetails, error) {
@@ -307,14 +307,14 @@ func extractCsrfToken(token *jwt.Token, ad *AccessDetails) (*AccessDetails, erro
 		csrfUuid, ok := claims["csrf_uuid"].(string)
 		userId, userOk := claims["user_id"].(string)
 		if !ok || !userOk || userId != ad.UserId {
-			return nil, customErr.NoAuth(context.Background(), "unauthorized")
+			return nil, customErr.NoAuth("unauthorized")
 
 		}
 		ad.CsrfUuid = csrfUuid
 		return ad, nil
 	}
 
-	return nil, customErr.NoAuth(context.Background(), "something went wrong")
+	return nil, customErr.NoAuth("something went wrong")
 }
 
 func extract(accesToken *jwt.Token, csrfToken *jwt.Token) (*AccessDetails, error) {
@@ -323,11 +323,11 @@ func extract(accesToken *jwt.Token, csrfToken *jwt.Token) (*AccessDetails, error
 
 	ad, err := extractAccessToken(accesToken, ad)
 	if err != nil {
-		return nil, customErr.NoAuth(context.Background(), err.Error())
+		return nil, customErr.NoAuth(err.Error())
 	}
 	ad, err = extractCsrfToken(csrfToken, ad)
 	if err != nil {
-		return nil, customErr.NoAuth(context.Background(), err.Error())
+		return nil, customErr.NoAuth(err.Error())
 	}
 
 	return ad, nil
@@ -337,15 +337,15 @@ func extract(accesToken *jwt.Token, csrfToken *jwt.Token) (*AccessDetails, error
 func (t *tokenOperator) ExtractTokenMetadata(ctx context.Context) (*AccessDetails, error) {
 	token, err := t.verifyAccessToken(ctx, accessSecret)
 	if err != nil {
-		return nil, customErr.NoAuth(ctx, err.Error())
+		return nil, customErr.NoAuth(err.Error())
 	}
 	csrf, err := t.verifyCsrfToken(ctx, csrfSecret)
 	if err != nil {
-		return nil, customErr.NoAuth(ctx, err.Error())
+		return nil, customErr.NoAuth(err.Error())
 	}
 	acc, err := extract(token, csrf)
 	if err != nil {
-		return nil, customErr.NoAuth(ctx, err.Error())
+		return nil, customErr.NoAuth(err.Error())
 	}
 	return acc, nil
 }
@@ -353,11 +353,11 @@ func (t *tokenOperator) ExtractTokenMetadata(ctx context.Context) (*AccessDetail
 func (t *tokenOperator) ExtractRefreshMetadata(ctx context.Context) (*RefreshDetails, error) {
 	token, err := t.verifyRefreshToken(ctx, refreshSecret)
 	if err != nil {
-		return nil, customErr.NoAuth(ctx, err.Error())
+		return nil, customErr.NoAuth(err.Error())
 	}
 	rd, err := extractRefreshToken(token)
 	if err != nil {
-		return nil, customErr.NoAuth(ctx, err.Error())
+		return nil, customErr.NoAuth(err.Error())
 	}
 	return rd, nil
 }
@@ -370,7 +370,7 @@ func (t *tokenOperator) getTokensFromCookie(ctx context.Context) (map[string]str
 	ec := ca.EncodedCookie
 	value := make(map[string]string)
 	if err = t.sc.Decode("cookie-name", ec, &value); err != nil {
-		return nil, customErr.NoAuth(ctx, err.Error())
+		return nil, customErr.NoAuth(err.Error())
 	}
 
 	return value, nil
@@ -383,7 +383,7 @@ func (t *tokenOperator) getCsrfTokenFromHeader(ctx context.Context) (string, err
 	}
 	csrfTk := ha.CsrfToken
 	if len(csrfTk) == 0 {
-		return "", customErr.NoAuth(ctx, "missing csrf token")
+		return "", customErr.NoAuth("missing csrf token")
 	}
 
 	return csrfTk, nil
@@ -397,7 +397,7 @@ func (t *tokenOperator) parse(ctx context.Context, tokenString string, secret st
 		return []byte(secret), nil
 	})
 	if err != nil {
-		return nil, customErr.NoAuth(ctx, err.Error())
+		return nil, customErr.NoAuth(err.Error())
 
 	}
 

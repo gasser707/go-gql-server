@@ -21,7 +21,7 @@ func (ha *HeaderAccess) SetCsrfToken(csrfTk string) {
 func GetHeaderAccess(ctx context.Context) (*HeaderAccess, error) {
     ha, ok :=  ctx.Value(headerKey).(*HeaderAccess)
     if(!ok){
-        return nil, customErr.NoAuth(ctx, "csrf token not found")
+        return nil, customErr.NoAuth("csrf token not found")
     }
     return ha, nil
 }

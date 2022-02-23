@@ -49,7 +49,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 		return nil, err
 	}
 	if c != 0 {
-		return nil, customErr.BadRequest(ctx, "A user with this email already exists")
+		return nil, customErr.BadRequest("A user with this email already exists")
 	}
 	pwd, err := helpers.HashPassword(input.Password)
 	if err != nil {
@@ -102,7 +102,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 func (s *usersService) GetUsers(ctx context.Context, input *model.UserFilterInput) ([]*custom.User, error) {
 	_, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal("userId not found in ctx")
 	}
 	if input == nil {
 		return s.GetAllUsers(ctx)
@@ -129,7 +129,7 @@ func (s *usersService) GetUserById(ctx context.Context, ID string) (*custom.User
 
 	inputId, err := strconv.Atoi(ID)
 	if err != nil {
-		return nil, customErr.BadRequest(ctx, err.Error())
+		return nil, customErr.BadRequest(err.Error())
 	}
 	user, err := s.repo.GetById(ctx, inputId)
 	if err != nil {
@@ -203,7 +203,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 
 	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal("userId not found in ctx")
 	}
 	user, err := s.repo.GetById(ctx, int(userId))
 	if err != nil {
@@ -219,7 +219,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 			return nil, err
 		}
 		if c != 0 {
-			return nil, customErr.BadRequest(ctx, "A user with this email already exists")
+			return nil, customErr.BadRequest("A user with this email already exists")
 		}
 	}
 	user.Email = input.Email

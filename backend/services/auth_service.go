@@ -64,7 +64,7 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 
 	ok := helpers.CheckPasswordHash(input.Password, user.Password)
 	if !ok  {
-		return false, customErr.NoAuth(ctx, "this combination of email password is wrong")
+		return false, customErr.NoAuth("this combination of email password is wrong")
 	}
 
 	id := fmt.Sprintf("%v", user.ID)
@@ -104,7 +104,7 @@ func (s *authService) ValidateCredentials(ctx context.Context) (IntUserID, model
 
 	id, err := strconv.Atoi(userId)
 	if err != nil {
-		return -1, "", customErr.Internal(ctx, err.Error())
+		return -1, "", customErr.Internal(err.Error())
 	}
 
 	return IntUserID(id), metadata.UserRole, nil

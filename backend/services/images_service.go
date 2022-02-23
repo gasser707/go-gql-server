@@ -53,7 +53,7 @@ func NewImagesService(ctx context.Context, db *sqlx.DB, storageOperator cloud.St
 func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal("userId not found in ctx")
 	}
 	errs, ctx := errgroup.WithContext(ctx)
 	ch := make(chan *custom.Image)
@@ -81,7 +81,7 @@ func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImag
 func (s *imagesService) DeleteImages(ctx context.Context, input []string) (bool, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
-		return false, customErr.Internal(ctx, "userId not found in ctx")
+		return false, customErr.Internal("userId not found in ctx")
 	}
 	errs, ctx := errgroup.WithContext(ctx)
 	for _, delImg := range input {
@@ -147,7 +147,7 @@ func (s *imagesService) processDeleteImage(ctx context.Context, ID string, userI
 
 	delImgId, err := strconv.Atoi(ID)
 	if err != nil {
-		return customErr.BadRequest(ctx, err.Error())
+		return customErr.BadRequest(err.Error())
 	}
 	img, err := s.repo.GetImageIfOwner(ctx, delImgId, int(userId))
 	if err != nil {
@@ -168,7 +168,7 @@ func (s *imagesService) processDeleteImage(ctx context.Context, ID string, userI
 func (s *imagesService) GetImages(ctx context.Context, input *model.ImageFilterInput) ([]*custom.Image, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal("userId not found in ctx")
 	}
 	if input == nil {
 		return s.GetAllPublicImgs(ctx)
@@ -194,11 +194,11 @@ func (s *imagesService) GetImages(ctx context.Context, input *model.ImageFilterI
 func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Image, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal("userId not found in ctx")
 	}
 	inputId, err := strconv.Atoi(ID)
 	if err != nil {
-		return nil, customErr.BadRequest(ctx, err.Error())
+		return nil, customErr.BadRequest(err.Error())
 	}
 	img, labels, err := s.repo.GetById(ctx, inputId, int(userId))
 	if err != nil {
@@ -285,11 +285,11 @@ func (s *imagesService) GetAllPublicImgs(ctx context.Context) ([]*custom.Image, 
 func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImageInput) (*custom.Image, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal("userId not found in ctx")
 	}
 	imgId, err := strconv.Atoi(input.ID)
 	if err != nil {
-		return nil, customErr.BadRequest(ctx, err.Error())
+		return nil, customErr.BadRequest(err.Error())
 	}
 	img, err := s.repo.GetImageIfOwner(ctx, imgId, int(userId))
 	if err != nil {
@@ -365,15 +365,15 @@ func (s *imagesService) insertLabels(ctx context.Context, labels []string, imgId
 func (s *imagesService) AutoGenerateLabels(ctx context.Context, imageId string) ([]string, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal("userId not found in ctx")
 	}
 	imgId, err := strconv.Atoi(imageId)
 	if err != nil {
-		return nil, customErr.BadRequest(ctx, err.Error())
+		return nil, customErr.BadRequest(err.Error())
 	}
 	img, err := s.repo.GetImageIfOwner(ctx, imgId, int(userId))
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, customErr.DB(err)
 	}
 	generatedLabels, err := s.visionOperator.DetectImgProps(ctx, img.URL)
 	if err != nil {
@@ -381,7 +381,7 @@ func (s *imagesService) AutoGenerateLabels(ctx context.Context, imageId string) 
 	}
 	oldLabels, err := s.repo.GetImageLabels(ctx, imgId)
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, customErr.DB(err)
 	}
 	newLabels := helpers.RemoveDuplicate(generatedLabels, oldLabels)
 	err = s.insertLabels(ctx, newLabels, img.ID)

@@ -58,7 +58,7 @@ func GetCookieAccess(ctx context.Context) (*CookieAccess, error) {
 	cookieKey := cookieKey
 	ca, ok := ctx.Value(cookieKey).(*CookieAccess)
 	if !ok {
-		return nil, customErr.NoAuth(ctx, "cookie not found")
+		return nil, customErr.NoAuth("cookie not found")
 	}
 	return ca, nil
 }

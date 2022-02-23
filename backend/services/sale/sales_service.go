@@ -34,15 +34,15 @@ func NewSalesService(db *sqlx.DB) *SalesService {
 func (s *SalesService) BuyImage(ctx context.Context, id string) (*custom.Sale, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(services.IntUserID)
 	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal("userId not found in ctx")
 	}
 	imgId, err := strconv.Atoi(id)
 	if err != nil {
-		return nil, customErr.BadRequest(ctx, err.Error())
+		return nil, customErr.BadRequest(err.Error())
 	}
 	img, err := s.Repo.GetImageById(ctx, imgId, int(userId))
 	if err != nil || !img.ForSale || img.UserID == int(userId) {
-		return nil, customErr.Forbidden(ctx, "you can't buy an image you own")
+		return nil, customErr.Forbidden("you can't buy an image you own")
 	}
 	sale := dbModels.Sale{
 		Price:     img.Price,
@@ -69,11 +69,11 @@ func (s *SalesService) BuyImage(ctx context.Context, id string) (*custom.Sale, e
 func (s *SalesService) GetSales(ctx context.Context) ([]*custom.Sale, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(services.IntUserID)
 	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal("userId not found in ctx")
 	}
 	dbSales, err := s.Repo.GetAll(ctx, int(userId))
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, customErr.DB(err)
 	}
 
 	sales := []*custom.Sale{}

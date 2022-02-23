@@ -35,7 +35,7 @@ func NewGcsClient() (*GcsClient, error) {
 
 	storageClient, err := gcs.NewClient(context.Background())
 	if err != nil {
-		return nil, customErr.Internal(context.Background(),err.Error())
+		return nil, customErr.Internal(err.Error())
 	}
 
 	return &GcsClient{client: storageClient}, nil
@@ -55,10 +55,10 @@ func (c *GcsClient) UploadImage(img io.Reader, imgName string,
 	defer cancel()
 	sw := c.client.Bucket(bucketName).Object(productId + "/" + imgName).NewWriter(ctx)
 	if _, err = io.Copy(sw, img); err != nil {
-		return "", customErr.Internal(ctx,err.Error())
+		return "", customErr.Internal(err.Error())
 	}
 	if err := sw.Close(); err != nil {
-		return "", customErr.Internal(ctx, err.Error())
+		return "", customErr.Internal(err.Error())
 	}
 
 	url = fmt.Sprintf("%s/%s/%s", baseGcsUrl, bucketName, sw.Attrs().Name)
@@ -72,7 +72,7 @@ func (c *GcsClient) DeleteImage(path string) error {
 
 	o := c.client.Bucket(bucketName).Object(path)
 	if err := o.Delete(ctx); err != nil {
-		return customErr.Internal(ctx, err.Error())
+		return customErr.Internal(err.Error())
 	}
 
 	return nil
