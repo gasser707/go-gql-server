@@ -3,7 +3,7 @@
 echo "formatting code before committing"
 
 pwd
-gofmt -s -w ../
-git add
+gofmt -s -w 
+git add . 
 
 echo "done formatting"
