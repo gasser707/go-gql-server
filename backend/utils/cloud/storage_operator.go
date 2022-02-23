@@ -33,12 +33,12 @@ const baseGcsUrl = "https://storage.googleapis.com"
 
 func NewGcsClient() (*GcsClient, error) {
 
-	storageClient, err := gcs.NewClient(context.Background())
+	client, err := gcs.NewClient(context.Background())
 	if err != nil {
 		return nil, customErr.Internal(err.Error())
 	}
 
-	return &GcsClient{client: storageClient}, nil
+	return &GcsClient{client: client}, nil
 }
 
 func NewStorageOperator(client StorageOperatorInterface) *storageOperator {
