@@ -226,7 +226,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 
 	var newAvatarUrl string
 	if input.Avatar != nil {
-		newAvatarUrl, err = s.storageOperator.UploadImage( input.Avatar.File, "avatar", fmt.Sprintf("%v", userId))
+		newAvatarUrl, err = s.storageOperator.UploadImage(input.Avatar.File, "avatar", fmt.Sprintf("%v", userId))
 		if err != nil {
 			return nil, err
 		}

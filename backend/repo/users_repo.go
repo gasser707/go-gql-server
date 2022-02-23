@@ -14,7 +14,7 @@ type UsersRepoInterface interface {
 	GetByUsername(ctx context.Context, username string) ([]dbModels.User, error)
 	GetAll(ctx context.Context) ([]dbModels.User, error)
 	CountByEmail(ctx context.Context, email string) (int, error)
-	Create(ctx context.Context, insertedUser *dbModels.User) (int64 ,error)
+	Create(ctx context.Context, insertedUser *dbModels.User) (int64, error)
 	Update(ctx context.Context, id int, updatedUser *dbModels.User) error
 }
 
@@ -86,7 +86,6 @@ func (r *usersRepo) Create(ctx context.Context, insertedUser *dbModels.User) (id
 	return userId, nil
 }
 
-
 func (r *usersRepo) Update(ctx context.Context, id int, updatedUser *dbModels.User) error {
 	_, err := r.db.NamedExec(fmt.Sprintf(`UPDATE users SET username=:username, bio=:bio, email=:email, 
 	avatar=:avatar WHERE id = %d`, id), &updatedUser)
@@ -95,5 +94,3 @@ func (r *usersRepo) Update(ctx context.Context, id int, updatedUser *dbModels.Us
 	}
 	return nil
 }
-
-

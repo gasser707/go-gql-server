@@ -10,7 +10,7 @@ import (
 
 type AuthRepoInterface interface {
 	GetUserByEmail(ctx context.Context, email string) (*dbModels.User, error)
-	UpdatePassword(ctx context.Context, id string, password string) error 
+	UpdatePassword(ctx context.Context, id string, password string) error
 	UpdateVerified(ctx context.Context, id string) error
 }
 
@@ -32,15 +32,14 @@ func (r *authRepo) GetUserByEmail(ctx context.Context, email string) (*dbModels.
 	if err != nil {
 		return nil, customErr.BadRequest(err.Error())
 	}
-	if !user.Verfied{
+	if !user.Verfied {
 		return nil, customErr.UnProcessable("your account in unverified! go to http://localhost:8025 to verify it")
 	}
 	return &user, nil
 }
 
-
 func (r *authRepo) UpdatePassword(ctx context.Context, id string, password string) error {
-	_, err := r.db.Exec(`UPDATE users SET password=? WHERE id=?`,password, id)
+	_, err := r.db.Exec(`UPDATE users SET password=? WHERE id=?`, password, id)
 	if err != nil {
 		return customErr.DB(err)
 	}

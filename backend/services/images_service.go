@@ -30,7 +30,7 @@ type ImagesServiceInterface interface {
 	AutoGenerateLabels(ctx context.Context, imageId string) ([]string, error)
 }
 
-//UsersService implements the usersServiceInterface
+//imagessService implements the ImagesServiceInterface
 var _ ImagesServiceInterface = &imagesService{}
 
 type imagesService struct {
@@ -158,7 +158,7 @@ func (s *imagesService) processDeleteImage(ctx context.Context, ID string, userI
 		return err
 	}
 	url := img.URL
-	err = s.storageOperator.DeleteImage( url)
+	err = s.storageOperator.DeleteImage(url)
 	if err != nil {
 		return err
 	}

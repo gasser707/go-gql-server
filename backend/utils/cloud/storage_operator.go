@@ -8,7 +8,7 @@ import (
 	"time"
 
 	gcs "cloud.google.com/go/storage"
-    customErr "github.com/gasser707/go-gql-server/errors"
+	customErr "github.com/gasser707/go-gql-server/errors"
 )
 
 type StorageOperatorInterface interface {
@@ -24,7 +24,7 @@ type storageOperator struct {
 	storageClient StorageOperatorInterface
 }
 
-//UsersService implements the usersServiceInterface
+//storageOperator implements the StorageOperatorInterfaceInterface
 var _ StorageOperatorInterface = &storageOperator{}
 
 var bucketName = os.Getenv("BUCKET_NAME")

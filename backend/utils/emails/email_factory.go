@@ -8,7 +8,7 @@ type EmailFactoryInterface interface {
 	GenerateEmailContent(email EmailInterface) string
 }
 
-//UsersService implements the usersServiceInterface
+//emailFactory implements the EmailFactoryInterface
 var _ EmailFactoryInterface = &emailFactory{}
 
 type emailFactory struct {
@@ -101,7 +101,6 @@ type Email struct {
 	To     []string
 	Name   string
 }
-
 
 type ResetPassEmail struct {
 	Email

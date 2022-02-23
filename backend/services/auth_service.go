@@ -33,7 +33,7 @@ type AuthServiceInterface interface {
 	LogoutAll(ctx context.Context) (bool, error)
 }
 
-//UsersService implements the usersServiceInterface
+//authService implements the AuthServiceInterface
 var _ AuthServiceInterface = &authService{}
 
 type authService struct {
@@ -63,7 +63,7 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 	}
 
 	ok := helpers.CheckPasswordHash(input.Password, user.Password)
-	if !ok  {
+	if !ok {
 		return false, customErr.NoAuth("this combination of email password is wrong")
 	}
 
@@ -167,7 +167,7 @@ func (s *authService) ValidateUser(ctx context.Context, validationToken string) 
 	if err != nil {
 		return false, err
 	}
-	 err = s.repo.UpdateVerified(ctx, userId)
+	err = s.repo.UpdateVerified(ctx, userId)
 	if err != nil {
 		return true, nil
 	}

@@ -28,7 +28,7 @@ const (
 var (
 	addr           = os.Getenv(emailAddress)
 	host           = os.Getenv(emailHost)
-	emailAuth      = smtp.CRAMMD5Auth("","")
+	emailAuth      = smtp.CRAMMD5Auth("", "")
 	sendGridApiKey = os.Getenv(sendGridKey)
 	sendGridEmail  = os.Getenv(sendGridFrom)
 )
@@ -84,7 +84,7 @@ func (p *prodEmailClient) SendEmail(ctx context.Context, email emails.EmailInter
 	return nil
 }
 
-//UsersService implements the usersServiceInterface
+//emailService implements the EmailServiceInterface
 var _ EmailServiceInterface = &emailService{}
 
 func NewEmailService() *emailService {

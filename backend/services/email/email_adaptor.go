@@ -2,8 +2,8 @@ package services
 
 import (
 	"context"
-	"log"
 	"github.com/gasser707/go-gql-server/utils/emails"
+	"log"
 )
 
 type EmailAdaptorInterface interface {
@@ -13,7 +13,7 @@ type EmailAdaptorInterface interface {
 		buyerName string, imageID string, imageTitle string, paymentMethod string)
 }
 
-//UsersService implements the usersServiceInterface
+//emailAdaptor implements the EmailAdaptorInterface
 var _ EmailAdaptorInterface = &emailAdaptor{}
 
 type emailAdaptor struct {

@@ -19,7 +19,6 @@ const (
 )
 
 var (
-
 	username = os.Getenv(mysqlUsersUsername)
 	password = os.Getenv(mysqlUsersPassword)
 	host     = os.Getenv(mysqlUsersHost)
@@ -37,7 +36,7 @@ func NewMysqlClient() *sqlx.DB {
 	connected := false
 
 	log.Println("trying to connect to db")
-	for i:=0; i<7; i++{
+	for i := 0; i < 7; i++ {
 		mysqlClient, err = sqlx.Connect("mysql", dataSourceName)
 		if err == nil {
 			connected = true
@@ -45,11 +44,11 @@ func NewMysqlClient() *sqlx.DB {
 		} else {
 			log.Println(err)
 			log.Println("failed will try again in 30 secs!")
-			time.Sleep(30*time.Second)
+			time.Sleep(30 * time.Second)
 		}
 	}
 
-	if (!connected){
+	if !connected {
 		log.Println(err)
 		log.Println("Couldn't connect to db will exit")
 		os.Exit(1)

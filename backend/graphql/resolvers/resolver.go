@@ -4,9 +4,8 @@ package resolvers
 
 import (
 	"github.com/gasser707/go-gql-server/services"
-	sale_svc"github.com/gasser707/go-gql-server/services/sale"
-	email_svc"github.com/gasser707/go-gql-server/services/email"
-
+	email_svc "github.com/gasser707/go-gql-server/services/email"
+	sale_svc "github.com/gasser707/go-gql-server/services/sale"
 )
 
 // This file will not be regenerated automatically.

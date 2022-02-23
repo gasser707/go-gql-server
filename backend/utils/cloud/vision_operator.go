@@ -15,10 +15,10 @@ import (
 
 type VisionOperatorInterface interface {
 	DetectImgProps(ctx context.Context, source string) (labels []string, err error)
-	DetectLocalImgProps(ctx context.Context, imgReader io.Reader) (labels []string, err error) 
+	DetectLocalImgProps(ctx context.Context, imgReader io.Reader) (labels []string, err error)
 }
 
-//UsersService implements the usersServiceInterface
+//visionOperator implements the VisionOperatorInterface
 var _ VisionOperatorInterface = &visionOperator{}
 
 type visionOperator struct {

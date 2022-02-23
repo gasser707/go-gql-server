@@ -29,7 +29,7 @@ func graphqlHandler() gin.HandlerFunc {
 	// NewExecutableSchema and Config are in the generated.go file
 	// Resolver is in the resolver.go file
 
-	ctx:= context.Background()
+	ctx := context.Background()
 	gcsClient, err := cloud.NewGcsClient()
 	if err != nil {
 		log.Panic(err)
@@ -86,11 +86,11 @@ func main() {
 	r.Use(middleware.CookieMiddleware())
 	r.Use(middleware.HeaderMiddleware())
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:   []string{"*"},
+		AllowOrigins:     []string{"*"},
 		AllowCredentials: true,
 		AllowMethods:     []string{"PUT", "PATCH", "POST"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Cookie", "Set-Cookie", "X-CSRF-TOKEN"},
-		ExposeHeaders:    []string{"Content-Length", "Content-Type", "Cookie", "Set-Cookie", "X-CSRF-TOKEN"},	
+		ExposeHeaders:    []string{"Content-Length", "Content-Type", "Cookie", "Set-Cookie", "X-CSRF-TOKEN"},
 	}))
 
 	r.POST("/query", graphqlHandler())

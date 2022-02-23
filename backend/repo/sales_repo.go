@@ -10,7 +10,7 @@ import (
 
 type SalesRepoInterface interface {
 	GetAll(ctx context.Context, userId int) ([]dbModels.Sale, error)
-	Create(ctx context.Context, sale *dbModels.Sale) (int64 ,error)
+	Create(ctx context.Context, sale *dbModels.Sale) (int64, error)
 	GetImageById(ctx context.Context, imgId int, userId int) (*dbModels.Image, error)
 }
 
@@ -26,24 +26,22 @@ func NewSalesRepo(db *sqlx.DB) *salesRepo {
 	}
 }
 
-
 func (r *salesRepo) GetAll(ctx context.Context, userId int) ([]dbModels.Sale, error) {
 	dbSales := []dbModels.Sale{}
-	err := r.db.Select(&dbSales,"SELECT * FROM sales WHERE buyer_id=? OR seller_id=?", userId, userId)
+	err := r.db.Select(&dbSales, "SELECT * FROM sales WHERE buyer_id=? OR seller_id=?", userId, userId)
 	if err != nil {
 		return nil, customErr.DB(err)
 	}
 	return dbSales, nil
 }
 
-
 func (r *salesRepo) Create(ctx context.Context, sale *dbModels.Sale) (id int64, err error) {
 	result, err := r.db.NamedExec(`INSERT INTO sales(image_id, buyer_id, seller_id, price, created_at) VALUES (:image_id,
 		:buyer_id, :seller_id, :price, :created_at)`, sale)
-   if err != nil {
-	   return -1, customErr.DB(err)
-   }
-   saleId, _ := result.LastInsertId()
+	if err != nil {
+		return -1, customErr.DB(err)
+	}
+	saleId, _ := result.LastInsertId()
 	return saleId, nil
 }
 
@@ -52,7 +50,7 @@ func (r *salesRepo) GetImageById(ctx context.Context, imgId int, userId int) (*d
 	err := r.db.Get(&img, "SELECT * FROM images WHERE id=?", imgId)
 	if err != nil {
 		return nil, customErr.DB(err)
-	}else if img.UserID != int(userId) && (img.Private|| img.Archived) {
+	} else if img.UserID != int(userId) && (img.Private || img.Archived) {
 		return nil, customErr.Forbidden(err.Error())
 	}
 	return &img, nil
