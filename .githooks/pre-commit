@@ -20,5 +20,5 @@ else
     done
 fi
 
-
 tput setaf 2; echo "done formatting"
+tput sgr0 
