@@ -15,6 +15,7 @@ import (
 	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gasser707/go-gql-server/repo"
 	email_svc "github.com/gasser707/go-gql-server/services/email"
+	"github.com/gasser707/go-gql-server/utils"
 	"github.com/gasser707/go-gql-server/utils/cloud"
 	"github.com/jmoiron/sqlx"
 	"github.com/twinj/uuid"
@@ -298,6 +299,15 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 
 	img.Title = input.Title
 	img.ForSale = input.ForSale
+	if !img.Private && input.Private {
+		oldPath := strings.Split(img.URL, fmt.Sprintf("%s/%s/", utils.BaseGcsUrl, utils.BucketName))
+		newPath := fmt.Sprintf("%d/%s", img.UserID, uuid.NewV4().String())
+		newUrl, err := s.storageOperator.ChangeImagePath(oldPath[1], newPath)
+		if err != nil {
+			return nil, err
+		}
+		img.URL = newUrl
+	}
 	img.Private = input.Private
 	img.Description = input.Description
 	img.Price = input.Price
@@ -330,6 +340,7 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 		DiscountPercent: img.DiscountPercent,
 		ID:              input.ID,
 		Archived:        input.Archived,
+		URL:             img.URL,
 	}, nil
 }
 
@@ -383,7 +394,7 @@ func (s *imagesService) AutoGenerateLabels(ctx context.Context, imageId string) 
 	if err != nil {
 		return nil, customErr.DB(err)
 	}
-	newLabels := helpers.RemoveDuplicate(generatedLabels, oldLabels)
+	newLabels := helpers.RemoveDuplicateLabels(generatedLabels, oldLabels)
 	err = s.insertLabels(newLabels, img.ID)
 	if err != nil {
 		return nil, err

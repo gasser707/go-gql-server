@@ -8,6 +8,7 @@ import (
 
 	vision "cloud.google.com/go/vision/apiv1"
 	customErr "github.com/gasser707/go-gql-server/errors"
+	"github.com/gasser707/go-gql-server/utils"
 	"golang.org/x/sync/errgroup"
 	visionpb "google.golang.org/genproto/googleapis/cloud/vision/v1"
 )
@@ -36,7 +37,7 @@ func NewVisionOperator(ctx context.Context) (*visionOperator, error) {
 }
 
 func (v *visionOperator) DetectImgProps(ctx context.Context, source string) (labels []string, err error) {
-	imgUrl := fmt.Sprintf("gs://%s/%s", bucketName, source)
+	imgUrl := fmt.Sprintf("gs://%s/%s", utils.BucketName, source)
 	image := vision.NewImageFromURI(imgUrl)
 	errs, ctx := errgroup.WithContext(ctx)
 	ch := make(chan string)

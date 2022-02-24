@@ -5,7 +5,6 @@ package resolvers
 
 import (
 	"context"
-	"log"
 	"strconv"
 
 	"github.com/gasser707/go-gql-server/graphql/custom"
@@ -15,7 +14,6 @@ import (
 
 func (r *imageResolver) User(ctx context.Context, img *custom.Image) (*custom.User, error) {
 	userId, _ := strconv.Atoi(img.UserID)
-	log.Println(userId)
 	return r.DataLoaders.Retrieve(ctx).UserByID.Load(userId)
 }
 

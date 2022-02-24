@@ -93,7 +93,7 @@ func (s *usersService) RegisterUser(input model.NewUserInput) (*custom.User, err
 	if err != nil {
 		return nil, err
 	}
-	go s.emailAdaptor.SendResetPassEmail("auth@shotify.com", []string{input.Email},
+	go s.emailAdaptor.SendWelcomeEmail("auth@shotify.com", []string{input.Email},
 		input.Username, fmt.Sprintf("http://%s/validate?token=%s", domain, token))
 
 	return returnedUser, nil

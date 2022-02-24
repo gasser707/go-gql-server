@@ -58,7 +58,6 @@ func (d *devEmailClient) SendEmail(email emails.EmailInterface, emailContent str
 
 	err := smtp.SendMail(addr, emailAuth, email.GetSender(), email.GetTo(), []byte(emailContent))
 	if err != nil {
-		fmt.Println(err.Error())
 		return customErr.Internal(err.Error())
 	}
 
@@ -70,7 +69,6 @@ func (p *prodEmailClient) SendEmail(email emails.EmailInterface, emailContent st
 	from := mail.NewEmail(email.GetSender(), os.Getenv(sendGridEmail))
 	subject := string(email.GetType())
 	// mail.
-	fmt.Println(email.GetTo()[0])
 	to := mail.NewEmail(email.GetName(), email.GetTo()[0])
 
 	message := mail.NewSingleEmail(from, subject, to, emailContent, emailContent)

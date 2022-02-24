@@ -159,7 +159,7 @@ func (r *mysqlImagesRepo) Create(dbImg *dbModels.Image) (imgId int64, err error)
 func (r *mysqlImagesRepo) Update(id int, img *dbModels.Image) error {
 
 	_, err := r.db.NamedExec(fmt.Sprintf(`UPDATE images SET title= :title, forSale= :forSale, private= :private, 
-	description= :description, price= :price, discountPercent= :discountPercent, archived= :archived WHERE id=%d`, id), img)
+	description= :description, price= :price, discountPercent= :discountPercent, archived= :archived, url= :url WHERE id=%d`, id), img)
 	if err != nil {
 		return customErr.DB(err)
 	}

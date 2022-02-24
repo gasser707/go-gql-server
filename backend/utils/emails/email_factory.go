@@ -19,13 +19,9 @@ func NewEmailFactory() *emailFactory {
 
 	return &emailFactory{
 		maker: &hermes.Hermes{
-			// Optional Theme
-			// Theme: new(Default)
 			Product: hermes.Product{
-				// Appears in header & footer of e-mails
-				Name: "Shotify",
-				Link: "https://example-hermes.com/",
-				// Optional product logo
+				Name:      "Shotify",
+				Link:      "https://example-hermes.com/",
 				Logo:      "http://www.duchess-france.org/wp-content/uploads/2016/01/gopher.png",
 				Copyright: "Copyright © 2022 Gasser Aly. All rights reserved.",
 			},
@@ -46,6 +42,7 @@ type EmailInterface interface {
 	GetSender() string
 	GetTo() []string
 	GetName() string
+	GetVerificationLink() string
 }
 
 type ResetPassEmailInterface interface {
@@ -77,6 +74,10 @@ func (e Email) GetName() string {
 	return e.Name
 }
 
+func (e Email) GetVerificationLink() string {
+	return e.Link
+}
+
 func (e ResetPassEmail) GetResetLink() string {
 	return e.ResetLink
 }
@@ -100,6 +101,7 @@ type Email struct {
 	Sender string
 	To     []string
 	Name   string
+	Link   string
 }
 
 type ResetPassEmail struct {
@@ -122,10 +124,6 @@ func (f *emailFactory) GenerateEmailContent(email EmailInterface) string {
 		emailContent = f.generateWelcomeEmail(email)
 	case ResetPassword:
 		emailContent = f.generateResetPasswordEmail(email.(ResetPassEmailInterface))
-	case Receipt:
-		emailContent = f.generateReceiptEmail(email.(ReceiptEmailInterface))
-	case Promotion:
-		emailContent = f.generatePromotionEmail(email)
 	default:
 		emailContent = f.generateWelcomeEmail(email)
 	}
@@ -143,11 +141,11 @@ func (f *emailFactory) generateWelcomeEmail(email EmailInterface) hermes.Email {
 			},
 			Actions: []hermes.Action{
 				{
-					Instructions: "To get started with Hermes, please click here:",
+					Instructions: "To get started with Hermes, please click here to verify your account:",
 					Button: hermes.Button{
-						Color: "#22BC66", // Optional action button color
+						Color: "#22BC66",
 						Text:  "Confirm your account",
-						Link:  "https://hermes-example.com/confirm?token=d9729feb74992cc3482b350163a1a010",
+						Link:  email.GetVerificationLink(),
 					},
 				},
 			},
@@ -165,14 +163,14 @@ func (f *emailFactory) generateResetPasswordEmail(email ResetPassEmailInterface)
 		Body: hermes.Body{
 			Name: email.GetTo()[0],
 			Intros: []string{
-				"Welcome to Shotify! We're very excited to have you on board.",
+				"You have asked to reset your password",
 			},
 			Actions: []hermes.Action{
 				{
-					Instructions: "To get started with Hermes, please click here:",
+					Instructions: "To reset click here",
 					Button: hermes.Button{
 						Color: "#22BC66",
-						Text:  "Confirm your account",
+						Text:  "Reset your password",
 						Link:  email.GetResetLink(),
 					},
 				},
@@ -182,56 +180,5 @@ func (f *emailFactory) generateResetPasswordEmail(email ResetPassEmailInterface)
 			},
 		},
 	}
-	return emailContent
-}
-
-func (f *emailFactory) generateReceiptEmail(email ReceiptEmailInterface) hermes.Email {
-	emailContent := hermes.Email{
-		Body: hermes.Body{
-			Name: email.GetTo()[0],
-			Intros: []string{
-				"Welcome to Shotify! We're very excited to have you on board.",
-			},
-			Actions: []hermes.Action{
-				{
-					Instructions: "To get started with Hermes, please click here:",
-					Button: hermes.Button{
-						Color: "#22BC66", // Optional action button color
-						Text:  "Confirm your account",
-						Link:  "https://hermes-example.com/confirm?token=d9729feb74992cc3482b350163a1a010",
-					},
-				},
-			},
-			Outros: []string{
-				"Need help, or have questions? Just reply to this email, we'd love to help.",
-			},
-		},
-	}
-
-	return emailContent
-}
-
-func (f *emailFactory) generatePromotionEmail(email EmailInterface) hermes.Email {
-	emailContent := hermes.Email{
-		Body: hermes.Body{
-			Intros: []string{
-				"Welcome to Shotify! We're very excited to have you on board.",
-			},
-			Actions: []hermes.Action{
-				{
-					Instructions: "To get started with Hermes, please click here:",
-					Button: hermes.Button{
-						Color: "#22BC66", // Optional action button color
-						Text:  "Confirm your account",
-						Link:  "https://hermes-example.com/confirm?token=d9729feb74992cc3482b350163a1a010",
-					},
-				},
-			},
-			Outros: []string{
-				"Need help, or have questions? Just reply to this email, we'd love to help.",
-			},
-		},
-	}
-
 	return emailContent
 }

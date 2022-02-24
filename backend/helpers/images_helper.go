@@ -87,7 +87,7 @@ func ParseFilter(input *model.ImageFilterInput, userID int) string {
 	return filterStart + strings.Join(queryStr[:], " And ")
 }
 
-func RemoveDuplicate(newLabels []string, oldLabels []string) []string {
+func RemoveDuplicateLabels(newLabels []string, oldLabels []string) []string {
 	allKeys := make(map[string]bool)
 	list := []string{}
 	for _, item := range oldLabels {
