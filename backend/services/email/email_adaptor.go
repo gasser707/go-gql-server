@@ -1,15 +1,14 @@
 package services
 
 import (
-	"context"
 	"github.com/gasser707/go-gql-server/utils/emails"
 	"log"
 )
 
 type EmailAdaptorInterface interface {
-	SendWelcomeEmail(ctx context.Context, sender string, to []string, name string)
-	SendResetPassEmail(ctx context.Context, sender string, to []string, name string, resetLink string)
-	SendReceiptEmail(ctx context.Context, sender string, to []string, sellerName string,
+	SendWelcomeEmail(sender string, to []string, name string)
+	SendResetPassEmail(sender string, to []string, name string, resetLink string)
+	SendReceiptEmail(sender string, to []string, sellerName string,
 		buyerName string, imageID string, imageTitle string, paymentMethod string)
 }
 
@@ -24,7 +23,7 @@ func NewEmailAdaptor(emailService EmailServiceInterface) *emailAdaptor {
 	return &emailAdaptor{emailService: emailService}
 }
 
-func (ea *emailAdaptor) SendWelcomeEmail(ctx context.Context, sender string, to []string, name string) {
+func (ea *emailAdaptor) SendWelcomeEmail(sender string, to []string, name string) {
 	email := &emails.Email{
 		Type:   emails.Welcome,
 		Sender: sender,
@@ -32,13 +31,13 @@ func (ea *emailAdaptor) SendWelcomeEmail(ctx context.Context, sender string, to 
 		Name:   name,
 	}
 
-	err := ea.emailService.SendEmail(ctx, email)
+	err := ea.emailService.SendEmail(email)
 	if err != nil {
 		log.Println("couldn't send email\n", err.Error())
 	}
 }
 
-func (ea *emailAdaptor) SendResetPassEmail(ctx context.Context, sender string, to []string, name string, resetLink string) {
+func (ea *emailAdaptor) SendResetPassEmail(sender string, to []string, name string, resetLink string) {
 
 	email := &emails.ResetPassEmail{
 		ResetLink: resetLink,
@@ -50,14 +49,14 @@ func (ea *emailAdaptor) SendResetPassEmail(ctx context.Context, sender string, t
 		},
 	}
 
-	err := ea.emailService.SendEmail(ctx, email)
+	err := ea.emailService.SendEmail(email)
 	if err != nil {
 		log.Println("couldn't send email\n", err.Error())
 	}
 
 }
 
-func (ea *emailAdaptor) SendReceiptEmail(ctx context.Context, sender string, to []string, sellerName string,
+func (ea *emailAdaptor) SendReceiptEmail(sender string, to []string, sellerName string,
 	buyerName string, imageID string, imageTitle string, paymentMethod string) {
 
 	email := &emails.ReceiptEmail{
@@ -73,7 +72,7 @@ func (ea *emailAdaptor) SendReceiptEmail(ctx context.Context, sender string, to 
 		},
 	}
 
-	err := ea.emailService.SendEmail(ctx, email)
+	err := ea.emailService.SendEmail(email)
 	if err != nil {
 		log.Println("couldn't send email\n", err.Error())
 	}

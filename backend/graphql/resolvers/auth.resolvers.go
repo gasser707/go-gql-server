@@ -23,7 +23,7 @@ func (r *mutationResolver) LogoutAll(ctx context.Context, input *bool) (bool, er
 }
 
 func (r *mutationResolver) Refresh(ctx context.Context, input *bool) (bool, error) {
-	return r.AuthService.Refresh(ctx)
+	return r.AuthService.RefreshCredentials(ctx)
 }
 
 func (r *mutationResolver) ValidateUser(ctx context.Context, validationToken string) (bool, error) {

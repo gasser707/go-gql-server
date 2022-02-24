@@ -1,7 +1,6 @@
 package services
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/smtp"
@@ -34,11 +33,11 @@ var (
 )
 
 type EmailServiceInterface interface {
-	SendEmail(ctx context.Context, email emails.EmailInterface) error
+	SendEmail(email emails.EmailInterface) error
 }
 
 type EmailClientInterface interface {
-	SendEmail(ctx context.Context, email emails.EmailInterface, emailContent string) error
+	SendEmail(email emails.EmailInterface, emailContent string) error
 }
 
 type devEmailClient struct{}
@@ -49,7 +48,7 @@ type emailService struct {
 	emailClient EmailClientInterface
 }
 
-func (d *devEmailClient) SendEmail(ctx context.Context, email emails.EmailInterface, emailContent string) error {
+func (d *devEmailClient) SendEmail(email emails.EmailInterface, emailContent string) error {
 
 	emailContent =
 		"MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\r\n" +
@@ -66,7 +65,7 @@ func (d *devEmailClient) SendEmail(ctx context.Context, email emails.EmailInterf
 	return nil
 }
 
-func (p *prodEmailClient) SendEmail(ctx context.Context, email emails.EmailInterface, emailContent string) error {
+func (p *prodEmailClient) SendEmail(email emails.EmailInterface, emailContent string) error {
 
 	from := mail.NewEmail(email.GetSender(), os.Getenv(sendGridEmail))
 	subject := string(email.GetType())
@@ -101,10 +100,10 @@ func NewEmailService() *emailService {
 	}
 }
 
-func (s *emailService) SendEmail(ctx context.Context, email emails.EmailInterface) error {
+func (s *emailService) SendEmail(email emails.EmailInterface) error {
 
 	emailContent := s.factory.GenerateEmailContent(email)
-	err := s.emailClient.SendEmail(ctx, email, emailContent)
+	err := s.emailClient.SendEmail(email, emailContent)
 	if err != nil {
 		return customErr.Internal(err.Error())
 	}

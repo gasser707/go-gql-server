@@ -116,22 +116,25 @@ type ReceiptEmail struct {
 }
 
 func (f *emailFactory) GenerateEmailContent(email EmailInterface) string {
+	var emailContent hermes.Email
 	switch email.GetType() {
 	case Welcome:
-		return f.generateWelcomeEmail(email)
+		emailContent = f.generateWelcomeEmail(email)
 	case ResetPassword:
-		return f.generateResetPasswordEmail(email.(ResetPassEmailInterface))
+		emailContent = f.generateResetPasswordEmail(email.(ResetPassEmailInterface))
 	case Receipt:
-		return f.generateReceiptEmail(email.(ReceiptEmailInterface))
+		emailContent = f.generateReceiptEmail(email.(ReceiptEmailInterface))
 	case Promotion:
-		return f.generatePromotionEmail(email)
+		emailContent = f.generatePromotionEmail(email)
+	default:
+		emailContent = f.generateWelcomeEmail(email)
 	}
 
-	return f.generateWelcomeEmail(email)
-
+	emailBody, _ := f.maker.GenerateHTML(emailContent)
+	return emailBody
 }
 
-func (f *emailFactory) generateWelcomeEmail(email EmailInterface) string {
+func (f *emailFactory) generateWelcomeEmail(email EmailInterface) hermes.Email {
 	emailContent := hermes.Email{
 		Body: hermes.Body{
 			Name: email.GetName(),
@@ -154,11 +157,10 @@ func (f *emailFactory) generateWelcomeEmail(email EmailInterface) string {
 		},
 	}
 
-	body, _ := f.maker.GenerateHTML(emailContent)
-	return body
+	return emailContent
 }
 
-func (f *emailFactory) generateResetPasswordEmail(email ResetPassEmailInterface) string {
+func (f *emailFactory) generateResetPasswordEmail(email ResetPassEmailInterface) hermes.Email {
 	emailContent := hermes.Email{
 		Body: hermes.Body{
 			Name: email.GetTo()[0],
@@ -169,7 +171,7 @@ func (f *emailFactory) generateResetPasswordEmail(email ResetPassEmailInterface)
 				{
 					Instructions: "To get started with Hermes, please click here:",
 					Button: hermes.Button{
-						Color: "#22BC66", // Optional action button color
+						Color: "#22BC66",
 						Text:  "Confirm your account",
 						Link:  email.GetResetLink(),
 					},
@@ -180,12 +182,10 @@ func (f *emailFactory) generateResetPasswordEmail(email ResetPassEmailInterface)
 			},
 		},
 	}
-
-	body, _ := f.maker.GenerateHTML(emailContent)
-	return body
+	return emailContent
 }
 
-func (f *emailFactory) generateReceiptEmail(email ReceiptEmailInterface) string {
+func (f *emailFactory) generateReceiptEmail(email ReceiptEmailInterface) hermes.Email {
 	emailContent := hermes.Email{
 		Body: hermes.Body{
 			Name: email.GetTo()[0],
@@ -208,11 +208,10 @@ func (f *emailFactory) generateReceiptEmail(email ReceiptEmailInterface) string 
 		},
 	}
 
-	body, _ := f.maker.GenerateHTML(emailContent)
-	return body
+	return emailContent
 }
 
-func (f *emailFactory) generatePromotionEmail(email EmailInterface) string {
+func (f *emailFactory) generatePromotionEmail(email EmailInterface) hermes.Email {
 	emailContent := hermes.Email{
 		Body: hermes.Body{
 			Intros: []string{
@@ -234,6 +233,5 @@ func (f *emailFactory) generatePromotionEmail(email EmailInterface) string {
 		},
 	}
 
-	body, _ := f.maker.GenerateHTML(emailContent)
-	return body
+	return emailContent
 }

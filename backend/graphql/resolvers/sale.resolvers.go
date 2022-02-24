@@ -23,11 +23,11 @@ func (r *saleResolver) Image(ctx context.Context, sale *custom.Sale) (*custom.Im
 }
 
 func (r *saleResolver) Buyer(ctx context.Context, sale *custom.Sale) (*custom.User, error) {
-	return r.UsersService.GetUserById(ctx, sale.BuyerID)
+	return r.UsersService.GetUserById(sale.BuyerID)
 }
 
 func (r *saleResolver) Seller(ctx context.Context, sale *custom.Sale) (*custom.User, error) {
-	return r.UsersService.GetUserById(ctx, sale.SellerID)
+	return r.UsersService.GetUserById(sale.SellerID)
 }
 
 // Sale returns generated.SaleResolver implementation.

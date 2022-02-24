@@ -57,7 +57,7 @@ const (
 
 type TokenOperatorInterface interface {
 	CreateTokens(userId string, userRole model.Role) (*TokenDetails, error)
-	ExtractTokenMetadata(c context.Context) (*AccessDetails, error)
+	ExtractAccessTokenMetadata(c context.Context) (*AccessDetails, error)
 	ExtractRefreshMetadata(ctx context.Context) (*RefreshDetails, error)
 	ExtractStatelessTokenMetadata(ctx context.Context, tokenString string, kind StatelessToken) (string, error)
 	CreateStatelessToken(userId string, kind StatelessToken) (string, error)
@@ -334,7 +334,7 @@ func extract(accesToken *jwt.Token, csrfToken *jwt.Token) (*AccessDetails, error
 
 }
 
-func (t *tokenOperator) ExtractTokenMetadata(ctx context.Context) (*AccessDetails, error) {
+func (t *tokenOperator) ExtractAccessTokenMetadata(ctx context.Context) (*AccessDetails, error) {
 	token, err := t.verifyAccessToken(ctx, accessSecret)
 	if err != nil {
 		return nil, customErr.NoAuth(err.Error())

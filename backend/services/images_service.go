@@ -83,12 +83,12 @@ func (s *imagesService) DeleteImages(ctx context.Context, input []string) (bool,
 	if !ok {
 		return false, customErr.Internal("userId not found in ctx")
 	}
-	errs, ctx := errgroup.WithContext(ctx)
+	errs, _ := errgroup.WithContext(ctx)
 	for _, delImg := range input {
 		i := delImg
 		errs.Go(
 			func() error {
-				return s.processDeleteImage(ctx, i, userId)
+				return s.processDeleteImage(i, userId)
 			})
 	}
 	err := errs.Wait()
@@ -116,11 +116,11 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 		URL:             url,
 		CreatedAt:       time.Now(),
 	}
-	imgId, err := s.repo.Create(ctx, &dbImg)
+	imgId, err := s.repo.Create(&dbImg)
 	if err != nil {
 		return err
 	}
-	err = s.insertLabels(ctx, inputImg.Labels, int(imgId))
+	err = s.insertLabels(inputImg.Labels, int(imgId))
 	if err != nil {
 		return err
 	}
@@ -143,17 +143,17 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 	return nil
 }
 
-func (s *imagesService) processDeleteImage(ctx context.Context, ID string, userId IntUserID) (err error) {
+func (s *imagesService) processDeleteImage(ID string, userId IntUserID) (err error) {
 
 	delImgId, err := strconv.Atoi(ID)
 	if err != nil {
 		return customErr.BadRequest(err.Error())
 	}
-	img, err := s.repo.GetImageIfOwner(ctx, delImgId, int(userId))
+	img, err := s.repo.GetImageIfOwner(delImgId, int(userId))
 	if err != nil {
 		return err
 	}
-	err = s.repo.Delete(ctx, delImgId, int(userId))
+	err = s.repo.Delete(delImgId, int(userId))
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Im
 	if err != nil {
 		return nil, customErr.BadRequest(err.Error())
 	}
-	img, labels, err := s.repo.GetById(ctx, inputId, int(userId))
+	img, labels, err := s.repo.GetById(inputId, int(userId))
 	if err != nil {
 		return nil, err
 
@@ -223,13 +223,13 @@ func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Im
 }
 
 func (s *imagesService) GetImagesByFilter(ctx context.Context, userID IntUserID, filter string) ([]*custom.Image, error) {
-	dbImgs, err := s.repo.GetByFilter(ctx, filter)
+	dbImgs, err := s.repo.GetByFilter(filter)
 	if err != nil {
 		return nil, err
 	}
 	imgList := []*custom.Image{}
 	for _, img := range dbImgs {
-		labels, err := s.repo.GetImageLabels(ctx, img.ID)
+		labels, err := s.repo.GetImageLabels(img.ID)
 		if err != nil {
 			return nil, err
 
@@ -259,7 +259,7 @@ func (s *imagesService) GetAllPublicImgs(ctx context.Context) ([]*custom.Image, 
 	}
 	imgList := []*custom.Image{}
 	for _, img := range dbImgs {
-		labels, err := s.repo.GetImageLabels(ctx, img.ID)
+		labels, err := s.repo.GetImageLabels(img.ID)
 		if err != nil {
 			return nil, err
 
@@ -291,7 +291,7 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 	if err != nil {
 		return nil, customErr.BadRequest(err.Error())
 	}
-	img, err := s.repo.GetImageIfOwner(ctx, imgId, int(userId))
+	img, err := s.repo.GetImageIfOwner(imgId, int(userId))
 	if err != nil {
 		return nil, err
 	}
@@ -304,17 +304,17 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 	img.DiscountPercent = input.DiscountPercent
 	img.Archived = input.Archived
 
-	err = s.repo.Update(ctx, img.ID, img)
+	err = s.repo.Update(img.ID, img)
 	if err != nil {
 		return nil, err
 	}
 
 	if input.Labels != nil {
-		err = s.repo.DeleteImageLabels(ctx, imgId)
+		err = s.repo.DeleteImageLabels(imgId)
 		if err != nil {
 			return nil, err
 		}
-		err = s.insertLabels(ctx, input.Labels, img.ID)
+		err = s.insertLabels(input.Labels, img.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -346,7 +346,7 @@ func (s *imagesService) searchbyImage(ctx context.Context, userId IntUserID, img
 	return s.GetImagesByFilter(ctx, userId, filter)
 }
 
-func (s *imagesService) insertLabels(ctx context.Context, labels []string, imgId int) error {
+func (s *imagesService) insertLabels(labels []string, imgId int) error {
 	if len(labels) == 0 {
 		return nil
 	}
@@ -355,7 +355,7 @@ func (s *imagesService) insertLabels(ctx context.Context, labels []string, imgId
 		insertedLabels = append(insertedLabels, &dbModels.Label{ImageID: imgId, Tag: strings.ToLower(l)})
 	}
 
-	err := s.repo.InsertImageLabels(ctx, imgId, insertedLabels)
+	err := s.repo.InsertImageLabels(imgId, insertedLabels)
 	if err != nil {
 		return err
 	}
@@ -371,7 +371,7 @@ func (s *imagesService) AutoGenerateLabels(ctx context.Context, imageId string) 
 	if err != nil {
 		return nil, customErr.BadRequest(err.Error())
 	}
-	img, err := s.repo.GetImageIfOwner(ctx, imgId, int(userId))
+	img, err := s.repo.GetImageIfOwner(imgId, int(userId))
 	if err != nil {
 		return nil, customErr.DB(err)
 	}
@@ -379,12 +379,12 @@ func (s *imagesService) AutoGenerateLabels(ctx context.Context, imageId string) 
 	if err != nil {
 		return nil, err
 	}
-	oldLabels, err := s.repo.GetImageLabels(ctx, imgId)
+	oldLabels, err := s.repo.GetImageLabels(imgId)
 	if err != nil {
 		return nil, customErr.DB(err)
 	}
 	newLabels := helpers.RemoveDuplicate(generatedLabels, oldLabels)
-	err = s.insertLabels(ctx, newLabels, img.ID)
+	err = s.insertLabels(newLabels, img.ID)
 	if err != nil {
 		return nil, err
 	}

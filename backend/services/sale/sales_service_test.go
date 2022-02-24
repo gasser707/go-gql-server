@@ -50,8 +50,8 @@ func (suite *SalesServiceTestSuite) TestBuyImage() {
 	ctx := context.Background()
 	ctx = setValInCtx(ctx, "userId", services.IntUserID(1))
 
-	mockSalesRepo.On("GetImageById", ctx, 1, 1).Return(img, nil)
-	mockSalesRepo.On("Create", ctx, sale).Return(int64(1), nil)
+	mockSalesRepo.On("GetImageById", 1, 1).Return(img, nil)
+	mockSalesRepo.On("Create", sale).Return(int64(1), nil)
 
 	salesService := SalesService{&mockSalesRepo}
 

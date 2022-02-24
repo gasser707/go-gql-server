@@ -40,7 +40,7 @@ func (s *SalesService) BuyImage(ctx context.Context, id string) (*custom.Sale, e
 	if err != nil {
 		return nil, customErr.BadRequest(err.Error())
 	}
-	img, err := s.Repo.GetImageById(ctx, imgId, int(userId))
+	img, err := s.Repo.GetImageById(imgId, int(userId))
 	if err != nil || !img.ForSale || img.UserID == int(userId) {
 		return nil, customErr.Forbidden("you can't buy an image you own")
 	}
@@ -51,7 +51,7 @@ func (s *SalesService) BuyImage(ctx context.Context, id string) (*custom.Sale, e
 		SellerID:  img.UserID,
 		CreatedAt: utils.Now(),
 	}
-	saleId, err := s.Repo.Create(ctx, &sale)
+	saleId, err := s.Repo.Create(&sale)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (s *SalesService) GetSales(ctx context.Context) ([]*custom.Sale, error) {
 	if !ok {
 		return nil, customErr.Internal("userId not found in ctx")
 	}
-	dbSales, err := s.Repo.GetAll(ctx, int(userId))
+	dbSales, err := s.Repo.GetAll(int(userId))
 	if err != nil {
 		return nil, customErr.DB(err)
 	}

@@ -12,7 +12,7 @@ import (
 )
 
 func (r *imageResolver) User(ctx context.Context, img *custom.Image) (*custom.User, error) {
-	return r.UsersService.GetUserById(ctx, img.UserID)
+	return r.UsersService.GetUserById(img.UserID)
 }
 
 func (r *mutationResolver) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {

@@ -20,9 +20,9 @@ import (
 
 type UsersServiceInterface interface {
 	UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error)
-	RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error)
+	RegisterUser(input model.NewUserInput) (*custom.User, error)
 	GetUsers(ctx context.Context, input *model.UserFilterInput) ([]*custom.User, error)
-	GetUserById(ctx context.Context, ID string) (*custom.User, error)
+	GetUserById(ID string) (*custom.User, error)
 }
 
 //UsersService implements the usersServiceInterface
@@ -42,9 +42,9 @@ func NewUsersService(db *sqlx.DB, storageOperator cloud.StorageOperatorInterface
 		ValTokenMaker: authUtils.NewTokenOperator(nil)}
 }
 
-func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error) {
+func (s *usersService) RegisterUser(input model.NewUserInput) (*custom.User, error) {
 
-	c, err := s.repo.CountByEmail(ctx, input.Email)
+	c, err := s.repo.CountByEmail(input.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 		Role:      model.RoleUser.String(),
 		CreatedAt: time.Now(),
 	}
-	userId, err := s.repo.Create(ctx, insertedUser)
+	userId, err := s.repo.Create(insertedUser)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 	}
 	insertedUser.Avatar = avatarUrl
 
-	err = s.repo.Update(ctx, int(userId), insertedUser)
+	err = s.repo.Update(int(userId), insertedUser)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (s *usersService) RegisterUser(ctx context.Context, input model.NewUserInpu
 	if err != nil {
 		return nil, err
 	}
-	go s.emailAdaptor.SendResetPassEmail(ctx, "auth@shotify.com", []string{input.Email},
+	go s.emailAdaptor.SendResetPassEmail("auth@shotify.com", []string{input.Email},
 		input.Username, fmt.Sprintf("http://%s/validate?token=%s", domain, token))
 
 	return returnedUser, nil
@@ -105,11 +105,11 @@ func (s *usersService) GetUsers(ctx context.Context, input *model.UserFilterInpu
 		return nil, customErr.Internal("userId not found in ctx")
 	}
 	if input == nil {
-		return s.GetAllUsers(ctx)
+		return s.GetAllUsers()
 	}
 
 	if input.ID != nil {
-		user, err := s.GetUserById(ctx, *input.ID)
+		user, err := s.GetUserById(*input.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -117,21 +117,21 @@ func (s *usersService) GetUsers(ctx context.Context, input *model.UserFilterInpu
 	}
 
 	if input.Email != nil {
-		return s.GetUserByEmail(ctx, *input.Email)
+		return s.GetUserByEmail(*input.Email)
 	}
 	if input.Username != nil {
-		return s.GetUsersByUserName(ctx, *input.Username)
+		return s.GetUsersByUserName(*input.Username)
 	}
-	return s.GetAllUsers(ctx)
+	return s.GetAllUsers()
 }
 
-func (s *usersService) GetUserById(ctx context.Context, ID string) (*custom.User, error) {
+func (s *usersService) GetUserById(ID string) (*custom.User, error) {
 
 	inputId, err := strconv.Atoi(ID)
 	if err != nil {
 		return nil, customErr.BadRequest(err.Error())
 	}
-	user, err := s.repo.GetById(ctx, inputId)
+	user, err := s.repo.GetById(inputId)
 	if err != nil {
 		return nil, err
 	}
@@ -145,9 +145,9 @@ func (s *usersService) GetUserById(ctx context.Context, ID string) (*custom.User
 	}, nil
 }
 
-func (s *usersService) GetUserByEmail(ctx context.Context, email string) ([]*custom.User, error) {
+func (s *usersService) GetUserByEmail(email string) ([]*custom.User, error) {
 
-	user, err := s.repo.GetByEmail(ctx, email)
+	user, err := s.repo.GetByEmail(email)
 	if err != nil {
 		return nil, err
 	}
@@ -162,10 +162,10 @@ func (s *usersService) GetUserByEmail(ctx context.Context, email string) ([]*cus
 	}, nil
 }
 
-func (s *usersService) GetUsersByUserName(ctx context.Context, username string) ([]*custom.User, error) {
+func (s *usersService) GetUsersByUserName(username string) ([]*custom.User, error) {
 
 	userList := []*custom.User{}
-	users, err := s.repo.GetByUsername(ctx, username)
+	users, err := s.repo.GetByUsername(username)
 	if err != nil {
 		return nil, err
 	}
@@ -181,9 +181,9 @@ func (s *usersService) GetUsersByUserName(ctx context.Context, username string) 
 	return userList, nil
 }
 
-func (s *usersService) GetAllUsers(ctx context.Context) ([]*custom.User, error) {
+func (s *usersService) GetAllUsers() ([]*custom.User, error) {
 	userList := []*custom.User{}
-	users, err := s.repo.GetAll(ctx)
+	users, err := s.repo.GetAll()
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 	if !ok {
 		return nil, customErr.Internal("userId not found in ctx")
 	}
-	user, err := s.repo.GetById(ctx, int(userId))
+	user, err := s.repo.GetById(int(userId))
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 	user.Bio = input.Bio
 
 	if input.Email != user.Email {
-		c, err := s.repo.CountByEmail(ctx, input.Email)
+		c, err := s.repo.CountByEmail(input.Email)
 		if err != nil {
 			return nil, err
 		}
@@ -235,7 +235,7 @@ func (s *usersService) UpdateUser(ctx context.Context, input model.UpdateUserInp
 		user.Avatar = newAvatarUrl
 	}
 
-	err = s.repo.Update(ctx, int(userId), user)
+	err = s.repo.Update(int(userId), user)
 	if err != nil {
 		return nil, err
 	}

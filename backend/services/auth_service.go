@@ -26,7 +26,7 @@ type AuthServiceInterface interface {
 	Login(ctx context.Context, input model.LoginInput) (bool, error)
 	ValidateCredentials(c context.Context) (IntUserID, model.Role, error)
 	Logout(ctx context.Context) (bool, error)
-	Refresh(ctx context.Context) (bool, error)
+	RefreshCredentials(ctx context.Context) (bool, error)
 	RequestPasswordReset(ctx context.Context, email string) (bool, error)
 	ProcessPasswordReset(ctx context.Context, resetToken string, newPass string) (bool, error)
 	ValidateUser(ctx context.Context, validationToken string) (bool, error)
@@ -37,7 +37,7 @@ type AuthServiceInterface interface {
 var _ AuthServiceInterface = &authService{}
 
 type authService struct {
-	rd           auth.RedisOperatorInterface
+	rd           auth.AuthStoreOperatorInterface
 	tk           auth.TokenOperatorInterface
 	sc           *securecookie.SecureCookie
 	repo         repo.AuthRepoInterface
@@ -57,7 +57,7 @@ type IntUserID int64
 
 func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, error) {
 
-	user, err := s.repo.GetUserByEmail(ctx, input.Email)
+	user, err := s.repo.GetUserByEmail(input.Email)
 	if err != nil {
 		return false, err
 	}
@@ -74,7 +74,7 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 	if err != nil {
 		return false, err
 	}
-	saveErr := s.rd.CreateAuth(id, ts)
+	saveErr := s.rd.CreateAuthTokens(id, ts)
 	if saveErr != nil {
 		return false, err
 	}
@@ -93,7 +93,7 @@ func (s *authService) Login(ctx context.Context, input model.LoginInput) (bool, 
 }
 
 func (s *authService) ValidateCredentials(ctx context.Context) (IntUserID, model.Role, error) {
-	metadata, err := s.tk.ExtractTokenMetadata(ctx)
+	metadata, err := s.tk.ExtractAccessTokenMetadata(ctx)
 	if err != nil {
 		return -1, "", err
 	}
@@ -112,7 +112,7 @@ func (s *authService) ValidateCredentials(ctx context.Context) (IntUserID, model
 
 func (s *authService) Logout(ctx context.Context) (bool, error) {
 	//If metadata is passed and the tokens valid, delete them from the redis store
-	metadata, err := s.tk.ExtractTokenMetadata(ctx)
+	metadata, err := s.tk.ExtractAccessTokenMetadata(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -126,9 +126,9 @@ func (s *authService) Logout(ctx context.Context) (bool, error) {
 
 func (s *authService) RequestPasswordReset(ctx context.Context, email string) (bool, error) {
 
-	user, err := s.repo.GetUserByEmail(ctx, email)
+	user, err := s.repo.GetUserByEmail(email)
 	if err != nil {
-		return true, nil
+		return false, nil
 	}
 
 	token, err := s.tk.CreateStatelessToken(fmt.Sprintf("%d", user.ID), auth.ResetToken)
@@ -136,7 +136,7 @@ func (s *authService) RequestPasswordReset(ctx context.Context, email string) (b
 		return false, err
 	}
 
-	go s.emailAdaptor.SendResetPassEmail(ctx, "auth@shotify.com", []string{email},
+	go s.emailAdaptor.SendResetPassEmail("auth@shotify.com", []string{email},
 		user.Username, fmt.Sprintf("http://%s/reset?token=%s", domain, token))
 
 	return true, nil
@@ -153,7 +153,7 @@ func (s *authService) ProcessPasswordReset(ctx context.Context, resetToken strin
 	if err != nil {
 		return false, err
 	}
-	err = s.repo.UpdatePassword(ctx, userId, hashedPwd)
+	err = s.repo.UpdatePassword(userId, hashedPwd)
 	if err != nil {
 		return true, nil
 	}
@@ -167,7 +167,7 @@ func (s *authService) ValidateUser(ctx context.Context, validationToken string) 
 	if err != nil {
 		return false, err
 	}
-	err = s.repo.UpdateVerified(ctx, userId)
+	err = s.repo.UpdateVerified(userId)
 	if err != nil {
 		return true, nil
 	}
@@ -177,7 +177,7 @@ func (s *authService) ValidateUser(ctx context.Context, validationToken string) 
 }
 
 func (s *authService) LogoutAll(ctx context.Context) (bool, error) {
-	metadata, err := s.tk.ExtractTokenMetadata(ctx)
+	metadata, err := s.tk.ExtractAccessTokenMetadata(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -189,7 +189,7 @@ func (s *authService) LogoutAll(ctx context.Context) (bool, error) {
 
 }
 
-func (s *authService) Refresh(ctx context.Context) (bool, error) {
+func (s *authService) RefreshCredentials(ctx context.Context) (bool, error) {
 	metadata, err := s.tk.ExtractRefreshMetadata(ctx)
 	if err != nil {
 		return false, err
@@ -210,7 +210,7 @@ func (s *authService) Refresh(ctx context.Context) (bool, error) {
 		return false, err
 	}
 	//save the tokens metadata to redis
-	saveErr := s.rd.CreateAuth(userId, ts)
+	saveErr := s.rd.CreateAuthTokens(userId, ts)
 	if saveErr != nil {
 		return false, err
 	}
