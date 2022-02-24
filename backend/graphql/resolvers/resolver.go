@@ -3,6 +3,7 @@ package resolvers
 //go:generate go run github.com/99designs/gqlgen
 
 import (
+	"github.com/gasser707/go-gql-server/graphql/dataloaders"
 	"github.com/gasser707/go-gql-server/services"
 	email_svc "github.com/gasser707/go-gql-server/services/email"
 	sale_svc "github.com/gasser707/go-gql-server/services/sale"
@@ -18,4 +19,5 @@ type Resolver struct {
 	AuthService   services.AuthServiceInterface
 	SaleService   sale_svc.SalesServiceInterface
 	EmailService  email_svc.EmailServiceInterface
+	DataLoaders   dataloaders.RetrieverInterface
 }

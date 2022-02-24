@@ -9,6 +9,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gasser707/go-gql-server/databases"
+	"github.com/gasser707/go-gql-server/graphql/dataloaders"
 	"github.com/gasser707/go-gql-server/graphql/generated"
 	"github.com/gasser707/go-gql-server/graphql/resolvers"
 	"github.com/gasser707/go-gql-server/helpers"
@@ -19,13 +20,14 @@ import (
 	"github.com/gasser707/go-gql-server/utils/cloud"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv/autoload"
 )
 
 var playgroundUrl = os.Getenv("DOMAIN_NAME")
 
 // Defining the Graphql handler
-func graphqlHandler() gin.HandlerFunc {
+func graphqlHandler(mysqlDB *sqlx.DB, dl dataloaders.RetrieverInterface) gin.HandlerFunc {
 	// NewExecutableSchema and Config are in the generated.go file
 	// Resolver is in the resolver.go file
 
@@ -39,8 +41,6 @@ func graphqlHandler() gin.HandlerFunc {
 	if err != nil {
 		log.Panic(err)
 	}
-	mysqlDB := databases.NewMysqlClient()
-
 	emailSrv := email_svc.NewEmailService()
 	emailAdaptor := email_svc.NewEmailAdaptor(emailSrv)
 
@@ -50,7 +50,9 @@ func graphqlHandler() gin.HandlerFunc {
 	saleSrv := sales_svc.NewSalesService(mysqlDB)
 
 	c := generated.Config{Resolvers: &resolvers.Resolver{AuthService: authSrv,
-		ImagesService: imgSrv, UsersService: userSrv, SaleService: saleSrv, EmailService: emailSrv}}
+		ImagesService: imgSrv, UsersService: userSrv, SaleService: saleSrv, EmailService: emailSrv,
+		DataLoaders: dl,
+	}}
 
 	c.Directives.IsLoggedIn = func(ctx context.Context, obj interface{}, next graphql.Resolver) (interface{}, error) {
 		userId, _, err := authSrv.ValidateCredentials(ctx)
@@ -83,6 +85,10 @@ func main() {
 	// Setting up Gin
 	r := gin.Default()
 
+	mysqlDB := databases.NewMysqlClient()
+	dl := dataloaders.NewRetriever()                         // <- here we initialize the dataloader.Retriever
+	dlMiddleware := middleware.DataLoaderMiddleware(mysqlDB) // <- here we initialize the middleware
+
 	r.Use(middleware.CookieMiddleware())
 	r.Use(middleware.HeaderMiddleware())
 	r.Use(cors.New(cors.Config{
@@ -93,7 +99,9 @@ func main() {
 		ExposeHeaders:    []string{"Content-Length", "Content-Type", "Cookie", "Set-Cookie", "X-CSRF-TOKEN"},
 	}))
 
-	r.POST("/query", graphqlHandler())
+	r.Use(dlMiddleware)
+
+	r.POST("/query", graphqlHandler(mysqlDB, dl))
 	r.GET("/query/playground", playgroundHandler())
 	r.Run()
 

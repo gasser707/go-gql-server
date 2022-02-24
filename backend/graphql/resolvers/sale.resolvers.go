@@ -5,6 +5,7 @@ package resolvers
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/gasser707/go-gql-server/graphql/custom"
 	"github.com/gasser707/go-gql-server/graphql/generated"
@@ -19,15 +20,18 @@ func (r *queryResolver) Sales(ctx context.Context) ([]*custom.Sale, error) {
 }
 
 func (r *saleResolver) Image(ctx context.Context, sale *custom.Sale) (*custom.Image, error) {
-	return r.ImagesService.GetImageById(ctx, sale.ImageID)
+	imgId, _ := strconv.Atoi(sale.ImageID)
+	return r.DataLoaders.Retrieve(ctx).ImageByID.Load(imgId)
 }
 
 func (r *saleResolver) Buyer(ctx context.Context, sale *custom.Sale) (*custom.User, error) {
-	return r.UsersService.GetUserById(sale.BuyerID)
+	buyerId, _ := strconv.Atoi(sale.BuyerID)
+	return r.DataLoaders.Retrieve(ctx).UserByID.Load(buyerId)
 }
 
 func (r *saleResolver) Seller(ctx context.Context, sale *custom.Sale) (*custom.User, error) {
-	return r.UsersService.GetUserById(sale.SellerID)
+	sellerId, _ := strconv.Atoi(sale.SellerID)
+	return r.DataLoaders.Retrieve(ctx).UserByID.Load(sellerId)
 }
 
 // Sale returns generated.SaleResolver implementation.

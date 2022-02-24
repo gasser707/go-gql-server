@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	vision "cloud.google.com/go/vision/apiv1"
@@ -37,7 +36,7 @@ func NewVisionOperator(ctx context.Context) (*visionOperator, error) {
 }
 
 func (v *visionOperator) DetectImgProps(ctx context.Context, source string) (labels []string, err error) {
-	imgUrl := fmt.Sprintf("gs://%s/%s", os.Getenv(bucketName), source)
+	imgUrl := fmt.Sprintf("gs://%s/%s", bucketName, source)
 	image := vision.NewImageFromURI(imgUrl)
 	errs, ctx := errgroup.WithContext(ctx)
 	ch := make(chan string)

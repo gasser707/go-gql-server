@@ -5,6 +5,8 @@ package resolvers
 
 import (
 	"context"
+	"log"
+	"strconv"
 
 	"github.com/gasser707/go-gql-server/graphql/custom"
 	"github.com/gasser707/go-gql-server/graphql/generated"
@@ -12,7 +14,9 @@ import (
 )
 
 func (r *imageResolver) User(ctx context.Context, img *custom.Image) (*custom.User, error) {
-	return r.UsersService.GetUserById(img.UserID)
+	userId, _ := strconv.Atoi(img.UserID)
+	log.Println(userId)
+	return r.DataLoaders.Retrieve(ctx).UserByID.Load(userId)
 }
 
 func (r *mutationResolver) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
