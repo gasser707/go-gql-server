@@ -7,13 +7,13 @@ import (
 	"time"
 
 	customErr "github.com/gasser707/go-gql-server/errors"
+	"github.com/gasser707/go-gql-server/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/securecookie"
 	_ "github.com/joho/godotenv/autoload"
 )
 
 var env = "ENV"
-var cookieKey = "cookie-name"
 
 type CookieAccess struct {
 	Writer        http.ResponseWriter
@@ -28,13 +28,13 @@ func (ca *CookieAccess) SetCookie(at string, rt string, sm *securecookie.SecureC
 		"refresh_token": rt,
 	}
 
-	if encoded, err := sm.Encode("cookie-name", value); err == nil {
+	if encoded, err := sm.Encode(utils.CookieKey, value); err == nil {
 		cookie := &http.Cookie{
-			Name:  "cookie-name",
-			Value: encoded,
-			Path:  "/*",
-			// Secure:   true,
-			// SameSite: http.SameSiteLaxMode,
+			Name:     utils.CookieKey,
+			Value:    encoded,
+			Path:     "/*",
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
 			HttpOnly: true,
 			Expires:  time.Now().Add(time.Hour * 24 * 7),
 		}
@@ -55,8 +55,7 @@ func setValInCtx(ctx *gin.Context, key string, val interface{}) {
 }
 
 func GetCookieAccess(ctx context.Context) (*CookieAccess, error) {
-	cookieKey := cookieKey
-	ca, ok := ctx.Value(cookieKey).(*CookieAccess)
+	ca, ok := ctx.Value(utils.CookieKey).(*CookieAccess)
 	if !ok {
 		return nil, customErr.NoAuth("cookie not found")
 	}
@@ -66,7 +65,7 @@ func GetCookieAccess(ctx context.Context) (*CookieAccess, error) {
 func CookieMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		encodedCookie := ""
-		ca, err := ctx.Request.Cookie(string(cookieKey))
+		ca, err := ctx.Request.Cookie(string(utils.CookieKey))
 		if err == nil {
 			encodedCookie = ca.Value
 		}
@@ -76,7 +75,7 @@ func CookieMiddleware() gin.HandlerFunc {
 		}
 
 		// &cookieA is a pointer so any changes in future is changing cookieA is context
-		setValInCtx(ctx, cookieKey, &cookieA)
+		setValInCtx(ctx, utils.CookieKey, &cookieA)
 
 		// calling the actual resolver
 		ctx.Next()

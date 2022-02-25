@@ -6,7 +6,7 @@ import (
 )
 
 type EmailAdaptorInterface interface {
-	SendWelcomeEmail(sender string, to []string, name string, resetLink string)
+	SendWelcomeEmail(sender string, to []string, name string, verificationLink string)
 	SendResetPassEmail(sender string, to []string, name string, resetLink string)
 	SendReceiptEmail(sender string, to []string, sellerName string,
 		buyerName string, imageID string, imageTitle string, paymentMethod string)
@@ -23,12 +23,13 @@ func NewEmailAdaptor(emailService EmailServiceInterface) *emailAdaptor {
 	return &emailAdaptor{emailService: emailService}
 }
 
-func (ea *emailAdaptor) SendWelcomeEmail(sender string, to []string, name string, resetLink string) {
+func (ea *emailAdaptor) SendWelcomeEmail(sender string, to []string, name string, verificationLink string) {
 	email := &emails.Email{
 		Type:   emails.Welcome,
 		Sender: sender,
 		To:     to,
 		Name:   name,
+		Link:   verificationLink,
 	}
 
 	err := ea.emailService.SendEmail(email)

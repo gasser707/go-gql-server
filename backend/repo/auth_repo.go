@@ -13,6 +13,7 @@ type AuthRepoInterface interface {
 }
 
 var _ AuthRepoInterface = &authRepo{}
+var _ AuthRepoInterface = &mysqlAuthRepo{}
 
 type authRepo struct {
 	repo AuthRepoInterface

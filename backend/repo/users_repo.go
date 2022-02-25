@@ -18,6 +18,7 @@ type UsersRepoInterface interface {
 }
 
 var _ UsersRepoInterface = &usersRepo{}
+var _ UsersRepoInterface = &mysqlUsersRepo{}
 
 type mysqlUsersRepo struct {
 	db *sqlx.DB

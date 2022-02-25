@@ -10,8 +10,9 @@ import (
 	customErr "github.com/gasser707/go-gql-server/errors"
 	"github.com/gasser707/go-gql-server/graphql/model"
 	"github.com/gasser707/go-gql-server/middleware"
+	"github.com/gasser707/go-gql-server/utils"
 	"github.com/gorilla/securecookie"
-	"github.com/twinj/uuid"
+	"github.com/matoous/go-nanoid/v2"
 )
 
 var (
@@ -117,7 +118,8 @@ func (t *tokenOperator) createRefreshToken(userId string, userRole model.Role, t
 }
 func (t *tokenOperator) createAccessToken(userId string, userRole model.Role, td *TokenDetails) (*TokenDetails, error) {
 	td.AtExpires = time.Now().Add(time.Minute * 30).Unix() //expires after 30 min
-	td.BaseUuid = uuid.NewV4().String()
+	nanoId, _ := gonanoid.New()
+	td.BaseUuid = nanoId
 	td.TokenUuid = td.BaseUuid + "@@" + userId
 
 	var err error
@@ -369,7 +371,7 @@ func (t *tokenOperator) getTokensFromCookie(ctx context.Context) (map[string]str
 	}
 	ec := ca.EncodedCookie
 	value := make(map[string]string)
-	if err = t.sc.Decode("cookie-name", ec, &value); err != nil {
+	if err = t.sc.Decode(utils.CookieKey, ec, &value); err != nil {
 		return nil, customErr.NoAuth(err.Error())
 	}
 

@@ -18,7 +18,7 @@ import (
 	"github.com/gasser707/go-gql-server/utils"
 	"github.com/gasser707/go-gql-server/utils/cloud"
 	"github.com/jmoiron/sqlx"
-	"github.com/twinj/uuid"
+	"github.com/matoous/go-nanoid/v2"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -101,8 +101,8 @@ func (s *imagesService) DeleteImages(ctx context.Context, input []string) (bool,
 
 func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.Image, inputImg *model.NewImageInput,
 	userId IntUserID) (err error) {
-
-	url, err := s.storageOperator.UploadImage(inputImg.File.File, uuid.NewV4().String(), fmt.Sprintf("%v", userId))
+	nanoId, _ := gonanoid.New()
+	url, err := s.storageOperator.UploadImage(inputImg.File.File, nanoId, fmt.Sprintf("%v", userId))
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 		ID:              fmt.Sprintf("%v", imgId),
 		Title:           dbImg.Title,
 		Description:     dbImg.Description,
-		URL:             dbImg.URL,
+		URL:             fmt.Sprintf("%s/%s/%s", utils.BaseGcsUrl, utils.BucketName, dbImg.URL),
 		Private:         dbImg.Private,
 		ForSale:         dbImg.ForSale,
 		Price:           dbImg.Price,
@@ -212,7 +212,7 @@ func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Im
 		UserID:          fmt.Sprintf("%v", img.UserID),
 		Created:         &img.CreatedAt,
 		Title:           img.Title,
-		URL:             img.URL,
+		URL:             fmt.Sprintf("%s/%s/%s", utils.BaseGcsUrl, utils.BucketName, img.URL),
 		Description:     img.Description,
 		Private:         img.Private,
 		ForSale:         img.ForSale,
@@ -240,7 +240,7 @@ func (s *imagesService) GetImagesByFilter(ctx context.Context, userID IntUserID,
 			UserID:          fmt.Sprintf("%v", img.UserID),
 			Created:         &img.CreatedAt,
 			Title:           img.Title,
-			URL:             img.URL,
+			URL:             fmt.Sprintf("%s/%s/%s", utils.BaseGcsUrl, utils.BucketName, img.URL),
 			Description:     img.Description,
 			Private:         img.Private,
 			ForSale:         img.ForSale,
@@ -270,7 +270,7 @@ func (s *imagesService) GetAllPublicImgs(ctx context.Context) ([]*custom.Image, 
 			UserID:          fmt.Sprintf("%v", img.UserID),
 			Created:         &img.CreatedAt,
 			Title:           img.Title,
-			URL:             img.URL,
+			URL:             fmt.Sprintf("%s/%s/%s", utils.BaseGcsUrl, utils.BucketName, img.URL),
 			Description:     img.Description,
 			Private:         img.Private,
 			ForSale:         img.ForSale,
@@ -300,9 +300,9 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 	img.Title = input.Title
 	img.ForSale = input.ForSale
 	if !img.Private && input.Private {
-		oldPath := strings.Split(img.URL, fmt.Sprintf("%s/%s/", utils.BaseGcsUrl, utils.BucketName))
-		newPath := fmt.Sprintf("%d/%s", img.UserID, uuid.NewV4().String())
-		newUrl, err := s.storageOperator.ChangeImagePath(oldPath[1], newPath)
+		nanoId, _ := gonanoid.New()
+		newPath := fmt.Sprintf("%d/%s", img.UserID, nanoId)
+		newUrl, err := s.storageOperator.ChangeImagePath(img.URL, newPath)
 		if err != nil {
 			return nil, err
 		}
@@ -340,7 +340,7 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 		DiscountPercent: img.DiscountPercent,
 		ID:              input.ID,
 		Archived:        input.Archived,
-		URL:             img.URL,
+		URL:             fmt.Sprintf("%s/%s/%s", utils.BaseGcsUrl, utils.BucketName, img.URL),
 	}, nil
 }
 

@@ -27,6 +27,7 @@ type storageOperator struct {
 
 //storageOperator implements the StorageOperatorInterfaceInterface
 var _ StorageOperatorInterface = &storageOperator{}
+var _ StorageOperatorInterface = &GcsClient{}
 
 func NewGcsClient() (*GcsClient, error) {
 
@@ -58,8 +59,7 @@ func (c *GcsClient) UploadImage(img io.Reader, imgName string,
 		return "", customErr.Internal(err.Error())
 	}
 
-	url = fmt.Sprintf("%s/%s/%s", utils.BaseGcsUrl, utils.BucketName, sw.Attrs().Name)
-	return url, nil
+	return sw.Attrs().Name, nil
 }
 
 func (c *GcsClient) DeleteImage(path string) error {
