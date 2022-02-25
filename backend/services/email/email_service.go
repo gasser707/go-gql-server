@@ -1,7 +1,6 @@
 package services
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/smtp"
@@ -28,17 +27,17 @@ const (
 var (
 	addr           = os.Getenv(emailAddress)
 	host           = os.Getenv(emailHost)
-	emailAuth      = smtp.CRAMMD5Auth("","")
+	emailAuth      = smtp.CRAMMD5Auth("", "")
 	sendGridApiKey = os.Getenv(sendGridKey)
 	sendGridEmail  = os.Getenv(sendGridFrom)
 )
 
 type EmailServiceInterface interface {
-	SendEmail(ctx context.Context, email emails.EmailInterface) error
+	SendEmail(email emails.EmailInterface) error
 }
 
 type EmailClientInterface interface {
-	SendEmail(ctx context.Context, email emails.EmailInterface, emailContent string) error
+	SendEmail(email emails.EmailInterface, emailContent string) error
 }
 
 type devEmailClient struct{}
@@ -49,7 +48,7 @@ type emailService struct {
 	emailClient EmailClientInterface
 }
 
-func (d *devEmailClient) SendEmail(ctx context.Context, email emails.EmailInterface, emailContent string) error {
+func (d *devEmailClient) SendEmail(email emails.EmailInterface, emailContent string) error {
 
 	emailContent =
 		"MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\r\n" +
@@ -59,19 +58,17 @@ func (d *devEmailClient) SendEmail(ctx context.Context, email emails.EmailInterf
 
 	err := smtp.SendMail(addr, emailAuth, email.GetSender(), email.GetTo(), []byte(emailContent))
 	if err != nil {
-		fmt.Println(err.Error())
-		return customErr.Internal(ctx, err.Error())
+		return customErr.Internal(err.Error())
 	}
 
 	return nil
 }
 
-func (p *prodEmailClient) SendEmail(ctx context.Context, email emails.EmailInterface, emailContent string) error {
+func (p *prodEmailClient) SendEmail(email emails.EmailInterface, emailContent string) error {
 
 	from := mail.NewEmail(email.GetSender(), os.Getenv(sendGridEmail))
 	subject := string(email.GetType())
 	// mail.
-	fmt.Println(email.GetTo()[0])
 	to := mail.NewEmail(email.GetName(), email.GetTo()[0])
 
 	message := mail.NewSingleEmail(from, subject, to, emailContent, emailContent)
@@ -84,7 +81,7 @@ func (p *prodEmailClient) SendEmail(ctx context.Context, email emails.EmailInter
 	return nil
 }
 
-//UsersService implements the usersServiceInterface
+//emailService implements the EmailServiceInterface
 var _ EmailServiceInterface = &emailService{}
 
 func NewEmailService() *emailService {
@@ -101,12 +98,12 @@ func NewEmailService() *emailService {
 	}
 }
 
-func (s *emailService) SendEmail(ctx context.Context, email emails.EmailInterface) error {
+func (s *emailService) SendEmail(email emails.EmailInterface) error {
 
 	emailContent := s.factory.GenerateEmailContent(email)
-	err := s.emailClient.SendEmail(ctx, email, emailContent)
+	err := s.emailClient.SendEmail(email, emailContent)
 	if err != nil {
-		return customErr.Internal(ctx, err.Error())
+		return customErr.Internal(err.Error())
 	}
 	return nil
 }

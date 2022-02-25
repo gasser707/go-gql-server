@@ -1,15 +1,14 @@
 package databases
 
 import (
-	"os"
 	"github.com/go-redis/redis/v7"
 	_ "github.com/joho/godotenv/autoload"
+	"os"
 )
 
+func NewRedisClient() *redis.Client {
 
-func NewRedisClient() *redis.Client  {
-
-	 redisClient := redis.NewClient(&redis.Options{
+	redisClient := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_URI"),
 		Password: os.Getenv("REDIS_PASSWORD"),
 		DB:       0,

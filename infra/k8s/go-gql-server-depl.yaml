@@ -13,22 +13,22 @@ spec:
         app: go-gql
     spec:
       volumes:
-      - name: google-cloud-key
-        secret:
-          secretName: bucket-keys
+        - name: google-cloud-key
+          secret:
+            secretName: gcp-keys
       containers:
         - name: go-gql
           image: gasser707/go-gql-server
           volumeMounts:
-          - name: google-cloud-key
-            mountPath: /var/secrets/google
+            - name: google-cloud-key
+              mountPath: /var/secrets/google
           env:
             - name: REDIS_URI
-              value: 'redis-srv:6379'
+              value: "redis-srv:6379"
             - name: ENV
               value: dev
             - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: /var/secrets/google/bucket-keys.json
+              value: /var/secrets/google/gcp-keys.json
             - name: ACCESS_SECRET
               valueFrom:
                 secretKeyRef:
@@ -65,7 +65,7 @@ spec:
                   name: mysql-dbname
                   key: MYSQL_DBNAME
             - name: MYSQL_HOST
-              value: 'mysql-0.mysql'
+              value: "mysql-0.mysql"
             - name: MYSQL_USER
               value: root
             - name: MYSQL_PASS
@@ -74,7 +74,7 @@ spec:
                   name: mysql-pass
                   key: MYSQL_ROOT_PASSWORD
             - name: EMAIL_HOST
-              value: mailhog-srv 
+              value: mailhog-srv
             - name: EMAIL_ADDRESS
               value: mailhog-srv:1025
 

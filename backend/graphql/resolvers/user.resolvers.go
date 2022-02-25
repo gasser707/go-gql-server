@@ -12,7 +12,7 @@ import (
 )
 
 func (r *mutationResolver) RegisterUser(ctx context.Context, input model.NewUserInput) (*custom.User, error) {
-	return r.UsersService.RegisterUser(ctx, input)
+	return r.UsersService.RegisterUser(input)
 }
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*custom.User, error) {

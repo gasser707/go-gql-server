@@ -15,9 +15,10 @@ import (
 	"github.com/gasser707/go-gql-server/helpers"
 	"github.com/gasser707/go-gql-server/repo"
 	email_svc "github.com/gasser707/go-gql-server/services/email"
+	"github.com/gasser707/go-gql-server/utils"
 	"github.com/gasser707/go-gql-server/utils/cloud"
 	"github.com/jmoiron/sqlx"
-	"github.com/twinj/uuid"
+	"github.com/matoous/go-nanoid/v2"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -30,7 +31,7 @@ type ImagesServiceInterface interface {
 	AutoGenerateLabels(ctx context.Context, imageId string) ([]string, error)
 }
 
-//UsersService implements the usersServiceInterface
+//imagessService implements the ImagesServiceInterface
 var _ ImagesServiceInterface = &imagesService{}
 
 type imagesService struct {
@@ -53,7 +54,7 @@ func NewImagesService(ctx context.Context, db *sqlx.DB, storageOperator cloud.St
 func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImageInput) ([]*custom.Image, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal("userId not found in ctx")
 	}
 	errs, ctx := errgroup.WithContext(ctx)
 	ch := make(chan *custom.Image)
@@ -81,14 +82,14 @@ func (s *imagesService) UploadImages(ctx context.Context, input []*model.NewImag
 func (s *imagesService) DeleteImages(ctx context.Context, input []string) (bool, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
-		return false, customErr.Internal(ctx, "userId not found in ctx")
+		return false, customErr.Internal("userId not found in ctx")
 	}
-	errs, ctx := errgroup.WithContext(ctx)
+	errs, _ := errgroup.WithContext(ctx)
 	for _, delImg := range input {
 		i := delImg
 		errs.Go(
 			func() error {
-				return s.processDeleteImage(ctx, i, userId)
+				return s.processDeleteImage(i, userId)
 			})
 	}
 	err := errs.Wait()
@@ -100,8 +101,8 @@ func (s *imagesService) DeleteImages(ctx context.Context, input []string) (bool,
 
 func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.Image, inputImg *model.NewImageInput,
 	userId IntUserID) (err error) {
-
-	url, err := s.storageOperator.UploadImage(inputImg.File.File, uuid.NewV4().String(), fmt.Sprintf("%v", userId))
+	nanoId, _ := gonanoid.New()
+	url, err := s.storageOperator.UploadImage(inputImg.File.File, nanoId, fmt.Sprintf("%v", userId))
 	if err != nil {
 		return err
 	}
@@ -116,11 +117,11 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 		URL:             url,
 		CreatedAt:       time.Now(),
 	}
-	imgId, err := s.repo.Create(ctx, &dbImg)
+	imgId, err := s.repo.Create(&dbImg)
 	if err != nil {
 		return err
 	}
-	err = s.insertLabels(ctx, inputImg.Labels, int(imgId))
+	err = s.insertLabels(inputImg.Labels, int(imgId))
 	if err != nil {
 		return err
 	}
@@ -129,7 +130,7 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 		ID:              fmt.Sprintf("%v", imgId),
 		Title:           dbImg.Title,
 		Description:     dbImg.Description,
-		URL:             dbImg.URL,
+		URL:             fmt.Sprintf("%s/%s/%s", utils.BaseGcsUrl, utils.BucketName, dbImg.URL),
 		Private:         dbImg.Private,
 		ForSale:         dbImg.ForSale,
 		Price:           dbImg.Price,
@@ -143,22 +144,22 @@ func (s *imagesService) processUploadImage(ctx context.Context, ch chan *custom.
 	return nil
 }
 
-func (s *imagesService) processDeleteImage(ctx context.Context, ID string, userId IntUserID) (err error) {
+func (s *imagesService) processDeleteImage(ID string, userId IntUserID) (err error) {
 
 	delImgId, err := strconv.Atoi(ID)
 	if err != nil {
-		return customErr.BadRequest(ctx, err.Error())
+		return customErr.BadRequest(err.Error())
 	}
-	img, err := s.repo.GetImageIfOwner(ctx, delImgId, int(userId))
+	img, err := s.repo.GetImageIfOwner(delImgId, int(userId))
 	if err != nil {
 		return err
 	}
-	err = s.repo.Delete(ctx, delImgId, int(userId))
+	err = s.repo.Delete(delImgId, int(userId))
 	if err != nil {
 		return err
 	}
 	url := img.URL
-	err = s.storageOperator.DeleteImage( url)
+	err = s.storageOperator.DeleteImage(url)
 	if err != nil {
 		return err
 	}
@@ -168,7 +169,7 @@ func (s *imagesService) processDeleteImage(ctx context.Context, ID string, userI
 func (s *imagesService) GetImages(ctx context.Context, input *model.ImageFilterInput) ([]*custom.Image, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal("userId not found in ctx")
 	}
 	if input == nil {
 		return s.GetAllPublicImgs(ctx)
@@ -194,13 +195,13 @@ func (s *imagesService) GetImages(ctx context.Context, input *model.ImageFilterI
 func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Image, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal("userId not found in ctx")
 	}
 	inputId, err := strconv.Atoi(ID)
 	if err != nil {
-		return nil, customErr.BadRequest(ctx, err.Error())
+		return nil, customErr.BadRequest(err.Error())
 	}
-	img, labels, err := s.repo.GetById(ctx, inputId, int(userId))
+	img, labels, err := s.repo.GetById(inputId, int(userId))
 	if err != nil {
 		return nil, err
 
@@ -211,7 +212,7 @@ func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Im
 		UserID:          fmt.Sprintf("%v", img.UserID),
 		Created:         &img.CreatedAt,
 		Title:           img.Title,
-		URL:             img.URL,
+		URL:             fmt.Sprintf("%s/%s/%s", utils.BaseGcsUrl, utils.BucketName, img.URL),
 		Description:     img.Description,
 		Private:         img.Private,
 		ForSale:         img.ForSale,
@@ -223,13 +224,13 @@ func (s *imagesService) GetImageById(ctx context.Context, ID string) (*custom.Im
 }
 
 func (s *imagesService) GetImagesByFilter(ctx context.Context, userID IntUserID, filter string) ([]*custom.Image, error) {
-	dbImgs, err := s.repo.GetByFilter(ctx, filter)
+	dbImgs, err := s.repo.GetByFilter(filter)
 	if err != nil {
 		return nil, err
 	}
 	imgList := []*custom.Image{}
 	for _, img := range dbImgs {
-		labels, err := s.repo.GetImageLabels(ctx, img.ID)
+		labels, err := s.repo.GetImageLabels(img.ID)
 		if err != nil {
 			return nil, err
 
@@ -239,7 +240,7 @@ func (s *imagesService) GetImagesByFilter(ctx context.Context, userID IntUserID,
 			UserID:          fmt.Sprintf("%v", img.UserID),
 			Created:         &img.CreatedAt,
 			Title:           img.Title,
-			URL:             img.URL,
+			URL:             fmt.Sprintf("%s/%s/%s", utils.BaseGcsUrl, utils.BucketName, img.URL),
 			Description:     img.Description,
 			Private:         img.Private,
 			ForSale:         img.ForSale,
@@ -259,7 +260,7 @@ func (s *imagesService) GetAllPublicImgs(ctx context.Context) ([]*custom.Image, 
 	}
 	imgList := []*custom.Image{}
 	for _, img := range dbImgs {
-		labels, err := s.repo.GetImageLabels(ctx, img.ID)
+		labels, err := s.repo.GetImageLabels(img.ID)
 		if err != nil {
 			return nil, err
 
@@ -269,7 +270,7 @@ func (s *imagesService) GetAllPublicImgs(ctx context.Context) ([]*custom.Image, 
 			UserID:          fmt.Sprintf("%v", img.UserID),
 			Created:         &img.CreatedAt,
 			Title:           img.Title,
-			URL:             img.URL,
+			URL:             fmt.Sprintf("%s/%s/%s", utils.BaseGcsUrl, utils.BucketName, img.URL),
 			Description:     img.Description,
 			Private:         img.Private,
 			ForSale:         img.ForSale,
@@ -285,36 +286,45 @@ func (s *imagesService) GetAllPublicImgs(ctx context.Context) ([]*custom.Image, 
 func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImageInput) (*custom.Image, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal("userId not found in ctx")
 	}
 	imgId, err := strconv.Atoi(input.ID)
 	if err != nil {
-		return nil, customErr.BadRequest(ctx, err.Error())
+		return nil, customErr.BadRequest(err.Error())
 	}
-	img, err := s.repo.GetImageIfOwner(ctx, imgId, int(userId))
+	img, err := s.repo.GetImageIfOwner(imgId, int(userId))
 	if err != nil {
 		return nil, err
 	}
 
 	img.Title = input.Title
 	img.ForSale = input.ForSale
+	if !img.Private && input.Private {
+		nanoId, _ := gonanoid.New()
+		newPath := fmt.Sprintf("%d/%s", img.UserID, nanoId)
+		newUrl, err := s.storageOperator.ChangeImagePath(img.URL, newPath)
+		if err != nil {
+			return nil, err
+		}
+		img.URL = newUrl
+	}
 	img.Private = input.Private
 	img.Description = input.Description
 	img.Price = input.Price
 	img.DiscountPercent = input.DiscountPercent
 	img.Archived = input.Archived
 
-	err = s.repo.Update(ctx, img.ID, img)
+	err = s.repo.Update(img.ID, img)
 	if err != nil {
 		return nil, err
 	}
 
 	if input.Labels != nil {
-		err = s.repo.DeleteImageLabels(ctx, imgId)
+		err = s.repo.DeleteImageLabels(imgId)
 		if err != nil {
 			return nil, err
 		}
-		err = s.insertLabels(ctx, input.Labels, img.ID)
+		err = s.insertLabels(input.Labels, img.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -330,6 +340,7 @@ func (s *imagesService) UpdateImage(ctx context.Context, input *model.UpdateImag
 		DiscountPercent: img.DiscountPercent,
 		ID:              input.ID,
 		Archived:        input.Archived,
+		URL:             fmt.Sprintf("%s/%s/%s", utils.BaseGcsUrl, utils.BucketName, img.URL),
 	}, nil
 }
 
@@ -346,7 +357,7 @@ func (s *imagesService) searchbyImage(ctx context.Context, userId IntUserID, img
 	return s.GetImagesByFilter(ctx, userId, filter)
 }
 
-func (s *imagesService) insertLabels(ctx context.Context, labels []string, imgId int) error {
+func (s *imagesService) insertLabels(labels []string, imgId int) error {
 	if len(labels) == 0 {
 		return nil
 	}
@@ -355,7 +366,7 @@ func (s *imagesService) insertLabels(ctx context.Context, labels []string, imgId
 		insertedLabels = append(insertedLabels, &dbModels.Label{ImageID: imgId, Tag: strings.ToLower(l)})
 	}
 
-	err := s.repo.InsertImageLabels(ctx, imgId, insertedLabels)
+	err := s.repo.InsertImageLabels(imgId, insertedLabels)
 	if err != nil {
 		return err
 	}
@@ -365,26 +376,26 @@ func (s *imagesService) insertLabels(ctx context.Context, labels []string, imgId
 func (s *imagesService) AutoGenerateLabels(ctx context.Context, imageId string) ([]string, error) {
 	userId, ok := ctx.Value(helpers.UserIdKey).(IntUserID)
 	if !ok {
-		return nil, customErr.Internal(ctx, "userId not found in ctx")
+		return nil, customErr.Internal("userId not found in ctx")
 	}
 	imgId, err := strconv.Atoi(imageId)
 	if err != nil {
-		return nil, customErr.BadRequest(ctx, err.Error())
+		return nil, customErr.BadRequest(err.Error())
 	}
-	img, err := s.repo.GetImageIfOwner(ctx, imgId, int(userId))
+	img, err := s.repo.GetImageIfOwner(imgId, int(userId))
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, customErr.DB(err)
 	}
 	generatedLabels, err := s.visionOperator.DetectImgProps(ctx, img.URL)
 	if err != nil {
 		return nil, err
 	}
-	oldLabels, err := s.repo.GetImageLabels(ctx, imgId)
+	oldLabels, err := s.repo.GetImageLabels(imgId)
 	if err != nil {
-		return nil, customErr.DB(ctx, err)
+		return nil, customErr.DB(err)
 	}
-	newLabels := helpers.RemoveDuplicate(generatedLabels, oldLabels)
-	err = s.insertLabels(ctx, newLabels, img.ID)
+	newLabels := helpers.RemoveDuplicateLabels(generatedLabels, oldLabels)
+	err = s.insertLabels(newLabels, img.ID)
 	if err != nil {
 		return nil, err
 	}
